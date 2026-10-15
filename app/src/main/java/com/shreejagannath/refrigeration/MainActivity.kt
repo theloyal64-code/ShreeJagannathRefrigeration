@@ -245,9 +245,8 @@ private fun CustomerHome(appliances: List<Appliance>, bookings: List<ServiceBook
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(88.dp).background(Color(0xFFEAF1F8), RoundedCornerShape(14.dp))
                             .pointerInput(appliance.name) { detectDragGestures { change, drag -> change.consume(); rotation = (rotation + drag.x * 1.8f) % 360f } }
-                            .graphicsLayer { rotationY = rotation; cameraDistance = 12 * density }
-                            .clickable { rotation = (rotation + 45f) % 360f }, contentAlignment = Alignment.Center) {
-                            ApplianceDrawing(appliance.name, "", showMarker = false, modifier = Modifier.fillMaxSize().padding(8.dp))
+                            .clickable { rotation = (rotation + 30f) % 360f }, contentAlignment = Alignment.Center) {
+                            Appliance3DPreview(appliance.name, rotation, Modifier.fillMaxSize().padding(8.dp))
                         }
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
@@ -555,6 +554,86 @@ private fun ApplianceDrawing(appliance: String, issue: String, showMarker: Boole
             drawCircle(Color(0xFF7F1D1D), radius = w*0.085f, center = Offset(mx,my), style=Stroke(width=2f))
             drawLine(Color(0xFFD92D20), Offset(mx,my-w*0.09f), Offset(mx,my-w*0.18f), strokeWidth=3f)
         }
+    }
+}
+
+@Composable
+private fun Appliance3DPreview(appliance: String, rotationDegrees: Float, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val w = size.width
+        val h = size.height
+        val angle = Math.toRadians(rotationDegrees.toDouble())
+        val c = kotlin.math.cos(angle).toFloat()
+        val sn = kotlin.math.sin(angle).toFloat()
+        data class V(val x: Float, val y: Float, val z: Float)
+        data class P(val x: Float, val y: Float, val depth: Float)
+        fun project(v: V): P {
+            val rx = v.x * c - v.z * sn
+            val rz = v.x * sn + v.z * c
+            val perspective = 3.4f / (3.4f + rz)
+            return P(w * (0.5f + rx * 0.68f * perspective), h * (0.5f + v.y * 0.76f * perspective), rz)
+        }
+        val (halfW, halfH, halfD) = when (appliance) {
+            "AC Service" -> Triple(0.82f, 0.42f, 0.22f)
+            "Refrigerator" -> Triple(0.48f, 0.94f, 0.30f)
+            "Washing Machine" -> Triple(0.63f, 0.78f, 0.34f)
+            "Microwave Oven" -> Triple(0.88f, 0.48f, 0.36f)
+            else -> Triple(0.43f, 0.90f, 0.35f)
+        }
+        val vertices = listOf(
+            V(-halfW,-halfH,-halfD), V(halfW,-halfH,-halfD), V(halfW,halfH,-halfD), V(-halfW,halfH,-halfD),
+            V(-halfW,-halfH,halfD), V(halfW,-halfH,halfD), V(halfW,halfH,halfD), V(-halfW,halfH,halfD)
+        )
+        data class F(val indices: List<Int>, val color: Color, val depth: Float)
+        val faces = listOf(
+            F(listOf(0,1,2,3), Color(0xFFB8C8D8), -halfD),
+            F(listOf(4,5,1,0), Color(0xFF879BB0), 0f),
+            F(listOf(5,6,2,1), Color(0xFF6D8298), halfW * 0.4f),
+            F(listOf(7,6,5,4), Color(0xFF9EAFBF), halfH * 0.2f),
+            F(listOf(4,7,3,0), Color(0xFFEAF1F7), -halfW * 0.4f)
+        ).sortedByDescending { it.depth * c }
+        faces.forEach { face ->
+            val pts = face.indices.map { project(vertices[it]) }
+            val path = Path().apply {
+                moveTo(pts[0].x, pts[0].y)
+                pts.drop(1).forEach { lineTo(it.x, it.y) }
+                close()
+            }
+            drawPath(path, face.color)
+            drawPath(path, Color(0xFF52677D), style = Stroke(width = 1.4f))
+        }
+        // Appliance-specific front details are drawn on the visible front plane.
+        val front = vertices.filterIndexed { index, _ -> index in listOf(0,1,2,3) }.map { project(it) }
+        val left = front.minOf { it.x }; val right = front.maxOf { it.x }
+        val top = front.minOf { it.y }; val bottom = front.maxOf { it.y }
+        val fw = right-left; val fh = bottom-top
+        when (appliance) {
+            "AC Service" -> {
+                for (i in 0..5) drawLine(Color(0xFF536A80), Offset(left+fw*.12f, top+fh*(.62f+i*.045f)), Offset(right-fw*.12f, top+fh*(.62f+i*.045f)), 1.7f)
+                drawCircle(Color(0xFF52677D), fw*.025f, Offset(right-fw*.15f, top+fh*.25f))
+            }
+            "Refrigerator" -> {
+                drawLine(Color(0xFF52677D), Offset(left, top+fh*.42f), Offset(right, top+fh*.42f), 2f)
+                drawLine(Color(0xFF52677D), Offset(right-fw*.18f, top+fh*.16f), Offset(right-fw*.18f, top+fh*.35f), 2.5f)
+                drawLine(Color(0xFF52677D), Offset(right-fw*.18f, top+fh*.53f), Offset(right-fw*.18f, top+fh*.78f), 2.5f)
+            }
+            "Washing Machine" -> {
+                drawLine(Color(0xFF52677D), Offset(left+fw*.06f, top+fh*.22f), Offset(right-fw*.06f, top+fh*.22f), 2f)
+                drawCircle(Color(0xFF829CB5), fw*.29f, Offset((left+right)/2, top+fh*.60f))
+                drawCircle(Color(0xFF435A70), fw*.29f, Offset((left+right)/2, top+fh*.60f), style=Stroke(2.5f))
+                drawCircle(Color(0xFFD9E8F4), fw*.19f, Offset((left+right)/2, top+fh*.60f))
+            }
+            "Microwave Oven" -> {
+                drawRoundRect(Color(0xFF30485E), Offset(left+fw*.10f,top+fh*.20f), Size(fw*.60f,fh*.60f), androidx.compose.ui.geometry.CornerRadius(4f))
+                drawRoundRect(Color(0xFF8FA9C0), Offset(left+fw*.13f,top+fh*.23f), Size(fw*.54f,fh*.54f), androidx.compose.ui.geometry.CornerRadius(3f))
+                for (i in 0..2) drawCircle(Color(0xFF435A70), fw*.025f, Offset(left+fw*.83f,top+fh*(.32f+i*.18f)))
+            }
+            else -> {
+                drawLine(Color(0xFF52677D), Offset(left+fw*.18f,top+fh*.28f), Offset(right-fw*.18f,top+fh*.28f), 2f)
+                drawCircle(Color(0xFF6D8298), fw*.055f, Offset((left+right)/2,top+fh*.18f))
+            }
+        }
+        drawOval(Color(0x260F172A), Offset(w*.18f,h*.88f), Size(w*.64f,h*.06f))
     }
 }
 
