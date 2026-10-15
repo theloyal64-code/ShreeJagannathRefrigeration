@@ -42,7 +42,7 @@ jobs:
 
       - name: Verify Android SDK
         run: |
-          adb version
+          "$ANDROID_HOME/platform-tools/adb" version
           ls "$ANDROID_HOME/platforms"
           ls "$ANDROID_HOME/build-tools"
 
