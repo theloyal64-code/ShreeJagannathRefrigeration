@@ -233,95 +233,77 @@ private fun fetchCommonsPhoto(searchTerm: String): android.graphics.Bitmap? {
 
 @Composable
 private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, onCustomer: () -> Unit, onAdmin: () -> Unit) {
-    var templeBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
-    val appliancePhotos = remember { mutableStateListOf<android.graphics.Bitmap?>(null, null, null, null, null) }
-    LaunchedEffect(Unit) {
-        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            templeBitmap = runCatching {
-                val url = java.net.URL("https://commons.wikimedia.org/wiki/Special:FilePath/Jagannath_Temple_Puri.JPG?width=1200")
-                val connection = url.openConnection() as java.net.HttpURLConnection
-                connection.connectTimeout = 10000
-                connection.readTimeout = 15000
-                connection.setRequestProperty("User-Agent", "ShreeJagannathRefrigeration/1.0")
-                connection.inputStream.use { android.graphics.BitmapFactory.decodeStream(it) }
-            }.getOrNull()
-            val queries = listOf("wall mounted air conditioner indoor unit", "stainless steel refrigerator appliance", "front loading washing machine appliance", "microwave oven kitchen appliance", "wall mounted electric water geyser")
-            queries.forEachIndexed { index, query ->
-                appliancePhotos[index] = fetchCommonsPhoto(query)
-            }
-        }
-    }
-    Column(
-        Modifier.fillMaxSize().background(Color(0xFFF7FAFE)).verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
-            Column(horizontalAlignment = Alignment.End) {
-                Text("Language / ଭାଷା", fontWeight = FontWeight.SemiBold, color = Navy, fontSize = 14.sp)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected = language == AppLanguage.ENGLISH, onClick = { onLanguage(AppLanguage.ENGLISH) }, label = { Text("English") })
-                    FilterChip(selected = language == AppLanguage.ODIA, onClick = { onLanguage(AppLanguage.ODIA) }, label = { Text("ଓଡ଼ିଆ") })
-                }
-            }
-        }
-        Spacer(Modifier.height(8.dp))
-        Card(Modifier.fillMaxWidth().height(350.dp), shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 8.dp, bottomEnd = 8.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFDAEFFF))) {
-            Box(Modifier.fillMaxSize()) {
-                if (templeBitmap != null) {
-                    androidx.compose.foundation.Image(bitmap = templeBitmap!!.asImageBitmap(), contentDescription = "Photograph of Shree Jagannath Temple, Puri", modifier = Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
-                } else {
-                    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF1687F8), Color(0xFFFFD49B)))), contentAlignment = Alignment.Center) {
-                        Text("ଶ୍ରୀ ଜଗନ୍ନାଥ ମନ୍ଦିର • PURI", color = Navy, fontWeight = FontWeight.Bold)
-                    }
-                }
-                Box(Modifier.fillMaxWidth().height(96.dp).align(Alignment.BottomCenter).background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xF5FFFDF8)))))
-                Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("SHREE", color = Navy, fontSize = 17.sp, fontWeight = FontWeight.Bold, letterSpacing = 5.sp)
-                    Text("JAGANNATH", color = Navy, fontSize = 35.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
-                    Text("REFRIGERATION", color = Color(0xFF292929), fontSize = 20.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
-                }
-            }
-        }
-        Spacer(Modifier.height(6.dp))
-        Text(tr(language, "Home Appliance Repair & Service", "ଘରୋଇ ଉପକରଣ ମରାମତି ଓ ସେବା"), color = Color.DarkGray, fontSize = 15.sp, letterSpacing = 0.4.sp)
-        Spacer(Modifier.height(14.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-            val cards = listOf(Triple("AC", "❄", Color(0xFFD7F0FF)), Triple("Fridge", "▣", Color(0xFFD8FBE8)), Triple("Washer", "▤", Color(0xFFFFE2ED)), Triple("Micro", "▦", Color(0xFFFFEDC4)), Triple("Geyser", "♨", Color(0xFFE5E2FF)))
-            cards.forEachIndexed { index, (label, icon, tint) ->
-                Column(Modifier.weight(1f).height(128.dp).background(tint, RoundedCornerShape(16.dp)).padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
-                    Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                        val photo = appliancePhotos[index]
-                        if (photo != null) {
-                            androidx.compose.foundation.Image(bitmap = photo.asImageBitmap(), contentDescription = "$label appliance", modifier = Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Fit)
-                        } else {
-                            Text(icon, fontSize = 29.sp, color = Navy)
-                        }
-                    }
-                    Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Navy, maxLines = 1)
-                    Text(tr(language, "Service", "ସେବା"), fontSize = 9.sp, color = Navy)
-                }
-            }
-        }
-        Spacer(Modifier.height(18.dp))
-        Button(onCustomer, Modifier.fillMaxWidth().height(66.dp), shape = RoundedCornerShape(18.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF064783))) {
-            Icon(Icons.Default.Person, null, modifier = Modifier.size(28.dp)); Spacer(Modifier.width(16.dp))
-            Text(tr(language, "Customer — Book a Service", "ଗ୍ରାହକ — ସେବା ବୁକ୍ କରନ୍ତୁ"), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.weight(1f)); Text("→", fontSize = 24.sp)
+    Column(Modifier.fillMaxSize().background(Color(0xFFF7FAFE)).verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Language / ଭାଷା", fontWeight = FontWeight.SemiBold, color = Navy)
+            FilterChip(selected = language == AppLanguage.ENGLISH, onClick = { onLanguage(AppLanguage.ENGLISH) }, label = { Text("English") })
+            FilterChip(selected = language == AppLanguage.ODIA, onClick = { onLanguage(AppLanguage.ODIA) }, label = { Text("ଓଡ଼ିଆ") })
         }
         Spacer(Modifier.height(12.dp))
-        OutlinedButton(onAdmin, Modifier.fillMaxWidth().height(64.dp), shape = RoundedCornerShape(18.dp)) {
-            Icon(Icons.Default.Settings, null, modifier = Modifier.size(27.dp)); Spacer(Modifier.width(16.dp))
-            Text(tr(language, "Admin / Mechanic Login", "ଆଡମିନ୍ / ମେକାନିକ୍ ଲଗ୍ଇନ୍"), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.weight(1f)); Text("→", fontSize = 24.sp)
-        }
-        Spacer(Modifier.height(18.dp))
-        Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), color = Color(0xFFE2F2FF)) {
-            Row(Modifier.padding(horizontal = 10.dp, vertical = 15.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                listOf("❄ AC", "▣ Fridge", "▤ Washer", "▦ Micro", "♨ Geyser").forEach { Text(it, fontSize = 10.sp, color = Navy, fontWeight = FontWeight.SemiBold) }
+        Card(
+            modifier = Modifier.fillMaxWidth().height(245.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F4FF))
+        ) {
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF1687F8), Color(0xFFFFE6B6))))) {
+                Canvas(Modifier.fillMaxSize()) {
+                    val w = size.width
+                    val h = size.height
+                    // Temple tower and tiered Jagannath temple silhouette
+                    val tower = Path().apply {
+                        moveTo(w * .37f, h * .78f); lineTo(w * .43f, h * .27f)
+                        lineTo(w * .47f, h * .18f); lineTo(w * .51f, h * .27f)
+                        lineTo(w * .57f, h * .78f); close()
+                    }
+                    drawPath(tower, Color(0xFF6C4025))
+                    drawRect(Color(0xFF8C5730), Offset(w*.30f,h*.76f), Size(w*.40f,h*.12f))
+                    for (i in 0..3) {
+                        val y = h * (.58f + i*.065f)
+                        drawLine(Color(0xFFE9C99A), Offset(w*.39f,y), Offset(w*.55f,y), strokeWidth = 3.dp.toPx())
+                    }
+                    // Smaller temple domes
+                    drawCircle(Color(0xFFFFF0D3), radius = w*.065f, center = Offset(w*.27f,h*.70f))
+                    drawRect(Color(0xFFF5E1BD), Offset(w*.22f,h*.70f), Size(w*.10f,h*.15f))
+                    drawCircle(Color(0xFFFFF0D3), radius = w*.055f, center = Offset(w*.69f,h*.73f))
+                    drawRect(Color(0xFFF5E1BD), Offset(w*.645f,h*.73f), Size(w*.09f,h*.12f))
+                    // Chakra and flying saffron flag
+                    drawCircle(Color(0xFFFFD35A), radius = w*.035f, center = Offset(w*.47f,h*.13f), style = Stroke(3.dp.toPx()))
+                    for (i in 0..7) {
+                        val a = i * (Math.PI / 4.0)
+                        drawLine(Color(0xFFFFD35A), Offset(w*.47f,h*.13f),
+                            Offset(w*.47f + (kotlin.math.cos(a)*w*.03f).toFloat(), h*.13f + (kotlin.math.sin(a)*w*.03f).toFloat()), strokeWidth = 1.5.dp.toPx())
+                    }
+                    val flag = Path().apply {
+                        moveTo(w*.49f,h*.09f); cubicTo(w*.58f,h*.03f,w*.65f,h*.16f,w*.76f,h*.10f)
+                        lineTo(w*.71f,h*.18f); lineTo(w*.76f,h*.20f)
+                        cubicTo(w*.65f,h*.24f,w*.58f,h*.12f,w*.49f,h*.15f); close()
+                    }
+                    drawPath(flag, Color(0xFFFF6B16))
+                    drawLine(Color(0xFFFFF0C2), Offset(w*.47f,h*.10f), Offset(w*.47f,h*.29f), strokeWidth = 2.dp.toPx())
+                }
             }
         }
-        Spacer(Modifier.height(8.dp))
-        Text("Photographs from Wikimedia Commons; individual licenses apply.", fontSize = 8.sp, color = Color.Gray)
+        Spacer(Modifier.height(14.dp))
+        Text("SHREE JAGANNATH", fontSize = 27.sp, fontWeight = FontWeight.Black, color = Navy, letterSpacing = 1.sp)
+        Text("REFRIGERATION", fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = Orange, letterSpacing = 2.sp)
+        Spacer(Modifier.height(6.dp))
+        Text(tr(language, "Home Appliance Repair & Service", "ଘରୋଇ ଉପକରଣ ମରାମତି ଓ ସେବା"), color = Color.DarkGray, fontSize = 14.sp)
+        Spacer(Modifier.height(14.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf(Triple("AC", "❄", Color(0xFFD7F0FF)), Triple("Fridge", "▣", Color(0xFFD8FBE8)), Triple("Washer", "▤", Color(0xFFFFE2ED)), Triple("Micro", "▦", Color(0xFFFFEDC4)), Triple("Geyser", "♨", Color(0xFFE5E2FF))).forEach { (label, icon, tint) ->
+                Column(Modifier.weight(1f).background(tint, RoundedCornerShape(12.dp)).padding(vertical = 8.dp, horizontal = 1.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(icon, fontSize = 21.sp)
+                    Text(label, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Navy, maxLines = 1)
+                    Text(tr(language, "Service", "ସେବା"), fontSize = 8.sp, color = Navy)
+                }
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        Button(onCustomer, Modifier.fillMaxWidth().height(58.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF064783))) { Icon(Icons.Default.Person, null); Spacer(Modifier.width(8.dp)); Text(tr(language, "Customer — Book a Service", "ଗ୍ରାହକ — ସେବା ବୁକ୍ କରନ୍ତୁ")) }
+        Spacer(Modifier.height(12.dp))
+        OutlinedButton(onAdmin, Modifier.fillMaxWidth().height(58.dp), shape = RoundedCornerShape(16.dp)) { Icon(Icons.Default.Settings, null); Spacer(Modifier.width(8.dp)); Text(tr(language, "Admin / Mechanic Login", "ଆଡମିନ୍ / ମେକାନିକ୍ ଲଗ୍ଇନ୍")) }
+        Spacer(Modifier.height(18.dp))
+        Text(tr(language, "AC • Fridge • Washing Machine • Microwave • Geyser", "ଏସି • ଫ୍ରିଜ୍ • ୱାଶିଂ ମେସିନ୍ • ମାଇକ୍ରୋୱେଭ୍ • ଗିଜର"), fontSize = 12.sp, color = Color.Gray)
     }
 }
 
