@@ -311,7 +311,7 @@ private fun Status(status: String) {
         "Pending" -> Orange
         else -> Navy
     }
-    Surface(color.copy(alpha = 0.12f), shape = RoundedCornerShape(50)) {
+    Surface(color = color.copy(alpha = 0.12f), shape = RoundedCornerShape(50)) {
         Text(status, color = color, modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
     }
 }
