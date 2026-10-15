@@ -234,49 +234,88 @@ private fun fetchCommonsPhoto(searchTerm: String): android.graphics.Bitmap? {
 @Composable
 private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, onCustomer: () -> Unit, onAdmin: () -> Unit) {
     Column(
-        Modifier.fillMaxSize().background(Color(0xFFF5F7FC)).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 28.dp),
+        Modifier.fillMaxSize()
+            .background(Color(0xFFF5F7FC))
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 26.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Surface(
-            modifier = Modifier.size(184.dp),
-            shape = RoundedCornerShape(52.dp),
+            modifier = Modifier.size(106.dp),
+            shape = RoundedCornerShape(30.dp),
             color = Color(0xFF173F68)
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.HomeRepairService, contentDescription = "Repair service", tint = Color.White, modifier = Modifier.size(82.dp))
+                Icon(
+                    Icons.Default.HomeRepairService,
+                    contentDescription = "Repair service",
+                    tint = Color.White,
+                    modifier = Modifier.size(48.dp)
+                )
             }
         }
-        Spacer(Modifier.height(38.dp))
-        Text("SHREE JAGANNATH", fontSize = 29.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF173F68), letterSpacing = 0.2.sp, maxLines = 1)
-        Text("REFRIGERATION", fontSize = 23.sp, fontWeight = FontWeight.ExtraBold, color = Orange, letterSpacing = 0.8.sp)
-        Spacer(Modifier.height(22.dp))
-        Text("Trusted Home Appliance Service", fontSize = 19.sp, color = Color(0xFF4B4B4B), maxLines = 1)
-        Spacer(Modifier.height(66.dp))
+        Spacer(Modifier.height(24.dp))
+        Text(
+            "SHREE JAGANNATH",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = Color(0xFF173F68),
+            letterSpacing = 0.1.sp,
+            maxLines = 1
+        )
+        Text(
+            "REFRIGERATION",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = Orange,
+            letterSpacing = 0.6.sp,
+            maxLines = 1
+        )
+        Spacer(Modifier.height(14.dp))
+        Text(
+            "Trusted Home Appliance Service",
+            fontSize = 18.sp,
+            color = Color(0xFF4B4B4B),
+            maxLines = 1
+        )
+        Spacer(Modifier.height(36.dp))
         Button(
             onClick = onCustomer,
-            modifier = Modifier.fillMaxWidth().height(104.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF173F68))
+            modifier = Modifier.fillMaxWidth().height(60.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF173F68)),
+            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp)
         ) {
-            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(38.dp))
-            Spacer(Modifier.width(22.dp))
-            Text(tr(language, "Customer — Book a Service", "ଗ୍ରାହକ — ସେବା ବୁକ୍ କରନ୍ତୁ"), fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
+            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(28.dp))
+            Spacer(Modifier.width(14.dp))
+            Text(
+                tr(language, "Customer — Book a Service", "ଗ୍ରାହକ — ସେବା ବୁକ୍ କରନ୍ତୁ"),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1
+            )
         }
-        Spacer(Modifier.height(22.dp))
+        Spacer(Modifier.height(12.dp))
         OutlinedButton(
             onClick = onAdmin,
-            modifier = Modifier.fillMaxWidth().height(104.dp),
-            shape = RoundedCornerShape(28.dp)
+            modifier = Modifier.fillMaxWidth().height(60.dp),
+            shape = RoundedCornerShape(16.dp),
+            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp)
         ) {
-            Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(38.dp))
-            Spacer(Modifier.width(22.dp))
-            Text(tr(language, "Admin / Mechanic Login", "ଆଡମିନ୍ / ମେକାନିକ୍ ଲଗ୍ଇନ୍"), fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
+            Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(28.dp))
+            Spacer(Modifier.width(14.dp))
+            Text(
+                tr(language, "Admin / Mechanic Login", "ଆଡମିନ୍ / ମେକାନିକ୍ ଲଗ୍ଇନ୍"),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1
+            )
         }
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(24.dp))
         Text(
             tr(language, "AC • Fridge • Washing Machine • Microwave • Geyser", "ଏସି • ଫ୍ରିଜ୍ • ୱାଶିଂ ମେସିନ୍ • ମାଇକ୍ରୋୱେଭ୍ • ଗିଜର"),
-            fontSize = 15.sp,
+            fontSize = 13.sp,
             color = Color(0xFF929292),
             maxLines = 1
         )
@@ -398,7 +437,6 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                 issues.forEach { option -> DropdownMenuItem(text = { Text(issueLabel(language, option)) }, leadingIcon = { Text(problemEmoji(option), fontSize = 22.sp) }, onClick = { issue = option; issueExpanded = false }) }
             }
         }
-        if (issue.isNotBlank()) { Spacer(Modifier.height(10.dp)); IssueIllustration(appliance.name, issue, language) }
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(address, { address = it }, label = { Text(tr(language, "Full address / area *", "ପୂରା ଠିକଣା / ଅଞ୍ଚଳ *")) }, modifier = Modifier.fillMaxWidth(), minLines = 2)
         Spacer(Modifier.height(8.dp))
@@ -695,27 +733,27 @@ private fun Appliance3DPreview(appliance: String, rotationDegrees: Float, modifi
         fun project(v: V): P {
             val rx = v.x * c - v.z * sn
             val rz = v.x * sn + v.z * c
-            val perspective = 3.4f / (3.4f + rz)
-            return P(w * (0.5f + rx * 0.68f * perspective), h * (0.5f + v.y * 0.76f * perspective), rz)
+            val perspective = 3.8f / (3.8f + rz)
+            return P(w * (0.5f + rx * 0.42f * perspective), h * (0.48f + v.y * 0.43f * perspective), rz)
         }
         val (halfW, halfH, halfD) = when (appliance) {
-            "AC Service" -> Triple(0.82f, 0.42f, 0.22f)
-            "Refrigerator" -> Triple(0.48f, 0.94f, 0.30f)
-            "Washing Machine" -> Triple(0.63f, 0.78f, 0.34f)
-            "Microwave Oven" -> Triple(0.88f, 0.48f, 0.36f)
-            else -> Triple(0.43f, 0.90f, 0.35f)
+            "AC Service" -> Triple(0.88f, 0.42f, 0.28f)
+            "Refrigerator" -> Triple(0.52f, 0.96f, 0.30f)
+            "Washing Machine" -> Triple(0.67f, 0.78f, 0.34f)
+            "Microwave Oven" -> Triple(0.86f, 0.48f, 0.36f)
+            else -> Triple(0.48f, 0.92f, 0.32f)
         }
         val vertices = listOf(
             V(-halfW,-halfH,-halfD), V(halfW,-halfH,-halfD), V(halfW,halfH,-halfD), V(-halfW,halfH,-halfD),
             V(-halfW,-halfH,halfD), V(halfW,-halfH,halfD), V(halfW,halfH,halfD), V(-halfW,halfH,halfD)
         )
-        data class F(val indices: List<Int>, val color: Color, val depth: Float)
+        data class Face(val indices: List<Int>, val color: Color, val light: Color, val depth: Float)
         val faces = listOf(
-            F(listOf(0,1,2,3), Color(0xFFB8C8D8), -halfD),
-            F(listOf(4,5,1,0), Color(0xFF879BB0), 0f),
-            F(listOf(5,6,2,1), Color(0xFF6D8298), halfW * 0.4f),
-            F(listOf(7,6,5,4), Color(0xFF9EAFBF), halfH * 0.2f),
-            F(listOf(4,7,3,0), Color(0xFFEAF1F7), -halfW * 0.4f)
+            Face(listOf(0,1,2,3), Color(0xFFCAD8E5), Color(0xFFF9FCFF), -halfD),
+            Face(listOf(4,5,1,0), Color(0xFF9EAFBF), Color(0xFFD8E2EC), 0f),
+            Face(listOf(5,6,2,1), Color(0xFF6D8298), Color(0xFF9EAFBF), halfW * 0.4f),
+            Face(listOf(7,6,5,4), Color(0xFF91A5B8), Color(0xFFB8C8D8), halfH * 0.2f),
+            Face(listOf(4,7,3,0), Color(0xFFE7EFF7), Color(0xFFFFFFFF), -halfW * 0.4f)
         ).sortedByDescending { it.depth * c }
         faces.forEach { face ->
             val pts = face.indices.map { project(vertices[it]) }
@@ -724,41 +762,51 @@ private fun Appliance3DPreview(appliance: String, rotationDegrees: Float, modifi
                 pts.drop(1).forEach { lineTo(it.x, it.y) }
                 close()
             }
-            drawPath(path, face.color)
-            drawPath(path, Color(0xFF52677D), style = Stroke(width = 1.4f))
+            drawPath(path, Brush.linearGradient(listOf(face.light, face.color), start = Offset(w*0.2f,h*0.15f), end = Offset(w*0.85f,h*0.85f)))
+            drawPath(path, Color(0xFF52677D).copy(alpha = 0.78f), style = Stroke(width = 1.15f))
         }
-        // Appliance-specific front details are drawn on the visible front plane.
-        val front = vertices.filterIndexed { index, _ -> index in listOf(0,1,2,3) }.map { project(it) }
+        val front = vertices.take(4).map { project(it) }
         val left = front.minOf { it.x }; val right = front.maxOf { it.x }
         val top = front.minOf { it.y }; val bottom = front.maxOf { it.y }
         val fw = right-left; val fh = bottom-top
+        // Subtle front-panel sheen and inset edge give the appliance a more dimensional finish.
+        drawRoundRect(
+            Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.16f), Color.Transparent, Color.Black.copy(alpha = 0.035f))),
+            Offset(left+fw*0.025f, top+fh*0.025f), Size(fw*0.95f, fh*0.95f),
+            androidx.compose.ui.geometry.CornerRadius(fw*0.025f)
+        )
         when (appliance) {
             "AC Service" -> {
-                for (i in 0..5) drawLine(Color(0xFF536A80), Offset(left+fw*.12f, top+fh*(.62f+i*.045f)), Offset(right-fw*.12f, top+fh*(.62f+i*.045f)), 1.7f)
-                drawCircle(Color(0xFF52677D), fw*.025f, Offset(right-fw*.15f, top+fh*.25f))
+                drawRoundRect(Color(0xFFDCE7F0), Offset(left+fw*.07f, top+fh*.56f), Size(fw*.86f,fh*.30f), androidx.compose.ui.geometry.CornerRadius(4f))
+                for (i in 0..5) drawLine(Color(0xFF52677D), Offset(left+fw*.13f, top+fh*(.62f+i*.035f)), Offset(right-fw*.13f, top+fh*(.62f+i*.035f)), 1.3f)
+                drawCircle(Color(0xFF49627B), fw*.025f, Offset(right-fw*.14f, top+fh*.28f))
             }
             "Refrigerator" -> {
-                drawLine(Color(0xFF52677D), Offset(left, top+fh*.42f), Offset(right, top+fh*.42f), 2f)
-                drawLine(Color(0xFF52677D), Offset(right-fw*.18f, top+fh*.16f), Offset(right-fw*.18f, top+fh*.35f), 2.5f)
-                drawLine(Color(0xFF52677D), Offset(right-fw*.18f, top+fh*.53f), Offset(right-fw*.18f, top+fh*.78f), 2.5f)
+                drawLine(Color(0xFF52677D), Offset(left+fw*.02f, top+fh*.43f), Offset(right-fw*.02f, top+fh*.43f), 1.8f)
+                drawRoundRect(Color(0xFF73899F), Offset(right-fw*.19f,top+fh*.15f),Size(fw*.035f,fh*.19f),androidx.compose.ui.geometry.CornerRadius(2f))
+                drawRoundRect(Color(0xFF73899F), Offset(right-fw*.19f,top+fh*.53f),Size(fw*.035f,fh*.23f),androidx.compose.ui.geometry.CornerRadius(2f))
             }
             "Washing Machine" -> {
-                drawLine(Color(0xFF52677D), Offset(left+fw*.06f, top+fh*.22f), Offset(right-fw*.06f, top+fh*.22f), 2f)
-                drawCircle(Color(0xFF829CB5), fw*.29f, Offset((left+right)/2, top+fh*.60f))
-                drawCircle(Color(0xFF435A70), fw*.29f, Offset((left+right)/2, top+fh*.60f), style=Stroke(2.5f))
-                drawCircle(Color(0xFFD9E8F4), fw*.19f, Offset((left+right)/2, top+fh*.60f))
+                drawRoundRect(Color(0xFFB6C7D8), Offset(left+fw*.08f,top+fh*.09f),Size(fw*.84f,fh*.16f),androidx.compose.ui.geometry.CornerRadius(3f))
+                drawCircle(Color(0xFF52677D), fw*.30f, Offset((left+right)/2, top+fh*.62f))
+                drawCircle(Brush.radialGradient(listOf(Color(0xFFEAF5FF),Color(0xFF6C91AE),Color(0xFF304D68)), radius=fw*.30f, center=Offset((left+right)/2-fw*.06f,top+fh*.57f)), fw*.265f, Offset((left+right)/2, top+fh*.62f))
+                drawCircle(Color(0xFFDAE7F2), fw*.19f, Offset((left+right)/2, top+fh*.62f), style=Stroke(width=2f))
             }
             "Microwave Oven" -> {
-                drawRoundRect(Color(0xFF30485E), Offset(left+fw*.10f,top+fh*.20f), Size(fw*.60f,fh*.60f), androidx.compose.ui.geometry.CornerRadius(4f))
-                drawRoundRect(Color(0xFF8FA9C0), Offset(left+fw*.13f,top+fh*.23f), Size(fw*.54f,fh*.54f), androidx.compose.ui.geometry.CornerRadius(3f))
+                drawRoundRect(Color(0xFF30485E), Offset(left+fw*.08f,top+fh*.18f), Size(fw*.62f,fh*.62f), androidx.compose.ui.geometry.CornerRadius(4f))
+                drawRoundRect(Brush.linearGradient(listOf(Color(0xFFC6E1F2),Color(0xFF6586A1),Color(0xFF203A53))), Offset(left+fw*.12f,top+fh*.22f), Size(fw*.54f,fh*.54f), androidx.compose.ui.geometry.CornerRadius(3f))
                 for (i in 0..2) drawCircle(Color(0xFF435A70), fw*.025f, Offset(left+fw*.83f,top+fh*(.32f+i*.18f)))
             }
             else -> {
-                drawLine(Color(0xFF52677D), Offset(left+fw*.18f,top+fh*.28f), Offset(right-fw*.18f,top+fh*.28f), 2f)
-                drawCircle(Color(0xFF6D8298), fw*.055f, Offset((left+right)/2,top+fh*.18f))
+                drawRoundRect(Color(0xFF52677D), Offset(left+fw*.15f,top+fh*.25f),Size(fw*.70f,fh*.04f),androidx.compose.ui.geometry.CornerRadius(3f))
+                drawCircle(Brush.radialGradient(listOf(Color(0xFFF7FBFF),Color(0xFF8DA7BC),Color(0xFF425A70)), radius=fw*.11f), fw*.09f, Offset((left+right)/2,top+fh*.18f))
+                drawRoundRect(Color(0xFF71869A), Offset(left+fw*.18f,top+fh*.36f),Size(fw*.64f,fh*.47f),androidx.compose.ui.geometry.CornerRadius(5f))
+                drawLine(Color(0xFFDAE4ED),Offset(left+fw*.23f,top+fh*.42f),Offset(right-fw*.23f,top+fh*.42f),1.3f)
             }
         }
-        drawOval(Color(0x260F172A), Offset(w*.18f,h*.88f), Size(w*.64f,h*.06f))
+        // Ground shadow, plus a narrow highlight on the front-left edge.
+        drawOval(Brush.radialGradient(listOf(Color(0x380F172A), Color.Transparent)), Offset(w*.16f,h*.84f), Size(w*.68f,h*.12f))
+        drawLine(Color.White.copy(alpha = 0.55f), Offset(left+fw*.04f,top+fh*.08f), Offset(left+fw*.04f,bottom-fh*.08f), 1.1f)
     }
 }
 
