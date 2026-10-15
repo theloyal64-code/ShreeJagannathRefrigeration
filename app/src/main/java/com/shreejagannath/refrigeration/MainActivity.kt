@@ -415,13 +415,23 @@ private fun ApplianceDrawing(appliance: String, issue: String, showMarker: Boole
             val mx = w * when {
                 issue.contains("door", true) || issue.contains("gasket", true) -> 0.72f
                 issue.contains("leak", true) || issue.contains("drain", true) -> 0.50f
-                else -> 0.50f
+                issue.contains("noise", true) || issue.contains("spin", true) -> 0.50f
+                issue.contains("smell", true) || issue.contains("turning on", true) || issue.contains("starting", true) -> 0.75f
+                issue.contains("installation", true) -> 0.22f
+                else -> 0.52f
             }
             val my = h * when {
                 issue.contains("leak", true) || issue.contains("drain", true) -> 0.84f
                 issue.contains("door", true) || issue.contains("gasket", true) -> 0.50f
                 issue.contains("cool", true) -> 0.30f
                 issue.contains("heating", true) || issue.contains("hot water", true) -> 0.58f
+                issue.contains("noise", true) -> 0.60f
+                issue.contains("spin", true) -> 0.59f
+                issue.contains("ice", true) -> 0.38f
+                issue.contains("sparking", true) -> 0.50f
+                issue.contains("smell", true) -> 0.32f
+                issue.contains("turning on", true) || issue.contains("starting", true) -> 0.22f
+                issue.contains("installation", true) -> 0.18f
                 else -> 0.45f
             }
             drawCircle(Color.White, radius = w*0.085f, center = Offset(mx,my))
