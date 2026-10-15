@@ -4,10 +4,13 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
@@ -713,6 +716,21 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
     var search by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("All") }
     var filterExpanded by remember { mutableStateOf(false) }
+    var reportText by remember { mutableStateOf("") }
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.openOutputStream(uri)?.bufferedWriter(Charsets.UTF_8)?.use { writer ->
+                    writer.write("\uFEFF")
+                    writer.write(reportText)
+                } ?: error("Unable to open destination")
+            }.onSuccess {
+                Toast.makeText(context, tr(language, "CSV report saved.", "CSV ରିପୋର୍ଟ ସେଭ୍ ହେଲା।"), Toast.LENGTH_SHORT).show()
+            }.onFailure {
+                Toast.makeText(context, tr(language, "Could not save report.", "ରିପୋର୍ଟ ସେଭ୍ ହୋଇପାରିଲା ନାହିଁ।"), Toast.LENGTH_LONG).show()
+            }
+        }
+    }
     val filters = listOf("All", "Pending", "Accepted", "On the Way", "In Progress", "Completed", "Rejected", "Cancelled")
     val visibleBookings = bookings
         .filter { selectedFilter == "All" || it.status == selectedFilter }
@@ -755,16 +773,11 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                         booking.address, booking.preferredSlot, booking.pincode
                     ).joinToString(",") { csvCell(it) }
                 }
-                val report = rows.joinToString("\n")
-                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/csv"
-                    putExtra(Intent.EXTRA_SUBJECT, "Shree Jagannath Refrigeration - Booking Report")
-                    putExtra(Intent.EXTRA_TEXT, report)
-                }
-                context.startActivity(Intent.createChooser(shareIntent, tr(language, "Share booking report", "ବୁକିଂ ରିପୋର୍ଟ ସେୟାର୍ କରନ୍ତୁ")))
+                reportText = rows.joinToString("\n")
+                exportLauncher.launch("ShreeJagannath-Bookings.csv")
             },
             modifier = Modifier.fillMaxWidth()
-        ) { Text(tr(language, "Export / Share Booking Report (CSV)", "ବୁକିଂ ରିପୋର୍ଟ ଏକ୍ସପୋର୍ଟ / ସେୟାର୍ (CSV)")) }
+        ) { Text(tr(language, "Save Booking Report as CSV", "ବୁକିଂ ରିପୋର୍ଟ CSV ଭାବେ ସେଭ୍ କରନ୍ତୁ")) }
         Spacer(Modifier.height(14.dp))
         OutlinedTextField(
             value = search,
