@@ -324,46 +324,101 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
 
 @Composable
 private fun CustomerHome(appliances: List<Appliance>, bookings: List<ServiceBooking>, language: AppLanguage, onChoose: (Appliance) -> Unit, onHistory: () -> Unit) {
-    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(top = 12.dp, bottom = 22.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
         item {
-            Spacer(Modifier.height(16.dp))
-            Text(tr(language, "Namaskar! 🙏", "ନମସ୍କାର! 🙏"), fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Navy)
-            Text(tr(language, "What appliance needs service today?", "ଆଜି କେଉଁ ଉପକରଣର ମରାମତି ଦରକାର?"), color = Color.DarkGray)
-            Spacer(Modifier.height(18.dp))
-            Card(colors = CardDefaults.cardColors(containerColor = Navy), shape = RoundedCornerShape(18.dp)) {
-                Column(Modifier.padding(18.dp)) {
-                    Text(tr(language, "Reliable service at your doorstep", "ଆପଣଙ୍କ ଘରେ ଭରସାଯୋଗ୍ୟ ସେବା"), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    Spacer(Modifier.height(6.dp))
-                    Text(tr(language, "Choose an appliance and send a service request.", "ଉପକରଣ ବାଛନ୍ତୁ ଏବଂ ସେବା ଅନୁରୋଧ ପଠାନ୍ତୁ।"), color = Color.White)
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.weight(1f)) {
+                    Text(tr(language, "Namaskar! 🙏", "ନମସ୍କାର! 🙏"), fontSize = 25.sp, fontWeight = FontWeight.Bold, color = Navy)
+                    Text(tr(language, "What can we repair for you today?", "ଆଜି କେଉଁ ଉପକରଣ ମରାମତି କରିବା?"), fontSize = 14.sp, color = Color(0xFF687789))
+                }
+                Surface(color = Color.White, shape = RoundedCornerShape(14.dp), shadowElevation = 1.dp) {
+                    Row(Modifier.clickable(onClick = onHistory).padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Check, contentDescription = null, tint = Navy, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("${bookings.size}", color = Navy, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
                 }
             }
-            Spacer(Modifier.height(20.dp))
-            Text(tr(language, "Our Services", "ଆମ ସେବା"), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Navy)
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(4.dp))
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = Navy)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(Color(0xFF173F68), Color(0xFF245783)))).padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(tr(language, "Reliable service. Right at home.", "ଭରସାଯୋଗ୍ୟ ସେବା, ଆପଣଙ୍କ ଘରେ।"), color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold, lineHeight = 25.sp)
+                        Spacer(Modifier.height(7.dp))
+                        Text(tr(language, "Book a visit for repair, installation or regular servicing.", "ମରାମତି, ଇନଷ୍ଟଲେସନ୍ କିମ୍ବା ସର୍ଭିସିଂ ପାଇଁ ବୁକ୍ କରନ୍ତୁ।"), color = Color(0xFFE4EDF7), fontSize = 13.sp, lineHeight = 19.sp)
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Surface(color = Color.White.copy(alpha = 0.12f), shape = RoundedCornerShape(18.dp)) {
+                        Icon(Icons.Default.HomeRepairService, contentDescription = null, tint = Color.White, modifier = Modifier.padding(12.dp).size(32.dp))
+                    }
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            Text(tr(language, "Our Services", "ଆମ ସେବା"), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Navy)
+            Text(tr(language, "Select an appliance to get started", "ଆରମ୍ଭ କରିବାକୁ ଉପକରଣ ବାଛନ୍ତୁ"), fontSize = 13.sp, color = Color(0xFF758295))
         }
-        items(appliances) { appliance ->
+        items(appliances, key = { it.name }) { appliance ->
             var rotation by remember(appliance.name) { mutableFloatStateOf(0f) }
-            Card(Modifier.fillMaxWidth().padding(bottom = 10.dp), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
                 Column(Modifier.padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(108.dp).background(Color(0xFFEAF1F8), RoundedCornerShape(16.dp))
-                            .pointerInput(appliance.name) { detectDragGestures { change, drag -> change.consume(); rotation = (rotation + drag.x * 1.8f) % 360f } }
-                            .clickable { rotation = (rotation + 30f) % 360f }, contentAlignment = Alignment.Center) {
-                            Appliance3DPreview(appliance.name, rotation, Modifier.fillMaxSize().padding(8.dp))
+                        Box(
+                            Modifier.size(width = 126.dp, height = 132.dp)
+                                .background(Brush.linearGradient(listOf(Color(0xFFF0F5FB), Color(0xFFE4EDF7))), RoundedCornerShape(16.dp))
+                                .pointerInput(appliance.name) {
+                                    detectDragGestures { change, drag ->
+                                        change.consume()
+                                        rotation = (rotation + drag.x * 1.5f) % 360f
+                                    }
+                                }
+                                .clickable { rotation = (rotation + 30f) % 360f },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Appliance3DPreview(appliance.name, rotation, Modifier.fillMaxSize().padding(5.dp))
                         }
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(applianceLabel(language, appliance.name), fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                            Text(appliance.detail, fontSize = 12.sp, color = Color.Gray)
-                            Text(tr(language, "Drag image to rotate 360°", "ଛବିକୁ ଟାଣି 360° ଘୁରାନ୍ତୁ"), fontSize = 10.sp, color = Navy)
+                        Spacer(Modifier.width(14.dp))
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
+                            Text(applianceLabel(language, appliance.name), fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Color(0xFF172433), lineHeight = 22.sp)
+                            Spacer(Modifier.height(6.dp))
+                            Text(appliance.detail, fontSize = 12.sp, color = Color(0xFF6C7887), lineHeight = 17.sp)
+                            Spacer(Modifier.height(9.dp))
+                            Surface(color = Color(0xFFEAF2FA), shape = RoundedCornerShape(50)) {
+                                Text(tr(language, "360° view", "360° ଦୃଶ୍ୟ"), modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp), fontSize = 10.sp, color = Navy, fontWeight = FontWeight.SemiBold)
+                            }
                         }
                     }
-                    Spacer(Modifier.height(10.dp))
-                    Button(onClick = { onChoose(appliance) }, modifier = Modifier.fillMaxWidth()) { Text(tr(language, "Book service", "ସେବା ବୁକ୍ କରନ୍ତୁ")) }
+                    Spacer(Modifier.height(13.dp))
+                    Button(
+                        onClick = { onChoose(appliance) },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Navy),
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) {
+                        Text(tr(language, "Book service", "ସେବା ବୁକ୍ କରନ୍ତୁ"), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                        Spacer(Modifier.width(8.dp))
+                        Icon(Icons.Default.ArrowBack, contentDescription = null, modifier = Modifier.size(17.dp).graphicsLayer(rotationZ = 180f))
+                    }
                 }
             }
         }
-        item { OutlinedButton(onHistory, Modifier.fillMaxWidth()) { Text(tr(language, "My Bookings", "ମୋ ବୁକିଂ") + " (${bookings.size})") }; Spacer(Modifier.height(20.dp)) }
+        item {
+            OutlinedButton(onClick = onHistory, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(14.dp)) {
+                Text(tr(language, "View my bookings", "ମୋ ବୁକିଂ ଦେଖନ୍ତୁ") + " (${bookings.size})")
+            }
+        }
     }
 }
 
@@ -733,80 +788,111 @@ private fun Appliance3DPreview(appliance: String, rotationDegrees: Float, modifi
         fun project(v: V): P {
             val rx = v.x * c - v.z * sn
             val rz = v.x * sn + v.z * c
-            val perspective = 4.4f / (4.4f + rz)
-            return P(w * (0.5f + rx * 0.37f * perspective), h * (0.48f + v.y * 0.40f * perspective), rz)
+            val perspective = 4.8f / (4.8f + rz)
+            return P(w * (0.5f + rx * 0.34f * perspective), h * (0.47f + v.y * 0.36f * perspective), rz)
         }
         val (halfW, halfH, halfD) = when (appliance) {
-            "AC Service" -> Triple(0.88f, 0.42f, 0.30f)
-            "Refrigerator" -> Triple(0.52f, 0.96f, 0.32f)
-            "Washing Machine" -> Triple(0.67f, 0.78f, 0.36f)
-            "Microwave Oven" -> Triple(0.86f, 0.48f, 0.38f)
-            else -> Triple(0.48f, 0.92f, 0.34f)
+            "AC Service" -> Triple(0.88f, 0.42f, 0.38f)
+            "Refrigerator" -> Triple(0.53f, 0.96f, 0.40f)
+            "Washing Machine" -> Triple(0.68f, 0.77f, 0.42f)
+            "Microwave Oven" -> Triple(0.86f, 0.49f, 0.43f)
+            else -> Triple(0.49f, 0.92f, 0.40f)
         }
-        val v = listOf(
-            V(-halfW,-halfH,-halfD), V(halfW,-halfH,-halfD), V(halfW,halfH,-halfD), V(-halfW,halfH,-halfD),
-            V(-halfW,-halfH,halfD), V(halfW,-halfH,halfD), V(halfW,halfH,halfD), V(-halfW,halfH,halfD)
+        val vertices = listOf(
+            V(-halfW, -halfH, -halfD), V(halfW, -halfH, -halfD), V(halfW, halfH, -halfD), V(-halfW, halfH, -halfD),
+            V(-halfW, -halfH, halfD), V(halfW, -halfH, halfD), V(halfW, halfH, halfD), V(-halfW, halfH, halfD)
         )
-        data class Face(val ids: List<Int>, val fill: Color, val depth: Float)
-        // All six faces are drawn, including the rear face, so rotation never reveals an open/hollow shell.
+        data class Face(val ids: List<Int>, val color: Color)
         val faces = listOf(
-            Face(listOf(0,1,2,3), Color(0xFFCAD8E5), -halfD),
-            Face(listOf(4,7,6,5), Color(0xFF9EAFBF), halfD),
-            Face(listOf(0,4,5,1), Color(0xFF91A5B8), 0f),
-            Face(listOf(1,5,6,2), Color(0xFF6D8298), halfW),
-            Face(listOf(2,6,7,3), Color(0xFF879BAF), 0f),
-            Face(listOf(3,7,4,0), Color(0xFFE7EFF7), -halfW)
-        ).sortedByDescending { it.depth * c }
-        faces.forEach { face ->
-            val pts = face.ids.map { project(v[it]) }
+            Face(listOf(0, 1, 2, 3), Color(0xFFB7C8D9)),
+            Face(listOf(4, 7, 6, 5), Color(0xFFE6EEF6)),
+            Face(listOf(0, 4, 5, 1), Color(0xFF9AAFC3)),
+            Face(listOf(1, 5, 6, 2), Color(0xFF71879D)),
+            Face(listOf(2, 6, 7, 3), Color(0xFF8FA4B8)),
+            Face(listOf(3, 7, 4, 0), Color(0xFFD5E1EC))
+        ).map { face -> face to face.ids.map { project(vertices[it]).depth }.average().toFloat() }
+            .sortedBy { it.second }
+
+        // Paint all opaque faces back-to-front using the projected depth.
+        faces.forEach { (face, _) ->
+            val points = face.ids.map { project(vertices[it]) }
             val path = Path().apply {
-                moveTo(pts[0].x, pts[0].y)
-                pts.drop(1).forEach { lineTo(it.x, it.y) }
+                moveTo(points[0].x, points[0].y)
+                points.drop(1).forEach { lineTo(it.x, it.y) }
                 close()
             }
-            val light = when (face.ids) {
-                listOf(0,1,2,3) -> Color.White.copy(alpha = 0.22f)
-                listOf(4,7,6,5) -> Color.Black.copy(alpha = 0.08f)
-                else -> Color.White.copy(alpha = 0.08f)
-            }
-            drawPath(path, Brush.linearGradient(listOf(face.fill.copy(alpha = 0.92f), face.fill), start = Offset(w*0.15f,h*0.1f), end = Offset(w*0.9f,h*0.9f)))
-            drawPath(path, Color(0xFF52677D).copy(alpha = 0.9f), style = Stroke(width = 1.15f))
+            val shaded = Color(
+                red = (face.color.red * 0.92f).coerceIn(0f, 1f),
+                green = (face.color.green * 0.94f).coerceIn(0f, 1f),
+                blue = (face.color.blue * 0.97f).coerceIn(0f, 1f),
+                alpha = 1f
+            )
+            drawPath(path, Brush.linearGradient(listOf(face.color, shaded), start = Offset(w * 0.18f, h * 0.12f), end = Offset(w * 0.84f, h * 0.86f)))
+            drawPath(path, Color(0xFF536B82), style = Stroke(width = 1.25f))
         }
-        // Appliance-specific details are attached to the front panel, which stays solid as it rotates.
-        val front = listOf(0,1,2,3).map { project(v[it]) }
-        val left = front.minOf { it.x }; val right = front.maxOf { it.x }
-        val top = front.minOf { it.y }; val bottom = front.maxOf { it.y }
-        val fw = right-left; val fh = bottom-top
-        when (appliance) {
-            "AC Service" -> {
-                drawRoundRect(Color(0xFFDCE7F0), Offset(left+fw*.07f,top+fh*.56f),Size(fw*.86f,fh*.30f),androidx.compose.ui.geometry.CornerRadius(4f))
-                for (i in 0..5) drawLine(Color(0xFF52677D),Offset(left+fw*.13f,top+fh*(.62f+i*.035f)),Offset(right-fw*.13f,top+fh*(.62f+i*.035f)),1.3f)
-                drawCircle(Color(0xFF49627B),fw*.025f,Offset(right-fw*.14f,top+fh*.28f))
+
+        // Appliance details are drawn in the front-face coordinate system and never float outside the shell.
+        if (c > -0.02f) {
+            val p0 = project(vertices[4])
+            val p1 = project(vertices[5])
+            val p2 = project(vertices[6])
+            val p3 = project(vertices[7])
+            fun facePoint(u: Float, v: Float): Offset {
+                val tx = p0.x + (p1.x - p0.x) * u
+                val ty = p0.y + (p1.y - p0.y) * u
+                val bx = p3.x + (p2.x - p3.x) * u
+                val by = p3.y + (p2.y - p3.y) * u
+                return Offset(tx + (bx - tx) * v, ty + (by - ty) * v)
             }
-            "Refrigerator" -> {
-                drawLine(Color(0xFF52677D),Offset(left+fw*.02f,top+fh*.43f),Offset(right-fw*.02f,top+fh*.43f),1.8f)
-                drawRoundRect(Color(0xFF73899F),Offset(right-fw*.19f,top+fh*.15f),Size(fw*.035f,fh*.19f),androidx.compose.ui.geometry.CornerRadius(2f))
-                drawRoundRect(Color(0xFF73899F),Offset(right-fw*.19f,top+fh*.53f),Size(fw*.035f,fh*.23f),androidx.compose.ui.geometry.CornerRadius(2f))
+            fun panelRect(u: Float, v: Float, rw: Float, rh: Float, color: Color) {
+                val pts = listOf(facePoint(u, v), facePoint(u + rw, v), facePoint(u + rw, v + rh), facePoint(u, v + rh))
+                val path = Path().apply {
+                    moveTo(pts[0].x, pts[0].y)
+                    pts.drop(1).forEach { lineTo(it.x, it.y) }
+                    close()
+                }
+                drawPath(path, color)
+                drawPath(path, Color(0xFF50667D), style = Stroke(width = 0.9f))
             }
-            "Washing Machine" -> {
-                drawRoundRect(Color(0xFFB6C7D8),Offset(left+fw*.08f,top+fh*.09f),Size(fw*.84f,fh*.16f),androidx.compose.ui.geometry.CornerRadius(3f))
-                drawCircle(Color(0xFF52677D),fw*.30f,Offset((left+right)/2,top+fh*.62f))
-                drawCircle(Brush.radialGradient(listOf(Color(0xFFEAF5FF),Color(0xFF6C91AE),Color(0xFF304D68)),radius=fw*.30f,center=Offset((left+right)/2-fw*.06f,top+fh*.57f)),fw*.265f,Offset((left+right)/2,top+fh*.62f))
-                drawCircle(Color(0xFFDAE7F2),fw*.19f,Offset((left+right)/2,top+fh*.62f),style=Stroke(width=2f))
+            fun panelLine(u1: Float, v1: Float, u2: Float, v2: Float, color: Color, width: Float = 1.4f) {
+                drawLine(color, facePoint(u1, v1), facePoint(u2, v2), strokeWidth = width)
             }
-            "Microwave Oven" -> {
-                drawRoundRect(Color(0xFF30485E),Offset(left+fw*.08f,top+fh*.18f),Size(fw*.62f,fh*.62f),androidx.compose.ui.geometry.CornerRadius(4f))
-                drawRoundRect(Brush.linearGradient(listOf(Color(0xFFC6E1F2),Color(0xFF6586A1),Color(0xFF203A53))),Offset(left+fw*.12f,top+fh*.22f),Size(fw*.54f,fh*.54f),androidx.compose.ui.geometry.CornerRadius(3f))
-                for (i in 0..2) drawCircle(Color(0xFF435A70),fw*.025f,Offset(left+fw*.83f,top+fh*(.32f+i*.18f)))
-            }
-            else -> {
-                drawRoundRect(Color(0xFF52677D),Offset(left+fw*.15f,top+fh*.25f),Size(fw*.70f,fh*.04f),androidx.compose.ui.geometry.CornerRadius(3f))
-                drawCircle(Brush.radialGradient(listOf(Color(0xFFF7FBFF),Color(0xFF8DA7BC),Color(0xFF425A70)),radius=fw*.11f),fw*.09f,Offset((left+right)/2,top+fh*.18f))
-                drawRoundRect(Color(0xFF71869A),Offset(left+fw*.18f,top+fh*.36f),Size(fw*.64f,fh*.47f),androidx.compose.ui.geometry.CornerRadius(5f))
-                drawLine(Color(0xFFDAE4ED),Offset(left+fw*.23f,top+fh*.42f),Offset(right-fw*.23f,top+fh*.42f),1.3f)
+            when (appliance) {
+                "AC Service" -> {
+                    panelRect(0.07f, 0.55f, 0.86f, 0.29f, Color(0xFFDCE7F0))
+                    for (i in 0..5) panelLine(0.13f, 0.60f + i * 0.038f, 0.87f, 0.60f + i * 0.038f, Color(0xFF627A90), 1.15f)
+                    drawCircle(Color(0xFF526B82), w * 0.012f, facePoint(0.84f, 0.28f))
+                }
+                "Refrigerator" -> {
+                    panelLine(0.03f, 0.43f, 0.97f, 0.43f, Color(0xFF71879D), 1.7f)
+                    panelRect(0.79f, 0.15f, 0.035f, 0.19f, Color(0xFF6D8298))
+                    panelRect(0.79f, 0.53f, 0.035f, 0.23f, Color(0xFF6D8298))
+                    panelLine(0.06f, 0.04f, 0.94f, 0.04f, Color(0xFFF8FBFF), 1.1f)
+                }
+                "Washing Machine" -> {
+                    panelRect(0.08f, 0.08f, 0.84f, 0.16f, Color(0xFFB5C7D8))
+                    val center = facePoint(0.5f, 0.62f)
+                    val radius = w * 0.072f
+                    drawCircle(Color(0xFF4C647B), radius * 1.16f, center)
+                    drawCircle(Brush.radialGradient(listOf(Color(0xFFEAF5FF), Color(0xFF6D91AE), Color(0xFF304D68)), radius = radius, center = center), radius, center)
+                    drawCircle(Color(0xFFDCE8F2), radius * 0.72f, center, style = Stroke(width = 1.7f))
+                }
+                "Microwave Oven" -> {
+                    panelRect(0.08f, 0.18f, 0.62f, 0.62f, Color(0xFF30485E))
+                    panelRect(0.12f, 0.22f, 0.54f, 0.54f, Color(0xFF7699B4))
+                    panelLine(0.16f, 0.28f, 0.60f, 0.28f, Color(0xFFBFD9EA), 1.1f)
+                    for (i in 0..2) drawCircle(Color(0xFF435A70), w * 0.009f, facePoint(0.83f, 0.32f + i * 0.18f))
+                }
+                else -> {
+                    panelRect(0.15f, 0.25f, 0.70f, 0.045f, Color(0xFF52677D))
+                    val control = facePoint(0.5f, 0.18f)
+                    drawCircle(Brush.radialGradient(listOf(Color(0xFFF7FBFF), Color(0xFF8DA7BC), Color(0xFF425A70)), radius = w * 0.027f, center = control), w * 0.027f, control)
+                    panelRect(0.18f, 0.36f, 0.64f, 0.47f, Color(0xFF71869A))
+                    panelLine(0.23f, 0.42f, 0.77f, 0.42f, Color(0xFFDAE4ED), 1.3f)
+                }
             }
         }
-        drawOval(Brush.radialGradient(listOf(Color(0x380F172A),Color.Transparent)),Offset(w*.16f,h*.84f),Size(w*.68f,h*.12f))
+        drawOval(Brush.radialGradient(listOf(Color(0x300F172A), Color.Transparent)), Offset(w * 0.18f, h * 0.83f), Size(w * 0.64f, h * 0.10f))
     }
 }
 
