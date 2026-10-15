@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
@@ -461,9 +462,12 @@ private fun IssueIllustration(appliance: String, issue: String, language: AppLan
 private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage, onCancel: (Int) -> Unit) {
     val context = LocalContext.current
     var search by remember { mutableStateOf("") }
+    var selectedStatus by remember { mutableStateOf("All") }
+    val historyStatuses = listOf("All", "Pending", "Accepted", "On the Way", "In Progress", "Completed", "Rejected", "Cancelled")
     val visibleBookings = bookings.filter { booking ->
         val query = search.trim()
-        query.isBlank() || booking.id.toString().contains(query, ignoreCase = true) ||
+        (selectedStatus == "All" || booking.status == selectedStatus) &&
+            (query.isBlank() || booking.id.toString().contains(query, ignoreCase = true) ||
             booking.customer.contains(query, ignoreCase = true) ||
             booking.phone.contains(query, ignoreCase = true) ||
             booking.appliance.contains(query, ignoreCase = true) ||
@@ -471,8 +475,8 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
             booking.issue.contains(query, ignoreCase = true) ||
             booking.address.contains(query, ignoreCase = true) ||
             booking.preferredSlot.contains(query, ignoreCase = true) ||
-            booking.pincode.contains(query, ignoreCase = true)
-    }.sortedByDescending { it.id }
+            booking.pincode.contains(query, ignoreCase = true))
+    }.sortedByDescending { it.createdAt }
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(
@@ -484,10 +488,20 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search bookings") }
         )
         Spacer(Modifier.height(8.dp))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 2.dp)) {
+            items(historyStatuses) { status ->
+                FilterChip(
+                    selected = selectedStatus == status,
+                    onClick = { selectedStatus = status },
+                    label = { Text(statusLabel(language, status)) }
+                )
+            }
+        }
+        Spacer(Modifier.height(8.dp))
         if (bookings.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text(tr(language, "No bookings yet.", "ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ବୁକିଂ ନାହିଁ।")) }
         } else if (visibleBookings.isEmpty()) {
-            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text(tr(language, "No matching bookings.", "ମେଳ ଖାଉଥିବା ବୁକିଂ ମିଳିଲା ନାହିଁ।"), color = Color.Gray) }
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text(tr(language, "No matching bookings. Try another status or search.", "ମେଳ ଖାଉଥିବା ବୁକିଂ ନାହିଁ। ଅନ୍ୟ ସ୍ଥିତି କିମ୍ବା ଖୋଜ ଚେଷ୍ଟା କରନ୍ତୁ।"), color = Color.Gray) }
         } else {
             LazyColumn(Modifier.weight(1f)) {
                 items(visibleBookings, key = { it.id }) { b ->
