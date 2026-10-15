@@ -1,5 +1,7 @@
 package com.shreejagannath.refrigeration
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -44,6 +46,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Calendar
 import java.util.Locale
 
 private val Navy = Color(0xFF123B67)
@@ -269,6 +272,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
     var error by remember { mutableStateOf("") }
     var issueExpanded by remember { mutableStateOf(false) }
     val issues = issueOptions[appliance.name] ?: listOf("Not working", "Making noise", "Leakage", "Other")
+    val context = LocalContext.current
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         Text("${appliance.emoji} ${applianceLabel(language, appliance.name)}", fontSize = 23.sp, fontWeight = FontWeight.Bold, color = Navy)
         Text(tr(language, "Choose the problem below—no long description needed.", "ତଳୁ ସମସ୍ୟା ବାଛନ୍ତୁ—ଲମ୍ବା ବର୍ଣ୍ଣନା ଦରକାର ନାହିଁ।"), color = Color.Gray)
@@ -288,7 +292,43 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(address, { address = it }, label = { Text(tr(language, "Full address / area *", "ପୂରା ଠିକଣା / ଅଞ୍ଚଳ *")) }, modifier = Modifier.fillMaxWidth(), minLines = 2)
         Spacer(Modifier.height(10.dp))
-        OutlinedTextField(preferredSlot, { preferredSlot = it }, label = { Text(tr(language, "Preferred visit date & time (optional)", "ପସନ୍ଦର ତାରିଖ ଓ ସମୟ (ଇଚ୍ଛାଧୀନ)")) }, placeholder = { Text(tr(language, "e.g. Tomorrow, 10 AM–12 PM", "ଯଥା: ଆସନ୍ତାକାଲି, ସକାଳ ୧୦–୧୨")) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+        OutlinedButton(
+            onClick = {
+                val now = Calendar.getInstance()
+                DatePickerDialog(
+                    context,
+                    { _, year, month, day ->
+                        val selectedDate = Calendar.getInstance().apply {
+                            set(Calendar.YEAR, year)
+                            set(Calendar.MONTH, month)
+                            set(Calendar.DAY_OF_MONTH, day)
+                        }
+                        TimePickerDialog(
+                            context,
+                            { _, hour, minute ->
+                                selectedDate.set(Calendar.HOUR_OF_DAY, hour)
+                                selectedDate.set(Calendar.MINUTE, minute)
+                                selectedDate.set(Calendar.SECOND, 0)
+                                preferredSlot = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(selectedDate.time)
+                            },
+                            now.get(Calendar.HOUR_OF_DAY),
+                            now.get(Calendar.MINUTE),
+                            false
+                        ).show()
+                    },
+                    now.get(Calendar.YEAR),
+                    now.get(Calendar.MONTH),
+                    now.get(Calendar.DAY_OF_MONTH)
+                ).apply { datePicker.minDate = System.currentTimeMillis() }.show()
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                if (preferredSlot.isBlank())
+                    tr(language, "Choose preferred visit date & time (optional)", "ପସନ୍ଦର ତାରିଖ ଓ ସମୟ ବାଛନ୍ତୁ (ଇଚ୍ଛାଧୀନ)")
+                else preferredSlot
+            )
+        }
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(pincode, { pincode = it.filter(Char::isDigit).take(6) }, label = { Text(tr(language, "Area PIN code (optional)", "ପିନ୍ କୋଡ୍ (ଇଚ୍ଛାଧୀନ)")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
         if (error.isNotBlank()) { Spacer(Modifier.height(8.dp)); Text(error, color = MaterialTheme.colorScheme.error) }
