@@ -605,7 +605,9 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                 it.customer.contains(query, ignoreCase = true) ||
                 it.phone.contains(query, ignoreCase = true) ||
                 it.appliance.contains(query, ignoreCase = true) ||
+                it.issue.contains(query, ignoreCase = true) ||
                 it.address.contains(query, ignoreCase = true) ||
+                it.preferredSlot.contains(query, ignoreCase = true) ||
                 it.pincode.contains(query, ignoreCase = true)
         }
         .sortedByDescending { it.id }
@@ -626,7 +628,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
             onValueChange = { search = it },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            label = { Text(tr(language, "Search ID, customer, phone, appliance, area or PIN", "ଆଇଡି, ଗ୍ରାହକ, ଫୋନ୍, ଉପକରଣ କିମ୍ବା ପିନ୍ ଖୋଜନ୍ତୁ")) },
+            label = { Text(tr(language, "Search ID, customer, phone, appliance, issue, area or PIN", "ଆଇଡି, ଗ୍ରାହକ, ଫୋନ୍, ଉପକରଣ, ସମସ୍ୟା କିମ୍ବା ପିନ୍ ଖୋଜନ୍ତୁ")) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search bookings") }
         )
         Spacer(Modifier.height(8.dp))
@@ -665,6 +667,11 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                                 Column(Modifier.weight(1f)) {
                                     Text("${tr(language, "Booking", "ବୁକିଂ")} #${b.id} • ${applianceLabel(language, b.appliance)}", fontWeight = FontWeight.Bold, color = Navy)
                                     Text(b.customer)
+                                    Text(
+                                        SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(b.createdAt)),
+                                        fontSize = 11.sp,
+                                        color = Color.Gray
+                                    )
                                 }
                                 Status(b.status, language)
                             }
@@ -672,6 +679,9 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                             Text(issueLabel(language, b.issue))
                             Text("${tr(language, "Phone", "ଫୋନ୍")}: ${b.phone}", fontSize = 13.sp, color = Color.Gray)
                             Text("${tr(language, "Address", "ଠିକଣା")}: ${b.address}", fontSize = 13.sp, color = Color.Gray)
+                            if (b.pincode.isNotBlank()) {
+                                Text("${tr(language, "PIN code", "ପିନ୍ କୋଡ୍")}: ${b.pincode}", fontSize = 13.sp, color = Color.Gray)
+                            }
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                                 OutlinedButton(
                                     onClick = { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${b.phone}"))) },
