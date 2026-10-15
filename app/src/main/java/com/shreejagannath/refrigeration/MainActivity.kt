@@ -341,7 +341,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
         Button(onClick = {
             error = when {
                 name.isBlank() -> tr(language, "Please enter your name.", "ଦୟାକରି ନାମ ଲେଖନ୍ତୁ।")
-                (phone.length != 10 || phone.firstOrNull() !in '6'..'9') -> tr(language, "Enter a valid Indian 10-digit mobile number.", "ଠିକ୍ ୧୦ ଅଙ୍କର ଭାରତୀୟ ମୋବାଇଲ୍ ନମ୍ବର ଦିଅନ୍ତୁ।")
+                (phone.length != 10 || phone[0] !in '6'..'9') -> tr(language, "Enter a valid Indian 10-digit mobile number.", "ଠିକ୍ ୧୦ ଅଙ୍କର ଭାରତୀୟ ମୋବାଇଲ୍ ନମ୍ବର ଦିଅନ୍ତୁ।")
                 pincode.isNotBlank() && pincode.length != 6 -> tr(language, "Enter a valid 6-digit PIN code or leave it blank.", "ଠିକ୍ ୬ ଅଙ୍କର ପିନ୍ କୋଡ୍ ଦିଅନ୍ତୁ କିମ୍ବା ଖାଲି ରଖନ୍ତୁ।")
                 issue.isBlank() -> tr(language, "Please select a problem.", "ଦୟାକରି ସମସ୍ୟା ବାଛନ୍ତୁ।")
                 address.isBlank() -> tr(language, "Please enter your address.", "ଦୟାକରି ଠିକଣା ଲେଖନ୍ତୁ।")
