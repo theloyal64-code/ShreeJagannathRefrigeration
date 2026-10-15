@@ -1,6 +1,8 @@
 package com.shreejagannath.refrigeration
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -309,6 +311,7 @@ private fun AdminLogin(onSuccess: () -> Unit) {
 
 @Composable
 private fun AdminHome(bookings: List<ServiceBooking>, onStatus: (Int, String) -> Unit) {
+    val context = LocalContext.current
     var search by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("All") }
     var filterExpanded by remember { mutableStateOf(false) }
@@ -389,6 +392,19 @@ private fun AdminHome(bookings: List<ServiceBooking>, onStatus: (Int, String) ->
                             Text(b.issue)
                             Text("Phone: ${b.phone}", fontSize = 13.sp, color = Color.Gray)
                             Text("Address: ${b.address}", fontSize = 13.sp, color = Color.Gray)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                                OutlinedButton(
+                                    onClick = { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${b.phone}"))) },
+                                    modifier = Modifier.weight(1f)
+                                ) { Text("Call customer") }
+                                OutlinedButton(
+                                    onClick = {
+                                        val mapIntent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=${Uri.encode(b.address)}"))
+                                        if (mapIntent.resolveActivity(context.packageManager) != null) context.startActivity(mapIntent)
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) { Text("Open address") }
+                            }
                             if (b.preferredSlot.isNotBlank()) Text("Preferred visit: ${b.preferredSlot}", fontSize = 13.sp, color = Navy)
                             if (b.pincode.isNotBlank()) Text("PIN code: ${b.pincode}", fontSize = 13.sp, color = Navy)
                             Spacer(Modifier.height(10.dp))
