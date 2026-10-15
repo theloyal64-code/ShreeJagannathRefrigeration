@@ -395,18 +395,18 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     Text("#${b.id} • ${b.appliance}", fontWeight = FontWeight.Bold, color = Navy)
-                                    Text("Requested: " + SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(b.createdAt)), fontSize = 11.sp, color = Color.Gray)
+                                    Text(tr(language, "Requested: ", "ଅନୁରୋଧ ତାରିଖ: ") + SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(b.createdAt)), fontSize = 11.sp, color = Color.Gray)
                                     Text(b.issue)
                                 }
-                                Status(b.status)
+                                Status(b.status, language)
                             }
                             Spacer(Modifier.height(8.dp))
                             Text("${tr(language, "Mobile", "ମୋବାଇଲ୍")}: ${b.phone}", fontSize = 13.sp, color = Color.Gray)
                             Text("${tr(language, "Address", "ଠିକଣା")}: ${b.address}", fontSize = 13.sp)
                             Spacer(Modifier.height(12.dp))
-                            BookingProgress(b.status)
-                            if (b.preferredSlot.isNotBlank()) Text("Preferred visit: ${b.preferredSlot}", fontSize = 13.sp, color = Navy)
-                            if (b.pincode.isNotBlank()) Text("PIN code: ${b.pincode}", fontSize = 13.sp)
+                            BookingProgress(b.status, language)
+                            if (b.preferredSlot.isNotBlank()) Text("${tr(language, "Preferred visit: ", "ପସନ୍ଦର ସମୟ: ")}${b.preferredSlot}", fontSize = 13.sp, color = Navy)
+                            if (b.pincode.isNotBlank()) Text("${tr(language, "PIN code: ", "ପିନ୍ କୋଡ୍: ")}${b.pincode}", fontSize = 13.sp)
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 OutlinedButton(
                                     onClick = {
@@ -420,10 +420,10 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
                                         context.startActivity(Intent.createChooser(shareIntent, "Share booking details"))
                                     },
                                     modifier = Modifier.weight(1f)
-                                ) { Text("Share Details") }
+                                ) { Text(tr(language, "Share Details", "ବିବରଣୀ ସେୟାର୍")) }
                                 if (b.status == "Pending") {
                                     OutlinedButton(onClick = { onCancel(b.id) }, modifier = Modifier.weight(1f)) {
-                                        Text("Cancel Request")
+                                        Text(tr(language, "Cancel Request", "ଅନୁରୋଧ ବାତିଲ୍"))
                                     }
                                 }
                             }
@@ -436,10 +436,10 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
 }
 
 @Composable
-private fun BookingProgress(status: String) {
+private fun BookingProgress(status: String, language: AppLanguage) {
     val steps = listOf("Pending", "Accepted", "On the Way", "In Progress", "Completed")
     if (status == "Rejected" || status == "Cancelled") {
-        Text("Request $status", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+        Text(tr(language, "Request $status", "ଅନୁରୋଧ: ${statusLabel(language, status)}"), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
         return
     }
     val current = steps.indexOf(status).coerceAtLeast(0)
@@ -462,7 +462,7 @@ private fun BookingProgress(status: String) {
                     }
                 }
                 Spacer(Modifier.width(8.dp))
-                Text(step, color = if (index == current) Navy else Color.Gray, fontWeight = if (index == current) FontWeight.Bold else FontWeight.Normal, fontSize = 13.sp)
+                Text(statusLabel(language, step), color = if (index == current) Navy else Color.Gray, fontWeight = if (index == current) FontWeight.Bold else FontWeight.Normal, fontSize = 13.sp)
             }
             if (index < steps.lastIndex) {
                 Box(Modifier.padding(start = 10.dp).width(2.dp).height(7.dp).background(if (index < current) Navy else Color(0xFFE1E6ED)))
@@ -547,13 +547,13 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
             }
         }
         Spacer(Modifier.height(8.dp))
-        Text("Showing ${visibleBookings.size} of ${bookings.size} requests", fontSize = 12.sp, color = Color.Gray)
+        Text(tr(language, "Showing ${visibleBookings.size} of ${bookings.size} requests", "${visibleBookings.size} ରୁ ${bookings.size} ଟି ଅନୁରୋଧ ଦେଖାଯାଉଛି"), fontSize = 12.sp, color = Color.Gray)
         Spacer(Modifier.height(8.dp))
         if (bookings.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(tr(language, "No service requests yet.", "ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ସେବା ଅନୁରୋଧ ନାହିଁ।")) }
         } else if (visibleBookings.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text("No matching requests. Try another search or status filter.", color = Color.Gray)
+                Text(tr(language, "No matching requests. Try another search or status filter.", "କୌଣସି ମେଳ ଅନୁରୋଧ ନାହିଁ। ଅନ୍ୟ ଖୋଜ କିମ୍ବା ଫିଲ୍ଟର୍ ଚେଷ୍ଟା କରନ୍ତୁ।"), color = Color.Gray)
             }
         } else {
             LazyColumn(Modifier.weight(1f)) {
@@ -573,8 +573,8 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                             }
                             Spacer(Modifier.height(8.dp))
                             Text(b.issue)
-                            Text("Phone: ${b.phone}", fontSize = 13.sp, color = Color.Gray)
-                            Text("Address: ${b.address}", fontSize = 13.sp, color = Color.Gray)
+                            Text("${tr(language, "Phone", "ଫୋନ୍")}: ${b.phone}", fontSize = 13.sp, color = Color.Gray)
+                            Text("${tr(language, "Address", "ଠିକଣା")}: ${b.address}", fontSize = 13.sp, color = Color.Gray)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                                 OutlinedButton(
                                     onClick = { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${b.phone}"))) },
@@ -588,18 +588,18 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                                     modifier = Modifier.weight(1f)
                                 ) { Text(tr(language, "Open address", "ଠିକଣା ଖୋଲନ୍ତୁ")) }
                             }
-                            if (b.preferredSlot.isNotBlank()) Text("Preferred visit: ${b.preferredSlot}", fontSize = 13.sp, color = Navy)
-                            if (b.pincode.isNotBlank()) Text("PIN code: ${b.pincode}", fontSize = 13.sp, color = Navy)
+                            if (b.preferredSlot.isNotBlank()) Text("${tr(language, "Preferred visit: ", "ପସନ୍ଦର ସମୟ: ")}${b.preferredSlot}", fontSize = 13.sp, color = Navy)
+                            if (b.pincode.isNotBlank()) Text("${tr(language, "PIN code: ", "ପିନ୍ କୋଡ୍: ")}${b.pincode}", fontSize = 13.sp, color = Navy)
                             Spacer(Modifier.height(10.dp))
                             if (b.status == "Pending") {
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Button(onClick = { onStatus(b.id, "Accepted") }, modifier = Modifier.weight(1f)) { Text("Accept") }
-                                    OutlinedButton(onClick = { onStatus(b.id, "Rejected") }, modifier = Modifier.weight(1f)) { Text("Reject") }
+                                    Button(onClick = { onStatus(b.id, "Accepted") }, modifier = Modifier.weight(1f)) { Text(tr(language, "Accept", "ଗ୍ରହଣ କରନ୍ତୁ")) }
+                                    OutlinedButton(onClick = { onStatus(b.id, "Rejected") }, modifier = Modifier.weight(1f)) { Text(tr(language, "Reject", "ଅସ୍ୱୀକାର କରନ୍ତୁ")) }
                                 }
                             } else if (b.status !in listOf("Completed", "Rejected", "Cancelled")) {
                                 var expanded by remember(b.id) { mutableStateOf(false) }
                                 Box {
-                                    OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) { Text("Update Status") }
+                                    OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) { Text(tr(language, "Update Status", "ସ୍ଥିତି ବଦଳାନ୍ତୁ")) }
                                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                                         listOf("On the Way", "In Progress", "Completed", "Cancelled").forEach { status ->
                                             DropdownMenuItem(
@@ -628,8 +628,24 @@ private fun Stat(title: String, value: String, modifier: Modifier = Modifier) {
     }
 }
 
+
+private fun statusLabel(language: AppLanguage, status: String): String {
+    if (language == AppLanguage.ENGLISH) return status
+    return when (status) {
+        "Pending" -> "ବିଚାରାଧୀନ"
+        "Accepted" -> "ଗ୍ରହଣ କରାଯାଇଛି"
+        "On the Way" -> "ରାସ୍ତାରେ ଅଛନ୍ତି"
+        "In Progress" -> "କାମ ଚାଲିଛି"
+        "Completed" -> "ସମ୍ପୂର୍ଣ୍ଣ"
+        "Rejected" -> "ଅସ୍ୱୀକୃତ"
+        "Cancelled" -> "ବାତିଲ୍"
+        "All" -> "ସମସ୍ତ"
+        else -> status
+    }
+}
+
 @Composable
-private fun Status(status: String) {
+private fun Status(status: String, language: AppLanguage) {
     val color = when (status) {
         "Completed" -> Color(0xFF16804A)
         "Rejected", "Cancelled" -> Color(0xFFB3261E)
@@ -637,6 +653,6 @@ private fun Status(status: String) {
         else -> Navy
     }
     Surface(color = color.copy(alpha = 0.12f), shape = RoundedCornerShape(50)) {
-        Text(status, color = color, modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+        Text(statusLabel(language, status), color = color, modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
     }
 }
