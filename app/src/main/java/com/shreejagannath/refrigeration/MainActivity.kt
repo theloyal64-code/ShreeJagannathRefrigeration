@@ -272,9 +272,9 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
         Spacer(Modifier.height(10.dp))
         Text(tr(language, "Select the problem *", "ସମସ୍ୟା ବାଛନ୍ତୁ *"), fontWeight = FontWeight.SemiBold, color = Navy)
         Box {
-            OutlinedButton(onClick = { issueExpanded = true }, modifier = Modifier.fillMaxWidth()) { Text(if (issue.isBlank()) tr(language, "Choose a problem", "ସମସ୍ୟା ବାଛନ୍ତୁ") else issue) }
+            OutlinedButton(onClick = { issueExpanded = true }, modifier = Modifier.fillMaxWidth()) { Text(if (issue.isBlank()) tr(language, "Choose a problem", "ସମସ୍ୟା ବାଛନ୍ତୁ") else issueLabel(language, issue)) }
             DropdownMenu(expanded = issueExpanded, onDismissRequest = { issueExpanded = false }, modifier = Modifier.heightIn(max = 340.dp)) {
-                issues.forEach { option -> DropdownMenuItem(text = { Text(option) }, leadingIcon = { Text(problemEmoji(option), fontSize = 22.sp) }, onClick = { issue = option; issueExpanded = false }) }
+                issues.forEach { option -> DropdownMenuItem(text = { Text(issueLabel(language, option)) }, leadingIcon = { Text(problemEmoji(option), fontSize = 22.sp) }, onClick = { issue = option; issueExpanded = false }) }
             }
         }
         if (issue.isNotBlank()) { Spacer(Modifier.height(10.dp)); IssueIllustration(appliance.name, issue) }
@@ -301,6 +301,35 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
     }
 }
 
+private fun issueLabel(language: AppLanguage, issue: String): String {
+    if (language == AppLanguage.ENGLISH) return issue
+    return when (issue) {
+        "Not cooling" -> "ଥଣ୍ଡା କରୁନାହିଁ"
+        "Water leakage" -> "ପାଣି ଲିକ୍ ହେଉଛି"
+        "Making noise" -> "ଅଧିକ ଶବ୍ଦ ହେଉଛି"
+        "Not turning on" -> "ଚାଲୁ ହେଉନାହିଁ"
+        "Bad smell" -> "ଖରାପ ଗନ୍ଧ ଆସୁଛି"
+        "Installation / servicing" -> "ଇନଷ୍ଟଲେସନ୍ / ସର୍ଭିସିଂ"
+        "Ice build-up" -> "ବରଫ ଜମୁଛି"
+        "Door / gasket problem" -> "ଦ୍ୱାର / ଗାସକେଟ୍ ସମସ୍ୟା"
+        "Not starting" -> "ଚାଲୁ ହେଉନାହିଁ"
+        "Not draining water" -> "ପାଣି ବାହାରୁନାହିଁ"
+        "Not spinning" -> "ଘୂରୁନାହିଁ"
+        "Door / lid problem" -> "ଦ୍ୱାର / ଢାଙ୍କୁଣୀ ସମସ୍ୟା"
+        "Not heating" -> "ଗରମ କରୁନାହିଁ"
+        "Sparking inside" -> "ଭିତରେ ସ୍ପାର୍କ ହେଉଛି"
+        "Turntable not moving" -> "ଭିତର ପ୍ଲେଟ୍ ଘୂରୁନାହିଁ"
+        "Door problem" -> "ଦ୍ୱାର ସମସ୍ୟା"
+        "No hot water" -> "ଗରମ ପାଣି ଆସୁନାହିଁ"
+        "Trips electricity" -> "ବିଦ୍ୟୁତ୍ ଟ୍ରିପ୍ ହେଉଛି"
+        "Not working" -> "କାମ କରୁନାହିଁ"
+        "Making noise" -> "ଅଧିକ ଶବ୍ଦ ହେଉଛି"
+        "Leakage" -> "ଲିକେଜ୍"
+        "Other" -> "ଅନ୍ୟ ସମସ୍ୟା"
+        else -> issue
+    }
+}
+
 private fun problemEmoji(issue: String): String = when {
     issue.contains("cool", true) || issue.contains("heating", true) || issue.contains("hot water", true) -> "🌡️"
     issue.contains("leak", true) || issue.contains("drain", true) -> "💧"
@@ -317,7 +346,7 @@ private fun problemEmoji(issue: String): String = when {
 private fun IssueIllustration(appliance: String, issue: String) {
     Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F5FA)), shape = RoundedCornerShape(14.dp)) {
         Column(Modifier.fillMaxWidth().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Problem area guide", fontWeight = FontWeight.Bold, color = Navy)
+            Text(tr(language, "Problem area guide", "ସମସ୍ୟା ଚିହ୍ନଟ ଗାଇଡ୍"), fontWeight = FontWeight.Bold, color = Navy)
             Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth().height(100.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                 Text(when (appliance) { "AC Service" -> "❄️"; "Refrigerator" -> "🧊"; "Washing Machine" -> "🧺"; "Microwave Oven" -> "🍲"; else -> "🚿" }, fontSize = 62.sp)
@@ -326,8 +355,8 @@ private fun IssueIllustration(appliance: String, issue: String) {
                 Spacer(Modifier.width(8.dp))
                 Text(problemEmoji(issue), fontSize = 36.sp)
             }
-            Text("Marked: $issue", fontWeight = FontWeight.SemiBold, color = Navy)
-            Text("Illustrative guide — select the closest matching issue.", fontSize = 11.sp, color = Color.Gray)
+            Text(tr(language, "Marked", "ବଛାଯାଇଛି") + ": ${issueLabel(language, issue)}", fontWeight = FontWeight.SemiBold, color = Navy)
+            Text(tr(language, "Illustrative guide — select the closest matching issue.", "ଏହା ଏକ ସାଧାରଣ ଗାଇଡ୍ — ମେଳ ଖାଉଥିବା ସମସ୍ୟା ବାଛନ୍ତୁ।"), fontSize = 11.sp, color = Color.Gray)
         }
     }
 }
