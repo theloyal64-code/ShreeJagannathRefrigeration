@@ -1,9 +1,15 @@
 package com.shreejagannath.refrigeration
 
+import android.Manifest
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
+import android.os.Looper
 import android.widget.Toast
 import android.net.Uri
 import android.os.Bundle
@@ -72,7 +78,7 @@ private val issueOptions = mapOf(
     "Microwave Oven" to listOf("Not heating", "Not turning on", "Sparking inside", "Turntable not moving", "Making noise", "Door problem", "Display not working", "Uneven heating", "Burning smell", "Buttons not responding"),
     "Geyser" to listOf("No hot water", "Water not heating enough", "Water leakage", "Not turning on", "Trips electricity", "Making noise", "Takes too long to heat", "Hot water runs out quickly", "Rusty water", "Installation / servicing")
 )
-data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val preferredSlot: String = "", val pincode: String = "", val status: String = "Pending", val createdAt: Long = System.currentTimeMillis())
+data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val preferredSlot: String = "", val pincode: String = "", val status: String = "Pending", val createdAt: Long = System.currentTimeMillis(), val latitude: Double? = null, val longitude: Double? = null)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -98,7 +104,9 @@ private fun loadBookings(context: Context): List<ServiceBooking> {
                 preferredSlot = item.optString("preferredSlot"),
                 pincode = item.optString("pincode"),
                 status = item.optString("status", "Pending"),
-                createdAt = item.optLong("createdAt", 0L).takeIf { it > 0L } ?: System.currentTimeMillis()
+                createdAt = item.optLong("createdAt", 0L).takeIf { it > 0L } ?: System.currentTimeMillis(),
+                latitude = if (item.isNull("latitude")) null else item.optDouble("latitude"),
+                longitude = if (item.isNull("longitude")) null else item.optDouble("longitude")
             )
         }
     } catch (_: Exception) {
@@ -120,6 +128,8 @@ private fun saveBookings(context: Context, bookings: List<ServiceBooking>) {
             put("pincode", booking.pincode)
             put("status", booking.status)
             put("createdAt", booking.createdAt)
+            put("latitude", booking.latitude ?: JSONObject.NULL)
+            put("longitude", booking.longitude ?: JSONObject.NULL)
         })
     }
     context.getSharedPreferences(BOOKING_PREFS, Context.MODE_PRIVATE)
@@ -181,8 +191,8 @@ private fun MainApp() {
                     "welcome" -> Welcome(language, onLanguage = { language = it }, onCustomer = { screen = "customer" }, onAdmin = { screen = "adminLogin" })
                     "customer" -> CustomerHome(appliances, bookings, language,
                         onChoose = { chosen = it; screen = "form" }, onHistory = { screen = "history" })
-                    "form" -> RequestForm(chosen, language, onSubmit = { name, phone, issue, address, preferredSlot, pincode ->
-                        bookings = bookings + ServiceBooking(nextId++, name, phone, chosen.name, issue, address, preferredSlot, pincode)
+                    "form" -> RequestForm(chosen, language, onSubmit = { name, phone, issue, address, preferredSlot, pincode, latitude, longitude ->
+                        bookings = bookings + ServiceBooking(nextId++, name, phone, chosen.name, issue, address, preferredSlot, pincode, latitude = latitude, longitude = longitude)
                         screen = "history"
                     })
                     "history" -> BookingHistory(bookings, language, onCancel = { id -> bookings = bookings.map { if (it.id == id && it.status == "Pending") it.copy(status = "Cancelled") else it } })
@@ -267,13 +277,16 @@ private fun CustomerHome(appliances: List<Appliance>, bookings: List<ServiceBook
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (String, String, String, String, String, String) -> Unit) {
+private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (String, String, String, String, String, String, Double?, Double?) -> Unit) {
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var issue by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     var preferredSlot by remember { mutableStateOf("") }
     var pincode by remember { mutableStateOf("") }
+    var latitude by remember { mutableStateOf<Double?>(null) }
+    var longitude by remember { mutableStateOf<Double?>(null) }
+    var locating by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
     var issueExpanded by remember { mutableStateOf(false) }
     var showSubmitConfirmation by remember { mutableStateOf(false) }
@@ -376,7 +389,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             confirmButton = {
                 TextButton(onClick = {
                     showSubmitConfirmation = false
-                    onSubmit(name.trim(), phone, issue.trim(), address.trim(), preferredSlot.trim(), pincode)
+                    onSubmit(name.trim(), phone, issue.trim(), address.trim(), preferredSlot.trim(), pincode, latitude, longitude)
                 }) { Text(tr(language, "Confirm booking", "ବୁକିଂ ନିଶ୍ଚିତ କରନ୍ତୁ")) }
             },
             dismissButton = {
