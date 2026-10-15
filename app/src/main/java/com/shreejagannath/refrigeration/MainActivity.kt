@@ -34,6 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.json.JSONArray
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private val Navy = Color(0xFF123B67)
 private val Orange = Color(0xFFF28C28)
@@ -42,7 +45,7 @@ private const val BOOKING_PREFS = "shree_jagannath_bookings"
 private const val BOOKINGS_KEY = "bookings"
 
 data class Appliance(val name: String, val detail: String, val emoji: String)
-data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val preferredSlot: String = "", val pincode: String = "", val status: String = "Pending")
+data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val preferredSlot: String = "", val pincode: String = "", val status: String = "Pending", val createdAt: Long = System.currentTimeMillis())
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,7 +70,8 @@ private fun loadBookings(context: Context): List<ServiceBooking> {
                 address = item.optString("address"),
                 preferredSlot = item.optString("preferredSlot"),
                 pincode = item.optString("pincode"),
-                status = item.optString("status", "Pending")
+                status = item.optString("status", "Pending"),
+                createdAt = item.optLong("createdAt", 0L).takeIf { it > 0L } ?: System.currentTimeMillis()
             )
         }
     } catch (_: Exception) {
@@ -88,6 +92,7 @@ private fun saveBookings(context: Context, bookings: List<ServiceBooking>) {
             put("preferredSlot", booking.preferredSlot)
             put("pincode", booking.pincode)
             put("status", booking.status)
+            put("createdAt", booking.createdAt)
         })
     }
     context.getSharedPreferences(BOOKING_PREFS, Context.MODE_PRIVATE)
@@ -267,6 +272,7 @@ private fun RequestForm(appliance: Appliance, onSubmit: (String, String, String,
 
 @Composable
 private fun BookingHistory(bookings: List<ServiceBooking>, onCancel: (Int) -> Unit) {
+    val context = LocalContext.current
     var search by remember { mutableStateOf("") }
     val visibleBookings = bookings.filter { booking ->
         val query = search.trim()
@@ -298,6 +304,7 @@ private fun BookingHistory(bookings: List<ServiceBooking>, onCancel: (Int) -> Un
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     Text("#${b.id} • ${b.appliance}", fontWeight = FontWeight.Bold, color = Navy)
+                                    Text("Requested: " + SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(b.createdAt)), fontSize = 11.sp, color = Color.Gray)
                                     Text(b.issue)
                                 }
                                 Status(b.status)
@@ -309,10 +316,24 @@ private fun BookingHistory(bookings: List<ServiceBooking>, onCancel: (Int) -> Un
                             BookingProgress(b.status)
                             if (b.preferredSlot.isNotBlank()) Text("Preferred visit: ${b.preferredSlot}", fontSize = 13.sp, color = Navy)
                             if (b.pincode.isNotBlank()) Text("PIN code: ${b.pincode}", fontSize = 13.sp)
-                            if (b.status == "Pending") {
-                                Spacer(Modifier.height(8.dp))
-                                OutlinedButton(onClick = { onCancel(b.id) }, modifier = Modifier.fillMaxWidth()) {
-                                    Text("Cancel Request")
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(
+                                    onClick = {
+                                        val details = "SHREE JAGANNATH REFRIGERATION\nService Booking #${b.id}\nAppliance: ${b.appliance}\nIssue: ${b.issue}\nStatus: ${b.status}\nCustomer: ${b.customer}\nPhone: ${b.phone}\nAddress: ${b.address}" +
+                                            if (b.preferredSlot.isNotBlank()) "\nPreferred visit: ${b.preferredSlot}" else ""
+                                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(Intent.EXTRA_SUBJECT, "Service Booking #${b.id}")
+                                            putExtra(Intent.EXTRA_TEXT, details)
+                                        }
+                                        context.startActivity(Intent.createChooser(shareIntent, "Share booking details"))
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) { Text("Share Details") }
+                                if (b.status == "Pending") {
+                                    OutlinedButton(onClick = { onCancel(b.id) }, modifier = Modifier.weight(1f)) {
+                                        Text("Cancel Request")
+                                    }
                                 }
                             }
                         }
