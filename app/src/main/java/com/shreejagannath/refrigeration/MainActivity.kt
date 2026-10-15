@@ -13,6 +13,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -45,6 +48,15 @@ private const val BOOKING_PREFS = "shree_jagannath_bookings"
 private const val BOOKINGS_KEY = "bookings"
 
 data class Appliance(val name: String, val detail: String, val emoji: String)
+private enum class AppLanguage { ENGLISH, ODIA }
+private fun tr(language: AppLanguage, english: String, odia: String): String = if (language == AppLanguage.ODIA) odia else english
+private val issueOptions = mapOf(
+    "AC Service" to listOf("Not cooling", "Water leakage", "Making noise", "Not turning on", "Bad smell", "Installation / servicing"),
+    "Refrigerator" to listOf("Not cooling", "Water leakage", "Making noise", "Not turning on", "Ice build-up", "Door / gasket problem"),
+    "Washing Machine" to listOf("Not starting", "Not draining water", "Not spinning", "Water leakage", "Making noise", "Door / lid problem"),
+    "Microwave Oven" to listOf("Not heating", "Not turning on", "Sparking inside", "Turntable not moving", "Making noise", "Door problem"),
+    "Geyser" to listOf("No hot water", "Water leakage", "Not turning on", "Trips electricity", "Making noise", "Installation / servicing")
+)
 data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val preferredSlot: String = "", val pincode: String = "", val status: String = "Pending", val createdAt: Long = System.currentTimeMillis())
 
 class MainActivity : ComponentActivity() {
@@ -113,6 +125,7 @@ private fun MainApp() {
         Appliance("Geyser", "Installation • Repair", "🚿")
     )
     var screen by remember { mutableStateOf("welcome") }
+    var language by remember { mutableStateOf(AppLanguage.ENGLISH) }
     var chosen by remember { mutableStateOf(appliances[0]) }
     var bookings by remember { mutableStateOf(loadBookings(context)) }
     var nextId by remember { mutableIntStateOf((bookings.maxOfOrNull { it.id } ?: 1000) + 1) }
@@ -144,14 +157,10 @@ private fun MainApp() {
         }) { insets ->
             Box(Modifier.fillMaxSize().background(Page).padding(insets)) {
                 when (screen) {
-                    "welcome" -> Welcome(
-                        onCustomer = { screen = "customer" },
-                        onAdmin = { screen = "adminLogin" }
-                    )
-                    "customer" -> CustomerHome(appliances, bookings,
-                        onChoose = { chosen = it; screen = "form" },
-                        onHistory = { screen = "history" })
-                    "form" -> RequestForm(chosen, onSubmit = { name, phone, issue, address, preferredSlot, pincode ->
+                    "welcome" -> Welcome(language, onLanguage = { language = it }, onCustomer = { screen = "customer" }, onAdmin = { screen = "adminLogin" })
+                    "customer" -> CustomerHome(appliances, bookings, language,
+                        onChoose = { chosen = it; screen = "form" }, onHistory = { screen = "history" })
+                    "form" -> RequestForm(chosen, language, onSubmit = { name, phone, issue, address, preferredSlot, pincode ->
                         bookings = bookings + ServiceBooking(nextId++, name, phone, chosen.name, issue, address, preferredSlot, pincode)
                         screen = "history"
                     })
@@ -167,70 +176,76 @@ private fun MainApp() {
 }
 
 @Composable
-private fun Welcome(onCustomer: () -> Unit, onAdmin: () -> Unit) {
-    Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Box(Modifier.size(96.dp).background(Navy, RoundedCornerShape(26.dp)), contentAlignment = Alignment.Center) {
-            Icon(Icons.Default.HomeRepairService, null, tint = Color.White, modifier = Modifier.size(52.dp))
+private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, onCustomer: () -> Unit, onAdmin: () -> Unit) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Language / ଭାଷା", fontWeight = FontWeight.SemiBold, color = Navy)
+            FilterChip(selected = language == AppLanguage.ENGLISH, onClick = { onLanguage(AppLanguage.ENGLISH) }, label = { Text("English") })
+            FilterChip(selected = language == AppLanguage.ODIA, onClick = { onLanguage(AppLanguage.ODIA) }, label = { Text("ଓଡ଼ିଆ") })
         }
+        Spacer(Modifier.height(24.dp))
+        Box(Modifier.size(96.dp).background(Navy, RoundedCornerShape(26.dp)), contentAlignment = Alignment.Center) { Icon(Icons.Default.HomeRepairService, null, tint = Color.White, modifier = Modifier.size(52.dp)) }
         Spacer(Modifier.height(20.dp))
         Text("SHREE JAGANNATH", fontSize = 25.sp, fontWeight = FontWeight.ExtraBold, color = Navy)
         Text("REFRIGERATION", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Orange)
         Spacer(Modifier.height(8.dp))
-        Text("Trusted Home Appliance Service", color = Color.DarkGray)
+        Text(tr(language, "Trusted Home Appliance Service", "ଭରସାଯୋଗ୍ୟ ଘରୋଇ ଉପକରଣ ସେବା"), color = Color.DarkGray)
         Spacer(Modifier.height(32.dp))
-        Button(onCustomer, Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(14.dp)) {
-            Icon(Icons.Default.Person, null); Spacer(Modifier.width(8.dp)); Text("Customer — Book a Service")
-        }
+        Button(onCustomer, Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(14.dp)) { Icon(Icons.Default.Person, null); Spacer(Modifier.width(8.dp)); Text(tr(language, "Customer — Book a Service", "ଗ୍ରାହକ — ସେବା ବୁକ୍ କରନ୍ତୁ")) }
         Spacer(Modifier.height(12.dp))
-        OutlinedButton(onAdmin, Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(14.dp)) {
-            Icon(Icons.Default.Settings, null); Spacer(Modifier.width(8.dp)); Text("Admin / Mechanic Login")
-        }
+        OutlinedButton(onAdmin, Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(14.dp)) { Icon(Icons.Default.Settings, null); Spacer(Modifier.width(8.dp)); Text(tr(language, "Admin / Mechanic Login", "ଆଡମିନ୍ / ମେକାନିକ୍ ଲଗ୍ଇନ୍")) }
         Spacer(Modifier.height(18.dp))
-        Text("AC • Fridge • Washing Machine • Microwave • Geyser", fontSize = 12.sp, color = Color.Gray)
+        Text(tr(language, "AC • Fridge • Washing Machine • Microwave • Geyser", "ଏସି • ଫ୍ରିଜ୍ • ୱାଶିଂ ମେସିନ୍ • ମାଇକ୍ରୋୱେଭ୍ • ଗିଜର"), fontSize = 12.sp, color = Color.Gray)
     }
 }
 
 @Composable
-private fun CustomerHome(appliances: List<Appliance>, bookings: List<ServiceBooking>, onChoose: (Appliance) -> Unit, onHistory: () -> Unit) {
+private fun CustomerHome(appliances: List<Appliance>, bookings: List<ServiceBooking>, language: AppLanguage, onChoose: (Appliance) -> Unit, onHistory: () -> Unit) {
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
         item {
             Spacer(Modifier.height(16.dp))
-            Text("Namaskar! 🙏", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Navy)
-            Text("What appliance needs service today?", color = Color.DarkGray)
+            Text(tr(language, "Namaskar! 🙏", "ନମସ୍କାର! 🙏"), fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Navy)
+            Text(tr(language, "What appliance needs service today?", "ଆଜି କେଉଁ ଉପକରଣର ମରାମତି ଦରକାର?"), color = Color.DarkGray)
             Spacer(Modifier.height(18.dp))
             Card(colors = CardDefaults.cardColors(containerColor = Navy), shape = RoundedCornerShape(18.dp)) {
                 Column(Modifier.padding(18.dp)) {
-                    Text("Reliable service at your doorstep", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(tr(language, "Reliable service at your doorstep", "ଆପଣଙ୍କ ଘରେ ଭରସାଯୋଗ୍ୟ ସେବା"), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Spacer(Modifier.height(6.dp))
-                    Text("Choose an appliance and send a service request.", color = Color.White)
+                    Text(tr(language, "Choose an appliance and send a service request.", "ଉପକରଣ ବାଛନ୍ତୁ ଏବଂ ସେବା ଅନୁରୋଧ ପଠାନ୍ତୁ।"), color = Color.White)
                 }
             }
             Spacer(Modifier.height(20.dp))
-            Text("Our Services", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Navy)
+            Text(tr(language, "Our Services", "ଆମ ସେବା"), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Navy)
             Spacer(Modifier.height(10.dp))
         }
         items(appliances) { appliance ->
-            Card(Modifier.fillMaxWidth().padding(bottom = 10.dp).clickable { onChoose(appliance) }, shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(appliance.emoji, fontSize = 30.sp)
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(appliance.name, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                        Text(appliance.detail, fontSize = 12.sp, color = Color.Gray)
+            var rotation by remember(appliance.name) { mutableFloatStateOf(0f) }
+            Card(Modifier.fillMaxWidth().padding(bottom = 10.dp), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Column(Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(76.dp).background(Color(0xFFEAF1F8), RoundedCornerShape(14.dp))
+                            .pointerInput(appliance.name) { detectDragGestures { change, drag -> change.consume(); rotation = (rotation + drag.x * 1.8f) % 360f } }
+                            .graphicsLayer { rotationY = rotation; cameraDistance = 12 * density }
+                            .clickable { rotation = (rotation + 45f) % 360f }, contentAlignment = Alignment.Center) { Text(appliance.emoji, fontSize = 42.sp) }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(appliance.name, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                            Text(appliance.detail, fontSize = 12.sp, color = Color.Gray)
+                            Text(tr(language, "Drag image to rotate 360°", "ଛବିକୁ ଟାଣି 360° ଘୁରାନ୍ତୁ"), fontSize = 10.sp, color = Navy)
+                        }
                     }
-                    Button(onClick = { onChoose(appliance) }) { Text("Book") }
+                    Spacer(Modifier.height(10.dp))
+                    Button(onClick = { onChoose(appliance) }, modifier = Modifier.fillMaxWidth()) { Text(tr(language, "Book service", "ସେବା ବୁକ୍ କରନ୍ତୁ")) }
                 }
             }
         }
-        item {
-            OutlinedButton(onHistory, Modifier.fillMaxWidth()) { Text("My Bookings (${bookings.size})") }
-            Spacer(Modifier.height(20.dp))
-        }
+        item { OutlinedButton(onHistory, Modifier.fillMaxWidth()) { Text(tr(language, "My Bookings", "ମୋ ବୁକିଂ") + " (${bookings.size})") }; Spacer(Modifier.height(20.dp)) }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RequestForm(appliance: Appliance, onSubmit: (String, String, String, String, String, String) -> Unit) {
+private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (String, String, String, String, String, String) -> Unit) {
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var issue by remember { mutableStateOf("") }
@@ -238,35 +253,75 @@ private fun RequestForm(appliance: Appliance, onSubmit: (String, String, String,
     var preferredSlot by remember { mutableStateOf("") }
     var pincode by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
+    var issueExpanded by remember { mutableStateOf(false) }
+    val issues = issueOptions[appliance.name] ?: listOf("Not working", "Making noise", "Leakage", "Other")
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         Text("${appliance.emoji} ${appliance.name}", fontSize = 23.sp, fontWeight = FontWeight.Bold, color = Navy)
-        Text("Tell us a few details so the mechanic can review your request.", color = Color.Gray)
+        Text(tr(language, "Choose the problem below—no long description needed.", "ତଳୁ ସମସ୍ୟା ବାଛନ୍ତୁ—ଲମ୍ବା ବର୍ଣ୍ଣନା ଦରକାର ନାହିଁ।"), color = Color.Gray)
         Spacer(Modifier.height(16.dp))
-        OutlinedTextField(name, { name = it }, label = { Text("Customer name *") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+        OutlinedTextField(name, { name = it }, label = { Text(tr(language, "Customer name *", "ଗ୍ରାହକଙ୍କ ନାମ *")) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
         Spacer(Modifier.height(10.dp))
-        OutlinedTextField(phone, { phone = it.filter(Char::isDigit).take(10) }, label = { Text("Mobile number *") }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
+        OutlinedTextField(phone, { phone = it.filter(Char::isDigit).take(10) }, label = { Text(tr(language, "Mobile number *", "ମୋବାଇଲ୍ ନମ୍ବର *")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
         Spacer(Modifier.height(10.dp))
-        OutlinedTextField(issue, { issue = it }, label = { Text("Describe the problem *") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
+        Text(tr(language, "Select the problem *", "ସମସ୍ୟା ବାଛନ୍ତୁ *"), fontWeight = FontWeight.SemiBold, color = Navy)
+        Box {
+            OutlinedButton(onClick = { issueExpanded = true }, modifier = Modifier.fillMaxWidth()) { Text(if (issue.isBlank()) tr(language, "Choose a problem", "ସମସ୍ୟା ବାଛନ୍ତୁ") else issue) }
+            DropdownMenu(expanded = issueExpanded, onDismissRequest = { issueExpanded = false }, modifier = Modifier.heightIn(max = 340.dp)) {
+                issues.forEach { option -> DropdownMenuItem(text = { Text(option) }, leadingIcon = { Text(problemEmoji(option), fontSize = 22.sp) }, onClick = { issue = option; issueExpanded = false }) }
+            }
+        }
+        if (issue.isNotBlank()) { Spacer(Modifier.height(10.dp)); IssueIllustration(appliance.name, issue) }
         Spacer(Modifier.height(10.dp))
-        OutlinedTextField(address, { address = it }, label = { Text("Full address / area *") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+        OutlinedTextField(address, { address = it }, label = { Text(tr(language, "Full address / area *", "ପୂରା ଠିକଣା / ଅଞ୍ଚଳ *")) }, modifier = Modifier.fillMaxWidth(), minLines = 2)
         Spacer(Modifier.height(10.dp))
-        OutlinedTextField(preferredSlot, { preferredSlot = it }, label = { Text("Preferred visit date & time (optional)") }, placeholder = { Text("e.g. Tomorrow, 10 AM–12 PM") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+        OutlinedTextField(preferredSlot, { preferredSlot = it }, label = { Text(tr(language, "Preferred visit date & time (optional)", "ପସନ୍ଦର ତାରିଖ ଓ ସମୟ (ଇଚ୍ଛାଧୀନ)")) }, placeholder = { Text("e.g. Tomorrow, 10 AM–12 PM") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
         Spacer(Modifier.height(10.dp))
-        OutlinedTextField(pincode, { pincode = it.filter(Char::isDigit).take(6) }, label = { Text("Area PIN code (optional)") }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+        OutlinedTextField(pincode, { pincode = it.filter(Char::isDigit).take(6) }, label = { Text(tr(language, "Area PIN code (optional)", "ପିନ୍ କୋଡ୍ (ଇଚ୍ଛାଧୀନ)")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
         if (error.isNotBlank()) { Spacer(Modifier.height(8.dp)); Text(error, color = MaterialTheme.colorScheme.error) }
         Spacer(Modifier.height(16.dp))
         Button(onClick = {
             error = when {
-                name.isBlank() -> "Please enter your name."
-                phone.length != 10 -> "Enter a valid 10-digit mobile number."
-                issue.isBlank() -> "Please describe the problem."
-                address.isBlank() -> "Please enter your address."
+                name.isBlank() -> tr(language, "Please enter your name.", "ଦୟାକରି ନାମ ଲେଖନ୍ତୁ।")
+                phone.length != 10 -> tr(language, "Enter a valid 10-digit mobile number.", "ଠିକ୍ ୧୦ ଅଙ୍କର ମୋବାଇଲ୍ ନମ୍ବର ଦିଅନ୍ତୁ।")
+                issue.isBlank() -> tr(language, "Please select a problem.", "ଦୟାକରି ସମସ୍ୟା ବାଛନ୍ତୁ।")
+                address.isBlank() -> tr(language, "Please enter your address.", "ଦୟାକରି ଠିକଣା ଲେଖନ୍ତୁ।")
                 else -> ""
             }
             if (error.isBlank()) onSubmit(name.trim(), phone, issue.trim(), address.trim(), preferredSlot.trim(), pincode)
-        }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) { Text("Submit Service Request") }
+        }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) { Text(tr(language, "Submit Service Request", "ସେବା ଅନୁରୋଧ ପଠାନ୍ତୁ")) }
         Spacer(Modifier.height(10.dp))
-        Text("No payment is collected in-app. The team will confirm your visit time and charges.", fontSize = 12.sp, color = Color.Gray)
+        Text(tr(language, "No payment is collected in-app. The team will confirm your visit time and charges.", "ଆପ୍‌ରେ କୌଣସି ପେମେଣ୍ଟ ନିଆଯାଏ ନାହିଁ। ଟିମ୍ ଆପଣଙ୍କ ସମୟ ଓ ଖର୍ଚ୍ଚ ନିଶ୍ଚିତ କରିବ।"), fontSize = 12.sp, color = Color.Gray)
+    }
+}
+
+private fun problemEmoji(issue: String): String = when {
+    issue.contains("cool", true) || issue.contains("heating", true) || issue.contains("hot water", true) -> "🌡️"
+    issue.contains("leak", true) || issue.contains("drain", true) -> "💧"
+    issue.contains("noise", true) -> "🔊"
+    issue.contains("turn", true) || issue.contains("start", true) -> "⚡"
+    issue.contains("door", true) -> "🚪"
+    issue.contains("ice", true) -> "🧊"
+    issue.contains("spin", true) -> "🌀"
+    issue.contains("smell", true) -> "🌬️"
+    else -> "🛠️"
+}
+
+@Composable
+private fun IssueIllustration(appliance: String, issue: String) {
+    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F5FA)), shape = RoundedCornerShape(14.dp)) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("Problem area guide", fontWeight = FontWeight.Bold, color = Navy)
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.fillMaxWidth().height(100.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                Text(when (appliance) { "AC Service" -> "❄️"; "Refrigerator" -> "🧊"; "Washing Machine" -> "🧺"; "Microwave Oven" -> "🍲"; else -> "🚿" }, fontSize = 62.sp)
+                Spacer(Modifier.width(12.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("➜", fontSize = 30.sp, color = Orange); Text("🔴", fontSize = 20.sp) }
+                Spacer(Modifier.width(8.dp))
+                Text(problemEmoji(issue), fontSize = 36.sp)
+            }
+            Text("Marked: $issue", fontWeight = FontWeight.SemiBold, color = Navy)
+            Text("Illustrative guide — select the closest matching issue.", fontSize = 11.sp, color = Color.Gray)
+        }
     }
 }
 
