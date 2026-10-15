@@ -769,7 +769,7 @@ private fun Appliance3DPreview(appliance: String, rotationDegrees: Float, modifi
                 listOf(4,7,6,5) -> Color.Black.copy(alpha = 0.08f)
                 else -> Color.White.copy(alpha = 0.08f)
             }
-            drawPath(path, Brush.linearGradient(listOf(face.fill + light, face.fill), start = Offset(w*0.15f,h*0.1f), end = Offset(w*0.9f,h*0.9f)))
+            drawPath(path, Brush.linearGradient(listOf(face.fill.copy(alpha = 0.92f), face.fill), start = Offset(w*0.15f,h*0.1f), end = Offset(w*0.9f,h*0.9f)))
             drawPath(path, Color(0xFF52677D).copy(alpha = 0.9f), style = Stroke(width = 1.15f))
         }
         // Appliance-specific details are attached to the front panel, which stays solid as it rotates.
