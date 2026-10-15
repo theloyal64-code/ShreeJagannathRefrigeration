@@ -798,7 +798,13 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                                 Box {
                                     OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) { Text(tr(language, "Update Status", "ସ୍ଥିତି ବଦଳାନ୍ତୁ")) }
                                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                                        listOf("On the Way", "In Progress", "Completed", "Cancelled").forEach { status ->
+                                        val nextStatuses = when (b.status) {
+                                            "Accepted" -> listOf("On the Way", "Cancelled")
+                                            "On the Way" -> listOf("In Progress", "Cancelled")
+                                            "In Progress" -> listOf("Completed", "Cancelled")
+                                            else -> emptyList()
+                                        }
+                                        nextStatuses.forEach { status ->
                                             DropdownMenuItem(
                                                 text = { Text(statusLabel(language, status)) },
                                                 onClick = { onStatus(b.id, status); expanded = false }
