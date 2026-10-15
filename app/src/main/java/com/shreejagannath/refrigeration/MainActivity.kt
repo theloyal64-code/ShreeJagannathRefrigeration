@@ -7,6 +7,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -30,6 +31,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -230,10 +234,12 @@ private fun CustomerHome(appliances: List<Appliance>, bookings: List<ServiceBook
             Card(Modifier.fillMaxWidth().padding(bottom = 10.dp), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(Modifier.padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(76.dp).background(Color(0xFFEAF1F8), RoundedCornerShape(14.dp))
+                        Box(Modifier.size(88.dp).background(Color(0xFFEAF1F8), RoundedCornerShape(14.dp))
                             .pointerInput(appliance.name) { detectDragGestures { change, drag -> change.consume(); rotation = (rotation + drag.x * 1.8f) % 360f } }
                             .graphicsLayer { rotationY = rotation; cameraDistance = 12 * density }
-                            .clickable { rotation = (rotation + 45f) % 360f }, contentAlignment = Alignment.Center) { Text(appliance.emoji, fontSize = 42.sp) }
+                            .clickable { rotation = (rotation + 45f) % 360f }, contentAlignment = Alignment.Center) {
+                            ApplianceDrawing(appliance.name, "", showMarker = false, modifier = Modifier.fillMaxSize().padding(8.dp))
+                        }
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(applianceLabel(language, appliance.name), fontWeight = FontWeight.Bold, fontSize = 17.sp)
@@ -356,18 +362,84 @@ private fun problemEmoji(issue: String): String = when {
     else -> "🛠️"
 }
 
+
+@Composable
+private fun ApplianceDrawing(appliance: String, issue: String, showMarker: Boolean, modifier: Modifier = Modifier) {
+    val body = Color(0xFFDAE2EB)
+    val edge = Color(0xFF64748B)
+    val dark = Color(0xFF334155)
+    Canvas(modifier) {
+        val w = size.width
+        val h = size.height
+        when (appliance) {
+            "AC Service" -> {
+                drawRoundRect(body, Offset(w*0.16f,h*0.24f), Size(w*0.68f,h*0.48f), androidx.compose.ui.geometry.CornerRadius(14f))
+                drawRoundRect(edge, Offset(w*0.16f,h*0.24f), Size(w*0.68f,h*0.48f), androidx.compose.ui.geometry.CornerRadius(14f), style=Stroke(3f))
+                for (i in 0..5) drawLine(dark, Offset(w*0.24f,h*(0.52f+i*0.025f)), Offset(w*0.76f,h*(0.52f+i*0.025f)), strokeWidth=2.5f)
+                drawCircle(edge, 3.5f, Offset(w*0.73f,h*0.34f))
+            }
+            "Refrigerator" -> {
+                drawRoundRect(body, Offset(w*0.27f,h*0.08f), Size(w*0.46f,h*0.84f), androidx.compose.ui.geometry.CornerRadius(12f))
+                drawRoundRect(edge, Offset(w*0.27f,h*0.08f), Size(w*0.46f,h*0.84f), androidx.compose.ui.geometry.CornerRadius(12f), style=Stroke(3f))
+                drawLine(edge, Offset(w*0.28f,h*0.43f), Offset(w*0.72f,h*0.43f), strokeWidth=3f)
+                drawLine(edge, Offset(w*0.64f,h*0.20f), Offset(w*0.64f,h*0.36f), strokeWidth=4f)
+                drawLine(edge, Offset(w*0.64f,h*0.54f), Offset(w*0.64f,h*0.78f), strokeWidth=4f)
+            }
+            "Washing Machine" -> {
+                drawRoundRect(body, Offset(w*0.20f,h*0.12f), Size(w*0.60f,h*0.78f), androidx.compose.ui.geometry.CornerRadius(12f))
+                drawRoundRect(edge, Offset(w*0.20f,h*0.12f), Size(w*0.60f,h*0.78f), androidx.compose.ui.geometry.CornerRadius(12f), style=Stroke(3f))
+                drawLine(edge, Offset(w*0.22f,h*0.30f), Offset(w*0.78f,h*0.30f), strokeWidth=3f)
+                drawCircle(Color(0xFF8DA8C4), w*0.19f, Offset(w*0.50f,h*0.59f))
+                drawCircle(edge, w*0.19f, Offset(w*0.50f,h*0.59f), style=Stroke(4f))
+                drawCircle(Color.White, w*0.12f, Offset(w*0.50f,h*0.59f))
+                drawCircle(edge, 3f, Offset(w*0.31f,h*0.21f))
+            }
+            "Microwave Oven" -> {
+                drawRoundRect(body, Offset(w*0.12f,h*0.22f), Size(w*0.76f,h*0.56f), androidx.compose.ui.geometry.CornerRadius(10f))
+                drawRoundRect(edge, Offset(w*0.12f,h*0.22f), Size(w*0.76f,h*0.56f), androidx.compose.ui.geometry.CornerRadius(10f), style=Stroke(3f))
+                drawRoundRect(Color(0xFF9CB4CA), Offset(w*0.19f,h*0.30f), Size(w*0.48f,h*0.40f), androidx.compose.ui.geometry.CornerRadius(5f))
+                drawCircle(Color.White, w*0.12f, Offset(w*0.43f,h*0.50f), style=Stroke(2.5f))
+                drawCircle(edge, 3f, Offset(w*0.76f,h*0.37f))
+                drawCircle(edge, 3f, Offset(w*0.76f,h*0.48f))
+                drawCircle(edge, 3f, Offset(w*0.76f,h*0.59f))
+            }
+            else -> {
+                drawRoundRect(body, Offset(w*0.31f,h*0.12f), Size(w*0.38f,h*0.76f), androidx.compose.ui.geometry.CornerRadius(w*0.16f))
+                drawRoundRect(edge, Offset(w*0.31f,h*0.12f), Size(w*0.38f,h*0.76f), androidx.compose.ui.geometry.CornerRadius(w*0.16f), style=Stroke(3f))
+                drawLine(edge, Offset(w*0.36f,h*0.29f), Offset(w*0.64f,h*0.29f), strokeWidth=3f)
+                drawCircle(Color(0xFF8DA8C4), w*0.06f, Offset(w*0.50f,h*0.20f))
+                drawLine(edge, Offset(w*0.50f,h*0.88f), Offset(w*0.50f,h*0.96f), strokeWidth=4f)
+            }
+        }
+        if (showMarker) {
+            val mx = w * when {
+                issue.contains("door", true) || issue.contains("gasket", true) -> 0.72f
+                issue.contains("leak", true) || issue.contains("drain", true) -> 0.50f
+                else -> 0.50f
+            }
+            val my = h * when {
+                issue.contains("leak", true) || issue.contains("drain", true) -> 0.84f
+                issue.contains("door", true) || issue.contains("gasket", true) -> 0.50f
+                issue.contains("cool", true) -> 0.30f
+                issue.contains("heating", true) || issue.contains("hot water", true) -> 0.58f
+                else -> 0.45f
+            }
+            drawCircle(Color.White, radius = w*0.085f, center = Offset(mx,my))
+            drawCircle(Color(0xFFD92D20), radius = w*0.073f, center = Offset(mx,my), style=Stroke(width=4f))
+            drawCircle(Color(0xFFD92D20), radius = w*0.025f, center = Offset(mx,my))
+            drawLine(Color(0xFFD92D20), Offset(mx,my-w*0.09f), Offset(mx,my-w*0.18f), strokeWidth=3f)
+        }
+    }
+}
+
 @Composable
 private fun IssueIllustration(appliance: String, issue: String, language: AppLanguage) {
     Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F5FA)), shape = RoundedCornerShape(14.dp)) {
         Column(Modifier.fillMaxWidth().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(tr(language, "Problem area guide", "ସମସ୍ୟା ଚିହ୍ନଟ ଗାଇଡ୍"), fontWeight = FontWeight.Bold, color = Navy)
             Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth().height(100.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                Text(when (appliance) { "AC Service" -> "❄️"; "Refrigerator" -> "🧊"; "Washing Machine" -> "🧺"; "Microwave Oven" -> "🍲"; else -> "🚿" }, fontSize = 62.sp)
-                Spacer(Modifier.width(12.dp))
-                Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("➜", fontSize = 30.sp, color = Orange); Text("🔴", fontSize = 20.sp) }
-                Spacer(Modifier.width(8.dp))
-                Text(problemEmoji(issue), fontSize = 36.sp)
+            Box(Modifier.fillMaxWidth().height(156.dp).padding(horizontal = 28.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
+                ApplianceDrawing(appliance, issue, showMarker = true, modifier = Modifier.fillMaxSize())
             }
             Text(tr(language, "Marked", "ବଛାଯାଇଛି") + ": ${issueLabel(language, issue)}", fontWeight = FontWeight.SemiBold, color = Navy)
             Text(tr(language, "Illustrative guide — select the closest matching issue.", "ଏହା ଏକ ସାଧାରଣ ଗାଇଡ୍ — ମେଳ ଖାଉଥିବା ସମସ୍ୟା ବାଛନ୍ତୁ।"), fontSize = 11.sp, color = Color.Gray)
