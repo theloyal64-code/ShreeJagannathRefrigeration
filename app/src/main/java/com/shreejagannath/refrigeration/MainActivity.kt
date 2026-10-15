@@ -208,7 +208,7 @@ private fun MainApp() {
 
 @Composable
 private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, onCustomer: () -> Unit, onAdmin: () -> Unit) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+    Column(Modifier.fillMaxSize().background(Color(0xFFF7FAFE)).verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Language / ଭାଷା", fontWeight = FontWeight.SemiBold, color = Navy)
             FilterChip(selected = language == AppLanguage.ENGLISH, onClick = { onLanguage(AppLanguage.ENGLISH) }, label = { Text("English") })
@@ -216,7 +216,7 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
         }
         Spacer(Modifier.height(12.dp))
         Card(
-            modifier = Modifier.fillMaxWidth().height(210.dp),
+            modifier = Modifier.fillMaxWidth().height(245.dp),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F4FF))
         ) {
@@ -259,14 +259,24 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
             }
         }
         Spacer(Modifier.height(14.dp))
-        Text("SHREE JAGANNATH", fontSize = 25.sp, fontWeight = FontWeight.ExtraBold, color = Navy)
-        Text("REFRIGERATION", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Orange)
+        Text("SHREE JAGANNATH", fontSize = 27.sp, fontWeight = FontWeight.Black, color = Navy, letterSpacing = 1.sp)
+        Text("REFRIGERATION", fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = Orange, letterSpacing = 2.sp)
         Spacer(Modifier.height(6.dp))
-        Text(tr(language, "Home Appliance Repair & Service", "ଘରୋଇ ଉପକରଣ ମରାମତି ଓ ସେବା"), color = Color.DarkGray)
-        Spacer(Modifier.height(22.dp))
-        Button(onCustomer, Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(14.dp)) { Icon(Icons.Default.Person, null); Spacer(Modifier.width(8.dp)); Text(tr(language, "Customer — Book a Service", "ଗ୍ରାହକ — ସେବା ବୁକ୍ କରନ୍ତୁ")) }
+        Text(tr(language, "Home Appliance Repair & Service", "ଘରୋଇ ଉପକରଣ ମରାମତି ଓ ସେବା"), color = Color.DarkGray, fontSize = 14.sp)
+        Spacer(Modifier.height(14.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf(Triple("AC", "❄", Color(0xFFD7F0FF)), Triple("Fridge", "▣", Color(0xFFD8FBE8)), Triple("Washer", "▤", Color(0xFFFFE2ED)), Triple("Micro", "▦", Color(0xFFFFEDC4)), Triple("Geyser", "♨", Color(0xFFE5E2FF))).forEach { (label, icon, tint) ->
+                Column(Modifier.weight(1f).background(tint, RoundedCornerShape(12.dp)).padding(vertical = 8.dp, horizontal = 1.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(icon, fontSize = 21.sp)
+                    Text(label, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Navy, maxLines = 1)
+                    Text(tr(language, "Service", "ସେବା"), fontSize = 8.sp, color = Navy)
+                }
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        Button(onCustomer, Modifier.fillMaxWidth().height(58.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF064783))) { Icon(Icons.Default.Person, null); Spacer(Modifier.width(8.dp)); Text(tr(language, "Customer — Book a Service", "ଗ୍ରାହକ — ସେବା ବୁକ୍ କରନ୍ତୁ")) }
         Spacer(Modifier.height(12.dp))
-        OutlinedButton(onAdmin, Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(14.dp)) { Icon(Icons.Default.Settings, null); Spacer(Modifier.width(8.dp)); Text(tr(language, "Admin / Mechanic Login", "ଆଡମିନ୍ / ମେକାନିକ୍ ଲଗ୍ଇନ୍")) }
+        OutlinedButton(onAdmin, Modifier.fillMaxWidth().height(58.dp), shape = RoundedCornerShape(16.dp)) { Icon(Icons.Default.Settings, null); Spacer(Modifier.width(8.dp)); Text(tr(language, "Admin / Mechanic Login", "ଆଡମିନ୍ / ମେକାନିକ୍ ଲଗ୍ଇନ୍")) }
         Spacer(Modifier.height(18.dp))
         Text(tr(language, "AC • Fridge • Washing Machine • Microwave • Geyser", "ଏସି • ଫ୍ରିଜ୍ • ୱାଶିଂ ମେସିନ୍ • ମାଇକ୍ରୋୱେଭ୍ • ଗିଜର"), fontSize = 12.sp, color = Color.Gray)
     }
