@@ -214,14 +214,56 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
             FilterChip(selected = language == AppLanguage.ENGLISH, onClick = { onLanguage(AppLanguage.ENGLISH) }, label = { Text("English") })
             FilterChip(selected = language == AppLanguage.ODIA, onClick = { onLanguage(AppLanguage.ODIA) }, label = { Text("ଓଡ଼ିଆ") })
         }
-        Spacer(Modifier.height(24.dp))
-        Box(Modifier.size(96.dp).background(Navy, RoundedCornerShape(26.dp)), contentAlignment = Alignment.Center) { Icon(Icons.Default.HomeRepairService, null, tint = Color.White, modifier = Modifier.size(52.dp)) }
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(12.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth().height(210.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F4FF))
+        ) {
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF1687F8), Color(0xFFFFE6B6, alpha = 0.95f))))) {
+                Canvas(Modifier.fillMaxSize()) {
+                    val w = size.width
+                    val h = size.height
+                    // Temple tower and tiered Jagannath temple silhouette
+                    val tower = Path().apply {
+                        moveTo(w * .37f, h * .78f); lineTo(w * .43f, h * .27f)
+                        lineTo(w * .47f, h * .18f); lineTo(w * .51f, h * .27f)
+                        lineTo(w * .57f, h * .78f); close()
+                    }
+                    drawPath(tower, Color(0xFF6C4025))
+                    drawRect(Color(0xFF8C5730), Offset(w*.30f,h*.76f), Size(w*.40f,h*.12f))
+                    for (i in 0..3) {
+                        val y = h * (.58f + i*.065f)
+                        drawLine(Color(0xFFE9C99A), Offset(w*.39f,y), Offset(w*.55f,y), strokeWidth = 3.dp.toPx())
+                    }
+                    // Smaller temple domes
+                    drawCircle(Color(0xFFFFF0D3), radius = w*.065f, center = Offset(w*.27f,h*.70f))
+                    drawRect(Color(0xFFF5E1BD), Offset(w*.22f,h*.70f), Size(w*.10f,h*.15f))
+                    drawCircle(Color(0xFFFFF0D3), radius = w*.055f, center = Offset(w*.69f,h*.73f))
+                    drawRect(Color(0xFFF5E1BD), Offset(w*.645f,h*.73f), Size(w*.09f,h*.12f))
+                    // Chakra and flying saffron flag
+                    drawCircle(Color(0xFFFFD35A), radius = w*.035f, center = Offset(w*.47f,h*.13f), style = Stroke(3.dp.toPx()))
+                    for (i in 0..7) {
+                        val a = i * (Math.PI / 4.0)
+                        drawLine(Color(0xFFFFD35A), Offset(w*.47f,h*.13f),
+                            Offset(w*.47f + (kotlin.math.cos(a)*w*.03f).toFloat(), h*.13f + (kotlin.math.sin(a)*w*.03f).toFloat()), strokeWidth = 1.5.dp.toPx())
+                    }
+                    val flag = Path().apply {
+                        moveTo(w*.49f,h*.09f); cubicTo(w*.58f,h*.03f,w*.65f,h*.16f,w*.76f,h*.10f)
+                        lineTo(w*.71f,h*.18f); lineTo(w*.76f,h*.20f)
+                        cubicTo(w*.65f,h*.24f,w*.58f,h*.12f,w*.49f,h*.15f); close()
+                    }
+                    drawPath(flag, Color(0xFFFF6B16))
+                    drawLine(Color(0xFFFFF0C2), Offset(w*.47f,h*.10f), Offset(w*.47f,h*.29f), strokeWidth = 2.dp.toPx())
+                }
+            }
+        }
+        Spacer(Modifier.height(14.dp))
         Text("SHREE JAGANNATH", fontSize = 25.sp, fontWeight = FontWeight.ExtraBold, color = Navy)
         Text("REFRIGERATION", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Orange)
-        Spacer(Modifier.height(8.dp))
-        Text(tr(language, "Trusted Home Appliance Service", "ଭରସାଯୋଗ୍ୟ ଘରୋଇ ଉପକରଣ ସେବା"), color = Color.DarkGray)
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(6.dp))
+        Text(tr(language, "Home Appliance Repair & Service", "ଘରୋଇ ଉପକରଣ ମରାମତି ଓ ସେବା"), color = Color.DarkGray)
+        Spacer(Modifier.height(22.dp))
         Button(onCustomer, Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(14.dp)) { Icon(Icons.Default.Person, null); Spacer(Modifier.width(8.dp)); Text(tr(language, "Customer — Book a Service", "ଗ୍ରାହକ — ସେବା ବୁକ୍ କରନ୍ତୁ")) }
         Spacer(Modifier.height(12.dp))
         OutlinedButton(onAdmin, Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(14.dp)) { Icon(Icons.Default.Settings, null); Spacer(Modifier.width(8.dp)); Text(tr(language, "Admin / Mechanic Login", "ଆଡମିନ୍ / ମେକାନିକ୍ ଲଗ୍ଇନ୍")) }
