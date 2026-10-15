@@ -236,7 +236,7 @@ private fun CustomerHome(appliances: List<Appliance>, bookings: List<ServiceBook
                             .clickable { rotation = (rotation + 45f) % 360f }, contentAlignment = Alignment.Center) { Text(appliance.emoji, fontSize = 42.sp) }
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(appliance.name, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                            Text(applianceLabel(language, appliance.name), fontWeight = FontWeight.Bold, fontSize = 17.sp)
                             Text(appliance.detail, fontSize = 12.sp, color = Color.Gray)
                             Text(tr(language, "Drag image to rotate 360°", "ଛବିକୁ ଟାଣି 360° ଘୁରାନ୍ତୁ"), fontSize = 10.sp, color = Navy)
                         }
@@ -263,7 +263,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
     var issueExpanded by remember { mutableStateOf(false) }
     val issues = issueOptions[appliance.name] ?: listOf("Not working", "Making noise", "Leakage", "Other")
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-        Text("${appliance.emoji} ${appliance.name}", fontSize = 23.sp, fontWeight = FontWeight.Bold, color = Navy)
+        Text("${appliance.emoji} ${applianceLabel(language, appliance.name)}", fontSize = 23.sp, fontWeight = FontWeight.Bold, color = Navy)
         Text(tr(language, "Choose the problem below—no long description needed.", "ତଳୁ ସମସ୍ୟା ବାଛନ୍ତୁ—ଲମ୍ବା ବର୍ଣ୍ଣନା ଦରକାର ନାହିଁ।"), color = Color.Gray)
         Spacer(Modifier.height(16.dp))
         OutlinedTextField(name, { name = it }, label = { Text(tr(language, "Customer name *", "ଗ୍ରାହକଙ୍କ ନାମ *")) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
@@ -298,6 +298,19 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
         }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) { Text(tr(language, "Submit Service Request", "ସେବା ଅନୁରୋଧ ପଠାନ୍ତୁ")) }
         Spacer(Modifier.height(10.dp))
         Text(tr(language, "No payment is collected in-app. The team will confirm your visit time and charges.", "ଆପ୍‌ରେ କୌଣସି ପେମେଣ୍ଟ ନିଆଯାଏ ନାହିଁ। ଟିମ୍ ଆପଣଙ୍କ ସମୟ ଓ ଖର୍ଚ୍ଚ ନିଶ୍ଚିତ କରିବ।"), fontSize = 12.sp, color = Color.Gray)
+    }
+}
+
+
+private fun applianceLabel(language: AppLanguage, appliance: String): String {
+    if (language == AppLanguage.ENGLISH) return appliance
+    return when (appliance) {
+        "AC Service" -> "ଏସି ସେବା"
+        "Refrigerator" -> "ଫ୍ରିଜ୍"
+        "Washing Machine" -> "ୱାଶିଂ ମେସିନ୍"
+        "Microwave Oven" -> "ମାଇକ୍ରୋୱେଭ୍ ଓଭନ୍"
+        "Geyser" -> "ଗିଜର୍"
+        else -> appliance
     }
 }
 
@@ -394,9 +407,9 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
                         Column(Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
-                                    Text("#${b.id} • ${b.appliance}", fontWeight = FontWeight.Bold, color = Navy)
+                                    Text("#${b.id} • ${applianceLabel(language, b.appliance)}", fontWeight = FontWeight.Bold, color = Navy)
                                     Text(tr(language, "Requested: ", "ଅନୁରୋଧ ତାରିଖ: ") + SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(b.createdAt)), fontSize = 11.sp, color = Color.Gray)
-                                    Text(b.issue)
+                                    Text(issueLabel(language, b.issue))
                                 }
                                 Status(b.status, language)
                             }
@@ -519,9 +532,9 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
         Text(tr(language, "Review requests, find customers and update service status.", "ଅନୁରୋଧ ଦେଖନ୍ତୁ, ଗ୍ରାହକ ଖୋଜନ୍ତୁ ଏବଂ ସେବା ସ୍ଥିତି ବଦଳାନ୍ତୁ।"), color = Color.Gray)
         Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Stat("New", bookings.count { it.status == "Pending" }.toString(), Modifier.weight(1f))
-            Stat("Active", bookings.count { it.status in listOf("Accepted", "On the Way", "In Progress") }.toString(), Modifier.weight(1f))
-            Stat("Done", bookings.count { it.status == "Completed" }.toString(), Modifier.weight(1f))
+            Stat(tr(language, "New", "ନୂଆ"), bookings.count { it.status == "Pending" }.toString(), Modifier.weight(1f))
+            Stat(tr(language, "Active", "ଚାଲୁ"), bookings.count { it.status in listOf("Accepted", "On the Way", "In Progress") }.toString(), Modifier.weight(1f))
+            Stat(tr(language, "Done", "ସମ୍ପୂର୍ଣ୍ଣ"), bookings.count { it.status == "Completed" }.toString(), Modifier.weight(1f))
         }
         Spacer(Modifier.height(14.dp))
         OutlinedTextField(
@@ -540,7 +553,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
             DropdownMenu(expanded = filterExpanded, onDismissRequest = { filterExpanded = false }) {
                 filters.forEach { filter ->
                     DropdownMenuItem(
-                        text = { Text(filter) },
+                        text = { Text(statusLabel(language, filter)) },
                         onClick = { selectedFilter = filter; filterExpanded = false }
                     )
                 }
@@ -566,7 +579,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                         Column(Modifier.padding(14.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
-                                    Text("Booking #${b.id} • ${b.appliance}", fontWeight = FontWeight.Bold, color = Navy)
+                                    Text("${tr(language, "Booking", "ବୁକିଂ")} #${b.id} • ${applianceLabel(language, b.appliance)}", fontWeight = FontWeight.Bold, color = Navy)
                                     Text(b.customer)
                                 }
                                 Status(b.status)
