@@ -150,7 +150,7 @@ private fun MainApp() {
                         bookings = bookings + ServiceBooking(nextId++, name, phone, chosen.name, issue, address, preferredSlot, pincode)
                         screen = "history"
                     })
-                    "history" -> BookingHistory(bookings)
+                    "history" -> BookingHistory(bookings, onCancel = { id -> bookings = bookings.map { if (it.id == id && it.status == "Pending") it.copy(status = "Cancelled") else it } })
                     "adminLogin" -> AdminLogin(onSuccess = { screen = "admin" })
                     "admin" -> AdminHome(bookings, onStatus = { id, status ->
                         bookings = bookings.map { if (it.id == id) it.copy(status = status) else it }
@@ -266,26 +266,57 @@ private fun RequestForm(appliance: Appliance, onSubmit: (String, String, String,
 }
 
 @Composable
-private fun BookingHistory(bookings: List<ServiceBooking>) {
-    if (bookings.isEmpty()) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("No bookings yet.") }
-    else LazyColumn(Modifier.fillMaxSize().padding(16.dp)) {
-        items(bookings.reversed()) { b ->
-            Card(Modifier.fillMaxWidth().padding(bottom = 12.dp), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                Column(Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text("#${b.id} • ${b.appliance}", fontWeight = FontWeight.Bold, color = Navy)
-                            Text(b.issue)
+private fun BookingHistory(bookings: List<ServiceBooking>, onCancel: (Int) -> Unit) {
+    var search by remember { mutableStateOf("") }
+    val visibleBookings = bookings.filter { booking ->
+        val query = search.trim()
+        query.isBlank() || booking.id.toString().contains(query, ignoreCase = true) ||
+            booking.appliance.contains(query, ignoreCase = true) ||
+            booking.status.contains(query, ignoreCase = true) ||
+            booking.issue.contains(query, ignoreCase = true)
+    }.sortedByDescending { it.id }
+    Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = search,
+            onValueChange = { search = it },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text("Search booking ID, appliance or status") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search bookings") }
+        )
+        Spacer(Modifier.height(8.dp))
+        if (bookings.isEmpty()) {
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text("No bookings yet.") }
+        } else if (visibleBookings.isEmpty()) {
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text("No matching bookings.", color = Color.Gray) }
+        } else {
+            LazyColumn(Modifier.weight(1f)) {
+                items(visibleBookings, key = { it.id }) { b ->
+                    Card(Modifier.fillMaxWidth().padding(bottom = 12.dp), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                        Column(Modifier.padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text("#${b.id} • ${b.appliance}", fontWeight = FontWeight.Bold, color = Navy)
+                                    Text(b.issue)
+                                }
+                                Status(b.status)
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            Text("Mobile: ${b.phone}", fontSize = 13.sp, color = Color.Gray)
+                            Text("Address: ${b.address}", fontSize = 13.sp)
+                            Spacer(Modifier.height(12.dp))
+                            BookingProgress(b.status)
+                            if (b.preferredSlot.isNotBlank()) Text("Preferred visit: ${b.preferredSlot}", fontSize = 13.sp, color = Navy)
+                            if (b.pincode.isNotBlank()) Text("PIN code: ${b.pincode}", fontSize = 13.sp)
+                            if (b.status == "Pending") {
+                                Spacer(Modifier.height(8.dp))
+                                OutlinedButton(onClick = { onCancel(b.id) }, modifier = Modifier.fillMaxWidth()) {
+                                    Text("Cancel Request")
+                                }
+                            }
                         }
-                        Status(b.status)
                     }
-                    Spacer(Modifier.height(8.dp))
-                    Text("Mobile: ${b.phone}", fontSize = 13.sp, color = Color.Gray)
-                    Text("Address: ${b.address}", fontSize = 13.sp)
-                    Spacer(Modifier.height(12.dp))
-                    BookingProgress(b.status)
-                    if (b.preferredSlot.isNotBlank()) Text("Preferred visit: ${b.preferredSlot}", fontSize = 13.sp, color = Navy)
-                    if (b.pincode.isNotBlank()) Text("PIN code: ${b.pincode}", fontSize = 13.sp)
                 }
             }
         }
