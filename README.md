@@ -18,11 +18,11 @@ Android app for a home-appliance repair and service business.
 ## Important limitations
 - Local persistence is not cloud sync: bookings created on a customer's phone will not automatically appear on a mechanic's phone yet.
 - Admin login still uses demo credentials (`admin` / `demo1234`) and is not secure for real customer data.
-- Cloud database/API, secure role-based authentication, cross-device synchronization, notifications, actual appliance photographs/interactive 3D models with accurately marked photo regions, and payment processing are not implemented yet. Current appliance previews and issue guides are illustrative emoji-based placeholders.
+- Cloud database/API, secure role-based authentication, cross-device synchronization, notifications, actual appliance photographs/interactive 3D product models, and payment processing are not implemented yet. Appliance previews and issue guides currently use custom-drawn illustrative diagrams with issue markers, not photographs or engineering-accurate fault locations.
 - Do not use this prototype to store real customer data until secure authentication and server-side access controls are implemented.
 
 ## Next milestone
-Next: replace illustrative appliance placeholders with actual appliance imagery and issue-marking overlays; then add a hosted backend and database so customer requests are securely stored centrally and visible to authorized admin/mechanic accounts across devices. Backend deployment will require selecting/configuring a hosting/database project and its credentials.
+Next: replace illustrative appliance diagrams with actual appliance imagery and more precise issue-marking overlays; then add a hosted backend and database so customer requests are securely stored centrally and visible to authorized admin/mechanic accounts across devices. Backend deployment will require selecting/configuring a hosting/database project and its credentials.
 
 ## Automated build
 Pushes and pull requests to `main` trigger the Android APK Build workflow. Download the `ShreeJagannathRefrigeration-debug-apk` artifact from a successful workflow run.
