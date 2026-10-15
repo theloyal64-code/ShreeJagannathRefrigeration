@@ -469,9 +469,20 @@ private fun ApplianceDrawing(appliance: String, issue: String, showMarker: Boole
     val edge = Color(0xFF64748B)
     val dark = Color(0xFF334155)
     Canvas(modifier) {
-        drawRoundRect(Color(0x180F172A), Offset(size.width*0.18f, size.height*0.86f), Size(size.width*0.66f, size.height*0.055f), androidx.compose.ui.geometry.CornerRadius(size.width*0.05f))
+        drawRoundRect(Color(0x240F172A), Offset(size.width*0.14f, size.height*0.87f), Size(size.width*0.72f, size.height*0.055f), androidx.compose.ui.geometry.CornerRadius(size.width*0.05f))
         val w = size.width
         val h = size.height
+        // Perspective side face behind each appliance's front panel.
+        val side = Path().apply {
+            when (appliance) {
+                "AC Service" -> { moveTo(w*0.84f,h*0.24f); lineTo(w*0.90f,h*0.18f); lineTo(w*0.90f,h*0.62f); lineTo(w*0.84f,h*0.72f); close() }
+                "Refrigerator" -> { moveTo(w*0.73f,h*0.08f); lineTo(w*0.80f,h*0.02f); lineTo(w*0.80f,h*0.85f); lineTo(w*0.73f,h*0.92f); close() }
+                "Washing Machine" -> { moveTo(w*0.80f,h*0.12f); lineTo(w*0.87f,h*0.06f); lineTo(w*0.87f,h*0.84f); lineTo(w*0.80f,h*0.90f); close() }
+                "Microwave Oven" -> { moveTo(w*0.88f,h*0.22f); lineTo(w*0.94f,h*0.16f); lineTo(w*0.94f,h*0.72f); lineTo(w*0.88f,h*0.78f); close() }
+                else -> { moveTo(w*0.69f,h*0.12f); lineTo(w*0.76f,h*0.06f); lineTo(w*0.76f,h*0.82f); lineTo(w*0.69f,h*0.88f); close() }
+            }
+        }
+        drawPath(side, color = Color(0xFF64788D))
         when (appliance) {
             "AC Service" -> {
                 drawRoundRect(Brush.verticalGradient(listOf(Color(0xFFF8FBFF), Color(0xFFB8C7D8), Color(0xFF7E91A8))), Offset(w*0.16f,h*0.24f), Size(w*0.68f,h*0.48f), androidx.compose.ui.geometry.CornerRadius(14f))
@@ -512,6 +523,8 @@ private fun ApplianceDrawing(appliance: String, issue: String, showMarker: Boole
                 drawLine(edge, Offset(w*0.50f,h*0.88f), Offset(w*0.50f,h*0.96f), strokeWidth=4f)
             }
         }
+        // Gloss highlight along the front edge.
+        drawLine(Color(0xBFFFFFFF), Offset(w*0.20f,h*0.27f), Offset(w*0.20f,h*0.64f), strokeWidth = w*0.012f)
         if (showMarker) {
             val mx = w * when {
                 issue.contains("door", true) || issue.contains("gasket", true) -> 0.72f
@@ -535,9 +548,10 @@ private fun ApplianceDrawing(appliance: String, issue: String, showMarker: Boole
                 issue.contains("installation", true) -> 0.18f
                 else -> 0.45f
             }
-            drawCircle(Color.White, radius = w*0.085f, center = Offset(mx,my))
-            drawCircle(Color(0xFFD92D20), radius = w*0.073f, center = Offset(mx,my), style=Stroke(width=4f))
-            drawCircle(Color(0xFFD92D20), radius = w*0.025f, center = Offset(mx,my))
+            drawCircle(Color(0x30000000), radius = w*0.095f, center = Offset(mx + w*0.018f, my + w*0.02f))
+            drawCircle(Brush.radialGradient(listOf(Color(0xFFFF8A80), Color(0xFFD92D20), Color(0xFF8B1111)), radius = w*0.11f, center = Offset(mx-w*0.025f,my-w*0.028f)), radius = w*0.085f, center = Offset(mx,my))
+            drawCircle(Color.White, radius = w*0.026f, center = Offset(mx-w*0.025f,my-w*0.028f))
+            drawCircle(Color(0xFF7F1D1D), radius = w*0.085f, center = Offset(mx,my), style=Stroke(width=2f))
             drawLine(Color(0xFFD92D20), Offset(mx,my-w*0.09f), Offset(mx,my-w*0.18f), strokeWidth=3f)
         }
     }
