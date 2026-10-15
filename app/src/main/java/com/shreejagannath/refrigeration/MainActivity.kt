@@ -233,77 +233,53 @@ private fun fetchCommonsPhoto(searchTerm: String): android.graphics.Bitmap? {
 
 @Composable
 private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, onCustomer: () -> Unit, onAdmin: () -> Unit) {
-    Column(Modifier.fillMaxSize().background(Color(0xFFF7FAFE)).verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Language / ଭାଷା", fontWeight = FontWeight.SemiBold, color = Navy)
-            FilterChip(selected = language == AppLanguage.ENGLISH, onClick = { onLanguage(AppLanguage.ENGLISH) }, label = { Text("English") })
-            FilterChip(selected = language == AppLanguage.ODIA, onClick = { onLanguage(AppLanguage.ODIA) }, label = { Text("ଓଡ଼ିଆ") })
-        }
-        Spacer(Modifier.height(12.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth().height(245.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F4FF))
+    Column(
+        Modifier.fillMaxSize().background(Color(0xFFF5F7FC)).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Surface(
+            modifier = Modifier.size(184.dp),
+            shape = RoundedCornerShape(52.dp),
+            color = Color(0xFF173F68)
         ) {
-            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF1687F8), Color(0xFFFFE6B6))))) {
-                Canvas(Modifier.fillMaxSize()) {
-                    val w = size.width
-                    val h = size.height
-                    // Temple tower and tiered Jagannath temple silhouette
-                    val tower = Path().apply {
-                        moveTo(w * .37f, h * .78f); lineTo(w * .43f, h * .27f)
-                        lineTo(w * .47f, h * .18f); lineTo(w * .51f, h * .27f)
-                        lineTo(w * .57f, h * .78f); close()
-                    }
-                    drawPath(tower, Color(0xFF6C4025))
-                    drawRect(Color(0xFF8C5730), Offset(w*.30f,h*.76f), Size(w*.40f,h*.12f))
-                    for (i in 0..3) {
-                        val y = h * (.58f + i*.065f)
-                        drawLine(Color(0xFFE9C99A), Offset(w*.39f,y), Offset(w*.55f,y), strokeWidth = 3.dp.toPx())
-                    }
-                    // Smaller temple domes
-                    drawCircle(Color(0xFFFFF0D3), radius = w*.065f, center = Offset(w*.27f,h*.70f))
-                    drawRect(Color(0xFFF5E1BD), Offset(w*.22f,h*.70f), Size(w*.10f,h*.15f))
-                    drawCircle(Color(0xFFFFF0D3), radius = w*.055f, center = Offset(w*.69f,h*.73f))
-                    drawRect(Color(0xFFF5E1BD), Offset(w*.645f,h*.73f), Size(w*.09f,h*.12f))
-                    // Chakra and flying saffron flag
-                    drawCircle(Color(0xFFFFD35A), radius = w*.035f, center = Offset(w*.47f,h*.13f), style = Stroke(3.dp.toPx()))
-                    for (i in 0..7) {
-                        val a = i * (Math.PI / 4.0)
-                        drawLine(Color(0xFFFFD35A), Offset(w*.47f,h*.13f),
-                            Offset(w*.47f + (kotlin.math.cos(a)*w*.03f).toFloat(), h*.13f + (kotlin.math.sin(a)*w*.03f).toFloat()), strokeWidth = 1.5.dp.toPx())
-                    }
-                    val flag = Path().apply {
-                        moveTo(w*.49f,h*.09f); cubicTo(w*.58f,h*.03f,w*.65f,h*.16f,w*.76f,h*.10f)
-                        lineTo(w*.71f,h*.18f); lineTo(w*.76f,h*.20f)
-                        cubicTo(w*.65f,h*.24f,w*.58f,h*.12f,w*.49f,h*.15f); close()
-                    }
-                    drawPath(flag, Color(0xFFFF6B16))
-                    drawLine(Color(0xFFFFF0C2), Offset(w*.47f,h*.10f), Offset(w*.47f,h*.29f), strokeWidth = 2.dp.toPx())
-                }
+            Box(contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.HomeRepairService, contentDescription = "Repair service", tint = Color.White, modifier = Modifier.size(82.dp))
             }
         }
-        Spacer(Modifier.height(14.dp))
-        Text("SHREE JAGANNATH", fontSize = 27.sp, fontWeight = FontWeight.Black, color = Navy, letterSpacing = 1.sp)
-        Text("REFRIGERATION", fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = Orange, letterSpacing = 2.sp)
-        Spacer(Modifier.height(6.dp))
-        Text(tr(language, "Home Appliance Repair & Service", "ଘରୋଇ ଉପକରଣ ମରାମତି ଓ ସେବା"), color = Color.DarkGray, fontSize = 14.sp)
-        Spacer(Modifier.height(14.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf(Triple("AC", "❄", Color(0xFFD7F0FF)), Triple("Fridge", "▣", Color(0xFFD8FBE8)), Triple("Washer", "▤", Color(0xFFFFE2ED)), Triple("Micro", "▦", Color(0xFFFFEDC4)), Triple("Geyser", "♨", Color(0xFFE5E2FF))).forEach { (label, icon, tint) ->
-                Column(Modifier.weight(1f).background(tint, RoundedCornerShape(12.dp)).padding(vertical = 8.dp, horizontal = 1.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(icon, fontSize = 21.sp)
-                    Text(label, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Navy, maxLines = 1)
-                    Text(tr(language, "Service", "ସେବା"), fontSize = 8.sp, color = Navy)
-                }
-            }
+        Spacer(Modifier.height(38.dp))
+        Text("SHREE JAGANNATH", fontSize = 29.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF173F68), letterSpacing = 0.2.sp, maxLines = 1)
+        Text("REFRIGERATION", fontSize = 23.sp, fontWeight = FontWeight.ExtraBold, color = Orange, letterSpacing = 0.8.sp)
+        Spacer(Modifier.height(22.dp))
+        Text("Trusted Home Appliance Service", fontSize = 19.sp, color = Color(0xFF4B4B4B), maxLines = 1)
+        Spacer(Modifier.height(66.dp))
+        Button(
+            onClick = onCustomer,
+            modifier = Modifier.fillMaxWidth().height(104.dp),
+            shape = RoundedCornerShape(28.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF173F68))
+        ) {
+            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(38.dp))
+            Spacer(Modifier.width(22.dp))
+            Text(tr(language, "Customer — Book a Service", "ଗ୍ରାହକ — ସେବା ବୁକ୍ କରନ୍ତୁ"), fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
         }
-        Spacer(Modifier.height(16.dp))
-        Button(onCustomer, Modifier.fillMaxWidth().height(58.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF064783))) { Icon(Icons.Default.Person, null); Spacer(Modifier.width(8.dp)); Text(tr(language, "Customer — Book a Service", "ଗ୍ରାହକ — ସେବା ବୁକ୍ କରନ୍ତୁ")) }
-        Spacer(Modifier.height(12.dp))
-        OutlinedButton(onAdmin, Modifier.fillMaxWidth().height(58.dp), shape = RoundedCornerShape(16.dp)) { Icon(Icons.Default.Settings, null); Spacer(Modifier.width(8.dp)); Text(tr(language, "Admin / Mechanic Login", "ଆଡମିନ୍ / ମେକାନିକ୍ ଲଗ୍ଇନ୍")) }
-        Spacer(Modifier.height(18.dp))
-        Text(tr(language, "AC • Fridge • Washing Machine • Microwave • Geyser", "ଏସି • ଫ୍ରିଜ୍ • ୱାଶିଂ ମେସିନ୍ • ମାଇକ୍ରୋୱେଭ୍ • ଗିଜର"), fontSize = 12.sp, color = Color.Gray)
+        Spacer(Modifier.height(22.dp))
+        OutlinedButton(
+            onClick = onAdmin,
+            modifier = Modifier.fillMaxWidth().height(104.dp),
+            shape = RoundedCornerShape(28.dp)
+        ) {
+            Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(38.dp))
+            Spacer(Modifier.width(22.dp))
+            Text(tr(language, "Admin / Mechanic Login", "ଆଡମିନ୍ / ମେକାନିକ୍ ଲଗ୍ଇନ୍"), fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
+        }
+        Spacer(Modifier.height(40.dp))
+        Text(
+            tr(language, "AC • Fridge • Washing Machine • Microwave • Geyser", "ଏସି • ଫ୍ରିଜ୍ • ୱାଶିଂ ମେସିନ୍ • ମାଇକ୍ରୋୱେଭ୍ • ଗିଜର"),
+            fontSize = 15.sp,
+            color = Color(0xFF929292),
+            maxLines = 1
+        )
     }
 }
 
