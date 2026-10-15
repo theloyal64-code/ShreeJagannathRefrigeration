@@ -346,7 +346,7 @@ private fun CustomerHome(appliances: List<Appliance>, bookings: List<ServiceBook
             Card(Modifier.fillMaxWidth().padding(bottom = 10.dp), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(Modifier.padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(88.dp).background(Color(0xFFEAF1F8), RoundedCornerShape(14.dp))
+                        Box(Modifier.size(108.dp).background(Color(0xFFEAF1F8), RoundedCornerShape(16.dp))
                             .pointerInput(appliance.name) { detectDragGestures { change, drag -> change.consume(); rotation = (rotation + drag.x * 1.8f) % 360f } }
                             .clickable { rotation = (rotation + 30f) % 360f }, contentAlignment = Alignment.Center) {
                             Appliance3DPreview(appliance.name, rotation, Modifier.fillMaxSize().padding(8.dp))
@@ -733,80 +733,80 @@ private fun Appliance3DPreview(appliance: String, rotationDegrees: Float, modifi
         fun project(v: V): P {
             val rx = v.x * c - v.z * sn
             val rz = v.x * sn + v.z * c
-            val perspective = 3.8f / (3.8f + rz)
-            return P(w * (0.5f + rx * 0.42f * perspective), h * (0.48f + v.y * 0.43f * perspective), rz)
+            val perspective = 4.4f / (4.4f + rz)
+            return P(w * (0.5f + rx * 0.37f * perspective), h * (0.48f + v.y * 0.40f * perspective), rz)
         }
         val (halfW, halfH, halfD) = when (appliance) {
-            "AC Service" -> Triple(0.88f, 0.42f, 0.28f)
-            "Refrigerator" -> Triple(0.52f, 0.96f, 0.30f)
-            "Washing Machine" -> Triple(0.67f, 0.78f, 0.34f)
-            "Microwave Oven" -> Triple(0.86f, 0.48f, 0.36f)
-            else -> Triple(0.48f, 0.92f, 0.32f)
+            "AC Service" -> Triple(0.88f, 0.42f, 0.30f)
+            "Refrigerator" -> Triple(0.52f, 0.96f, 0.32f)
+            "Washing Machine" -> Triple(0.67f, 0.78f, 0.36f)
+            "Microwave Oven" -> Triple(0.86f, 0.48f, 0.38f)
+            else -> Triple(0.48f, 0.92f, 0.34f)
         }
-        val vertices = listOf(
+        val v = listOf(
             V(-halfW,-halfH,-halfD), V(halfW,-halfH,-halfD), V(halfW,halfH,-halfD), V(-halfW,halfH,-halfD),
             V(-halfW,-halfH,halfD), V(halfW,-halfH,halfD), V(halfW,halfH,halfD), V(-halfW,halfH,halfD)
         )
-        data class Face(val indices: List<Int>, val color: Color, val light: Color, val depth: Float)
+        data class Face(val ids: List<Int>, val fill: Color, val depth: Float)
+        // All six faces are drawn, including the rear face, so rotation never reveals an open/hollow shell.
         val faces = listOf(
-            Face(listOf(0,1,2,3), Color(0xFFCAD8E5), Color(0xFFF9FCFF), -halfD),
-            Face(listOf(4,5,1,0), Color(0xFF9EAFBF), Color(0xFFD8E2EC), 0f),
-            Face(listOf(5,6,2,1), Color(0xFF6D8298), Color(0xFF9EAFBF), halfW * 0.4f),
-            Face(listOf(7,6,5,4), Color(0xFF91A5B8), Color(0xFFB8C8D8), halfH * 0.2f),
-            Face(listOf(4,7,3,0), Color(0xFFE7EFF7), Color(0xFFFFFFFF), -halfW * 0.4f)
+            Face(listOf(0,1,2,3), Color(0xFFCAD8E5), -halfD),
+            Face(listOf(4,7,6,5), Color(0xFF9EAFBF), halfD),
+            Face(listOf(0,4,5,1), Color(0xFF91A5B8), 0f),
+            Face(listOf(1,5,6,2), Color(0xFF6D8298), halfW),
+            Face(listOf(2,6,7,3), Color(0xFF879BAF), 0f),
+            Face(listOf(3,7,4,0), Color(0xFFE7EFF7), -halfW)
         ).sortedByDescending { it.depth * c }
         faces.forEach { face ->
-            val pts = face.indices.map { project(vertices[it]) }
+            val pts = face.ids.map { project(v[it]) }
             val path = Path().apply {
                 moveTo(pts[0].x, pts[0].y)
                 pts.drop(1).forEach { lineTo(it.x, it.y) }
                 close()
             }
-            drawPath(path, Brush.linearGradient(listOf(face.light, face.color), start = Offset(w*0.2f,h*0.15f), end = Offset(w*0.85f,h*0.85f)))
-            drawPath(path, Color(0xFF52677D).copy(alpha = 0.78f), style = Stroke(width = 1.15f))
+            val light = when (face.ids) {
+                listOf(0,1,2,3) -> Color.White.copy(alpha = 0.22f)
+                listOf(4,7,6,5) -> Color.Black.copy(alpha = 0.08f)
+                else -> Color.White.copy(alpha = 0.08f)
+            }
+            drawPath(path, Brush.linearGradient(listOf(face.fill + light, face.fill), start = Offset(w*0.15f,h*0.1f), end = Offset(w*0.9f,h*0.9f)))
+            drawPath(path, Color(0xFF52677D).copy(alpha = 0.9f), style = Stroke(width = 1.15f))
         }
-        val front = vertices.take(4).map { project(it) }
+        // Appliance-specific details are attached to the front panel, which stays solid as it rotates.
+        val front = listOf(0,1,2,3).map { project(v[it]) }
         val left = front.minOf { it.x }; val right = front.maxOf { it.x }
         val top = front.minOf { it.y }; val bottom = front.maxOf { it.y }
         val fw = right-left; val fh = bottom-top
-        // Subtle front-panel sheen and inset edge give the appliance a more dimensional finish.
-        drawRoundRect(
-            Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.16f), Color.Transparent, Color.Black.copy(alpha = 0.035f))),
-            Offset(left+fw*0.025f, top+fh*0.025f), Size(fw*0.95f, fh*0.95f),
-            androidx.compose.ui.geometry.CornerRadius(fw*0.025f)
-        )
         when (appliance) {
             "AC Service" -> {
-                drawRoundRect(Color(0xFFDCE7F0), Offset(left+fw*.07f, top+fh*.56f), Size(fw*.86f,fh*.30f), androidx.compose.ui.geometry.CornerRadius(4f))
-                for (i in 0..5) drawLine(Color(0xFF52677D), Offset(left+fw*.13f, top+fh*(.62f+i*.035f)), Offset(right-fw*.13f, top+fh*(.62f+i*.035f)), 1.3f)
-                drawCircle(Color(0xFF49627B), fw*.025f, Offset(right-fw*.14f, top+fh*.28f))
+                drawRoundRect(Color(0xFFDCE7F0), Offset(left+fw*.07f,top+fh*.56f),Size(fw*.86f,fh*.30f),androidx.compose.ui.geometry.CornerRadius(4f))
+                for (i in 0..5) drawLine(Color(0xFF52677D),Offset(left+fw*.13f,top+fh*(.62f+i*.035f)),Offset(right-fw*.13f,top+fh*(.62f+i*.035f)),1.3f)
+                drawCircle(Color(0xFF49627B),fw*.025f,Offset(right-fw*.14f,top+fh*.28f))
             }
             "Refrigerator" -> {
-                drawLine(Color(0xFF52677D), Offset(left+fw*.02f, top+fh*.43f), Offset(right-fw*.02f, top+fh*.43f), 1.8f)
-                drawRoundRect(Color(0xFF73899F), Offset(right-fw*.19f,top+fh*.15f),Size(fw*.035f,fh*.19f),androidx.compose.ui.geometry.CornerRadius(2f))
-                drawRoundRect(Color(0xFF73899F), Offset(right-fw*.19f,top+fh*.53f),Size(fw*.035f,fh*.23f),androidx.compose.ui.geometry.CornerRadius(2f))
+                drawLine(Color(0xFF52677D),Offset(left+fw*.02f,top+fh*.43f),Offset(right-fw*.02f,top+fh*.43f),1.8f)
+                drawRoundRect(Color(0xFF73899F),Offset(right-fw*.19f,top+fh*.15f),Size(fw*.035f,fh*.19f),androidx.compose.ui.geometry.CornerRadius(2f))
+                drawRoundRect(Color(0xFF73899F),Offset(right-fw*.19f,top+fh*.53f),Size(fw*.035f,fh*.23f),androidx.compose.ui.geometry.CornerRadius(2f))
             }
             "Washing Machine" -> {
-                drawRoundRect(Color(0xFFB6C7D8), Offset(left+fw*.08f,top+fh*.09f),Size(fw*.84f,fh*.16f),androidx.compose.ui.geometry.CornerRadius(3f))
-                drawCircle(Color(0xFF52677D), fw*.30f, Offset((left+right)/2, top+fh*.62f))
-                drawCircle(Brush.radialGradient(listOf(Color(0xFFEAF5FF),Color(0xFF6C91AE),Color(0xFF304D68)), radius=fw*.30f, center=Offset((left+right)/2-fw*.06f,top+fh*.57f)), fw*.265f, Offset((left+right)/2, top+fh*.62f))
-                drawCircle(Color(0xFFDAE7F2), fw*.19f, Offset((left+right)/2, top+fh*.62f), style=Stroke(width=2f))
+                drawRoundRect(Color(0xFFB6C7D8),Offset(left+fw*.08f,top+fh*.09f),Size(fw*.84f,fh*.16f),androidx.compose.ui.geometry.CornerRadius(3f))
+                drawCircle(Color(0xFF52677D),fw*.30f,Offset((left+right)/2,top+fh*.62f))
+                drawCircle(Brush.radialGradient(listOf(Color(0xFFEAF5FF),Color(0xFF6C91AE),Color(0xFF304D68)),radius=fw*.30f,center=Offset((left+right)/2-fw*.06f,top+fh*.57f)),fw*.265f,Offset((left+right)/2,top+fh*.62f))
+                drawCircle(Color(0xFFDAE7F2),fw*.19f,Offset((left+right)/2,top+fh*.62f),style=Stroke(width=2f))
             }
             "Microwave Oven" -> {
-                drawRoundRect(Color(0xFF30485E), Offset(left+fw*.08f,top+fh*.18f), Size(fw*.62f,fh*.62f), androidx.compose.ui.geometry.CornerRadius(4f))
-                drawRoundRect(Brush.linearGradient(listOf(Color(0xFFC6E1F2),Color(0xFF6586A1),Color(0xFF203A53))), Offset(left+fw*.12f,top+fh*.22f), Size(fw*.54f,fh*.54f), androidx.compose.ui.geometry.CornerRadius(3f))
-                for (i in 0..2) drawCircle(Color(0xFF435A70), fw*.025f, Offset(left+fw*.83f,top+fh*(.32f+i*.18f)))
+                drawRoundRect(Color(0xFF30485E),Offset(left+fw*.08f,top+fh*.18f),Size(fw*.62f,fh*.62f),androidx.compose.ui.geometry.CornerRadius(4f))
+                drawRoundRect(Brush.linearGradient(listOf(Color(0xFFC6E1F2),Color(0xFF6586A1),Color(0xFF203A53))),Offset(left+fw*.12f,top+fh*.22f),Size(fw*.54f,fh*.54f),androidx.compose.ui.geometry.CornerRadius(3f))
+                for (i in 0..2) drawCircle(Color(0xFF435A70),fw*.025f,Offset(left+fw*.83f,top+fh*(.32f+i*.18f)))
             }
             else -> {
-                drawRoundRect(Color(0xFF52677D), Offset(left+fw*.15f,top+fh*.25f),Size(fw*.70f,fh*.04f),androidx.compose.ui.geometry.CornerRadius(3f))
-                drawCircle(Brush.radialGradient(listOf(Color(0xFFF7FBFF),Color(0xFF8DA7BC),Color(0xFF425A70)), radius=fw*.11f), fw*.09f, Offset((left+right)/2,top+fh*.18f))
-                drawRoundRect(Color(0xFF71869A), Offset(left+fw*.18f,top+fh*.36f),Size(fw*.64f,fh*.47f),androidx.compose.ui.geometry.CornerRadius(5f))
+                drawRoundRect(Color(0xFF52677D),Offset(left+fw*.15f,top+fh*.25f),Size(fw*.70f,fh*.04f),androidx.compose.ui.geometry.CornerRadius(3f))
+                drawCircle(Brush.radialGradient(listOf(Color(0xFFF7FBFF),Color(0xFF8DA7BC),Color(0xFF425A70)),radius=fw*.11f),fw*.09f,Offset((left+right)/2,top+fh*.18f))
+                drawRoundRect(Color(0xFF71869A),Offset(left+fw*.18f,top+fh*.36f),Size(fw*.64f,fh*.47f),androidx.compose.ui.geometry.CornerRadius(5f))
                 drawLine(Color(0xFFDAE4ED),Offset(left+fw*.23f,top+fh*.42f),Offset(right-fw*.23f,top+fh*.42f),1.3f)
             }
         }
-        // Ground shadow, plus a narrow highlight on the front-left edge.
-        drawOval(Brush.radialGradient(listOf(Color(0x380F172A), Color.Transparent)), Offset(w*.16f,h*.84f), Size(w*.68f,h*.12f))
-        drawLine(Color.White.copy(alpha = 0.55f), Offset(left+fw*.04f,top+fh*.08f), Offset(left+fw*.04f,bottom-fh*.08f), 1.1f)
+        drawOval(Brush.radialGradient(listOf(Color(0x380F172A),Color.Transparent)),Offset(w*.16f,h*.84f),Size(w*.68f,h*.12f))
     }
 }
 
