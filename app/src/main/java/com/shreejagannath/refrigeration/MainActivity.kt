@@ -680,6 +680,7 @@ private fun AdminLogin(language: AppLanguage, onSuccess: () -> Unit) {
 @Composable
 private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onStatus: (Int, String) -> Unit) {
     val context = LocalContext.current
+    var pendingStatusChange by remember { mutableStateOf<Pair<Int, String>?>(null) }
     var search by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("All") }
     var filterExpanded by remember { mutableStateOf(false) }
@@ -814,7 +815,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                             if (b.status == "Pending") {
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Button(onClick = { onStatus(b.id, "Accepted") }, modifier = Modifier.weight(1f)) { Text(tr(language, "Accept", "ଗ୍ରହଣ କରନ୍ତୁ")) }
-                                    OutlinedButton(onClick = { onStatus(b.id, "Rejected") }, modifier = Modifier.weight(1f)) { Text(tr(language, "Reject", "ଅସ୍ୱୀକାର କରନ୍ତୁ")) }
+                                    OutlinedButton(onClick = { pendingStatusChange = b.id to "Rejected" }, modifier = Modifier.weight(1f)) { Text(tr(language, "Reject", "ଅସ୍ୱୀକାର କରନ୍ତୁ")) }
                                 }
                             } else if (b.status !in listOf("Completed", "Rejected", "Cancelled")) {
                                 var expanded by remember(b.id) { mutableStateOf(false) }
@@ -830,7 +831,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                                         nextStatuses.forEach { status ->
                                             DropdownMenuItem(
                                                 text = { Text(statusLabel(language, status)) },
-                                                onClick = { onStatus(b.id, status); expanded = false }
+                                                onClick = { if (status == "Cancelled") pendingStatusChange = b.id to status else onStatus(b.id, status); expanded = false }
                                             )
                                         }
                                     }
@@ -841,6 +842,33 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                 }
             }
         }
+    }
+    pendingStatusChange?.let { (bookingId, nextStatus) ->
+        AlertDialog(
+            onDismissRequest = { pendingStatusChange = null },
+            title = {
+                Text(
+                    if (nextStatus == "Rejected") tr(language, "Reject this booking?", "ଏହି ବୁକିଂ ଅସ୍ୱୀକାର କରିବେ କି?")
+                    else tr(language, "Cancel this service?", "ଏହି ସେବା ବାତିଲ୍ କରିବେ କି?")
+                )
+            },
+            text = {
+                Text(
+                    if (nextStatus == "Rejected") tr(language, "The customer request will be marked as rejected.", "ଗ୍ରାହକଙ୍କ ଅନୁରୋଧ ଅସ୍ୱୀକୃତ ଭାବେ ଚିହ୍ନିତ ହେବ।")
+                    else tr(language, "The booking will be marked as cancelled.", "ବୁକିଂଟି ବାତିଲ୍ ଭାବେ ଚିହ୍ନିତ ହେବ।")
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { onStatus(bookingId, nextStatus); pendingStatusChange = null }) {
+                    Text(tr(language, "Confirm", "ନିଶ୍ଚିତ କରନ୍ତୁ"))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingStatusChange = null }) {
+                    Text(tr(language, "Go back", "ଫେରିଯାଆନ୍ତୁ"))
+                }
+            }
+        )
     }
 }
 
