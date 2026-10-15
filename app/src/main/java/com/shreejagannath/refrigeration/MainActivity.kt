@@ -308,48 +308,105 @@ private fun AdminLogin(onSuccess: () -> Unit) {
 
 @Composable
 private fun AdminHome(bookings: List<ServiceBooking>, onStatus: (Int, String) -> Unit) {
+    var search by remember { mutableStateOf("") }
+    var selectedFilter by remember { mutableStateOf("All") }
+    var filterExpanded by remember { mutableStateOf(false) }
+    val filters = listOf("All", "Pending", "Accepted", "On the Way", "In Progress", "Completed", "Rejected", "Cancelled")
+    val visibleBookings = bookings
+        .filter { selectedFilter == "All" || it.status == selectedFilter }
+        .filter {
+            val query = search.trim()
+            query.isBlank() ||
+                it.id.toString().contains(query, ignoreCase = true) ||
+                it.customer.contains(query, ignoreCase = true) ||
+                it.phone.contains(query, ignoreCase = true) ||
+                it.appliance.contains(query, ignoreCase = true) ||
+                it.address.contains(query, ignoreCase = true) ||
+                it.pincode.contains(query, ignoreCase = true)
+        }
+        .sortedByDescending { it.id }
+
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Spacer(Modifier.height(14.dp))
         Text("Namaskar, Mechanic 👋", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Navy)
-        Text("Review requests and update service status.", color = Color.Gray)
+        Text("Review requests, find customers and update service status.", color = Color.Gray)
         Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Stat("New", bookings.count { it.status == "Pending" }.toString(), Modifier.weight(1f))
             Stat("Active", bookings.count { it.status in listOf("Accepted", "On the Way", "In Progress") }.toString(), Modifier.weight(1f))
             Stat("Done", bookings.count { it.status == "Completed" }.toString(), Modifier.weight(1f))
         }
-        Spacer(Modifier.height(16.dp))
-        Text("Service Requests", fontSize = 19.sp, fontWeight = FontWeight.Bold, color = Navy)
+        Spacer(Modifier.height(14.dp))
+        OutlinedTextField(
+            value = search,
+            onValueChange = { search = it },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text("Search ID, customer, phone, appliance, area or PIN") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search bookings") }
+        )
         Spacer(Modifier.height(8.dp))
-        if (bookings.isEmpty()) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("No service requests yet.") }
-        else LazyColumn {
-            items(bookings.reversed()) { b ->
-                Card(Modifier.fillMaxWidth().padding(bottom = 12.dp), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                    Column(Modifier.padding(14.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) {
-                                Text("#${b.id} • ${b.appliance}", fontWeight = FontWeight.Bold)
-                                Text(b.customer)
+        Box {
+            OutlinedButton(onClick = { filterExpanded = true }, modifier = Modifier.fillMaxWidth()) {
+                Text("Status filter: $selectedFilter")
+            }
+            DropdownMenu(expanded = filterExpanded, onDismissRequest = { filterExpanded = false }) {
+                filters.forEach { filter ->
+                    DropdownMenuItem(
+                        text = { Text(filter) },
+                        onClick = { selectedFilter = filter; filterExpanded = false }
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Text("Showing ${visibleBookings.size} of ${bookings.size} requests", fontSize = 12.sp, color = Color.Gray)
+        Spacer(Modifier.height(8.dp))
+        if (bookings.isEmpty()) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("No service requests yet.") }
+        } else if (visibleBookings.isEmpty()) {
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Text("No matching requests. Try another search or status filter.", color = Color.Gray)
+            }
+        } else {
+            LazyColumn(Modifier.weight(1f)) {
+                items(visibleBookings, key = { it.id }) { b ->
+                    Card(
+                        Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        Column(Modifier.padding(14.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text("Booking #${b.id} • ${b.appliance}", fontWeight = FontWeight.Bold, color = Navy)
+                                    Text(b.customer)
+                                }
+                                Status(b.status)
                             }
-                            Status(b.status)
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Text(b.issue)
-                        Text("Address: ${b.address}", fontSize = 13.sp, color = Color.Gray)
-                        Text("Phone: ${b.phone}", fontSize = 13.sp, color = Color.Gray)
-                        if (b.preferredSlot.isNotBlank()) Text("Preferred visit: ${b.preferredSlot}", fontSize = 13.sp, color = Navy)
-                        if (b.pincode.isNotBlank()) Text("PIN code: ${b.pincode}", fontSize = 13.sp, color = Navy)
-                        Spacer(Modifier.height(10.dp))
-                        if (b.status == "Pending") Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { onStatus(b.id, "Accepted") }, modifier = Modifier.weight(1f)) { Text("Accept") }
-                            OutlinedButton(onClick = { onStatus(b.id, "Rejected") }, modifier = Modifier.weight(1f)) { Text("Reject") }
-                        } else if (b.status !in listOf("Completed", "Rejected", "Cancelled")) {
-                            var expanded by remember { mutableStateOf(false) }
-                            Box {
-                                OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) { Text("Update Status") }
-                                DropdownMenu(expanded, { expanded = false }) {
-                                    listOf("On the Way", "In Progress", "Completed", "Cancelled").forEach { status ->
-                                        DropdownMenuItem(text = { Text(status) }, onClick = { onStatus(b.id, status); expanded = false })
+                            Spacer(Modifier.height(8.dp))
+                            Text(b.issue)
+                            Text("Phone: ${b.phone}", fontSize = 13.sp, color = Color.Gray)
+                            Text("Address: ${b.address}", fontSize = 13.sp, color = Color.Gray)
+                            if (b.preferredSlot.isNotBlank()) Text("Preferred visit: ${b.preferredSlot}", fontSize = 13.sp, color = Navy)
+                            if (b.pincode.isNotBlank()) Text("PIN code: ${b.pincode}", fontSize = 13.sp, color = Navy)
+                            Spacer(Modifier.height(10.dp))
+                            if (b.status == "Pending") {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Button(onClick = { onStatus(b.id, "Accepted") }, modifier = Modifier.weight(1f)) { Text("Accept") }
+                                    OutlinedButton(onClick = { onStatus(b.id, "Rejected") }, modifier = Modifier.weight(1f)) { Text("Reject") }
+                                }
+                            } else if (b.status !in listOf("Completed", "Rejected", "Cancelled")) {
+                                var expanded by remember(b.id) { mutableStateOf(false) }
+                                Box {
+                                    OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) { Text("Update Status") }
+                                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                                        listOf("On the Way", "In Progress", "Completed", "Cancelled").forEach { status ->
+                                            DropdownMenuItem(
+                                                text = { Text(status) },
+                                                onClick = { onStatus(b.id, status); expanded = false }
+                                            )
+                                        }
                                     }
                                 }
                             }
