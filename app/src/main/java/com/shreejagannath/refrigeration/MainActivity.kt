@@ -647,6 +647,31 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
             Stat(tr(language, "Active", "ଚାଲୁ"), bookings.count { it.status in listOf("Accepted", "On the Way", "In Progress") }.toString(), Modifier.weight(1f))
             Stat(tr(language, "Done", "ସମ୍ପୂର୍ଣ୍ଣ"), bookings.count { it.status == "Completed" }.toString(), Modifier.weight(1f))
         }
+        Spacer(Modifier.height(10.dp))
+        OutlinedButton(
+            onClick = {
+                fun csvCell(value: String): String = "\"" + value.replace("\"", "\"\"").replace("\n", " ").replace("\r", " ") + "\""
+                val rows = mutableListOf(
+                    listOf("Booking ID", "Created At", "Customer", "Phone", "Appliance", "Issue", "Status", "Address", "Preferred Visit", "PIN Code").joinToString(",")
+                )
+                bookings.sortedByDescending { it.createdAt }.forEach { booking ->
+                    rows += listOf(
+                        booking.id.toString(),
+                        SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(booking.createdAt)),
+                        booking.customer, booking.phone, booking.appliance, booking.issue, booking.status,
+                        booking.address, booking.preferredSlot, booking.pincode
+                    ).joinToString(",") { csvCell(it) }
+                }
+                val report = rows.joinToString("\n")
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/csv"
+                    putExtra(Intent.EXTRA_SUBJECT, "Shree Jagannath Refrigeration - Booking Report")
+                    putExtra(Intent.EXTRA_TEXT, report)
+                }
+                context.startActivity(Intent.createChooser(shareIntent, tr(language, "Share booking report", "ବୁକିଂ ରିପୋର୍ଟ ସେୟାର୍ କରନ୍ତୁ")))
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) { Text(tr(language, "Export / Share Booking Report (CSV)", "ବୁକିଂ ରିପୋର୍ଟ ଏକ୍ସପୋର୍ଟ / ସେୟାର୍ (CSV)")) }
         Spacer(Modifier.height(14.dp))
         OutlinedTextField(
             value = search,
