@@ -1,5 +1,6 @@
 package com.shreejagannath.refrigeration
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,14 +21,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.json.JSONArray
+import org.json.JSONObject
 
 private val Navy = Color(0xFF123B67)
 private val Orange = Color(0xFFF28C28)
 private val Page = Color(0xFFF5F7FA)
+private const val BOOKING_PREFS = "shree_jagannath_bookings"
+private const val BOOKINGS_KEY = "bookings"
 
 data class Appliance(val name: String, val detail: String, val emoji: String)
 data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val status: String = "Pending")
@@ -39,9 +45,51 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+private fun loadBookings(context: Context): List<ServiceBooking> {
+    val raw = context.getSharedPreferences(BOOKING_PREFS, Context.MODE_PRIVATE)
+        .getString(BOOKINGS_KEY, null) ?: return emptyList()
+    return try {
+        val json = JSONArray(raw)
+        (0 until json.length()).mapNotNull { index ->
+            val item = json.optJSONObject(index) ?: return@mapNotNull null
+            ServiceBooking(
+                id = item.optInt("id"),
+                customer = item.optString("customer"),
+                phone = item.optString("phone"),
+                appliance = item.optString("appliance"),
+                issue = item.optString("issue"),
+                address = item.optString("address"),
+                status = item.optString("status", "Pending")
+            )
+        }
+    } catch (_: Exception) {
+        emptyList()
+    }
+}
+
+private fun saveBookings(context: Context, bookings: List<ServiceBooking>) {
+    val json = JSONArray()
+    bookings.forEach { booking ->
+        json.put(JSONObject().apply {
+            put("id", booking.id)
+            put("customer", booking.customer)
+            put("phone", booking.phone)
+            put("appliance", booking.appliance)
+            put("issue", booking.issue)
+            put("address", booking.address)
+            put("status", booking.status)
+        })
+    }
+    context.getSharedPreferences(BOOKING_PREFS, Context.MODE_PRIVATE)
+        .edit()
+        .putString(BOOKINGS_KEY, json.toString())
+        .apply()
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainApp() {
+    val context = LocalContext.current
     val appliances = listOf(
         Appliance("AC Service", "Repair • Installation • Servicing", "❄️"),
         Appliance("Refrigerator", "Cooling • Repair • Leakage", "🧊"),
@@ -51,8 +99,12 @@ private fun MainApp() {
     )
     var screen by remember { mutableStateOf("welcome") }
     var chosen by remember { mutableStateOf(appliances[0]) }
-    var bookings by remember { mutableStateOf(listOf<ServiceBooking>()) }
-    var nextId by remember { mutableIntStateOf(1001) }
+    var bookings by remember { mutableStateOf(loadBookings(context)) }
+    var nextId by remember { mutableIntStateOf((bookings.maxOfOrNull { it.id } ?: 1000) + 1) }
+
+    LaunchedEffect(bookings) {
+        saveBookings(context, bookings)
+    }
 
     MaterialTheme(colorScheme = lightColorScheme(primary = Navy, secondary = Orange, background = Page)) {
         Scaffold(topBar = {
@@ -193,7 +245,7 @@ private fun RequestForm(appliance: Appliance, onSubmit: (String, String, String,
             if (error.isBlank()) onSubmit(name.trim(), phone, issue.trim(), address.trim())
         }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) { Text("Submit Service Request") }
         Spacer(Modifier.height(10.dp))
-        Text("No payment is collected in this prototype. Charges are confirmed by the mechanic.", fontSize = 12.sp, color = Color.Gray)
+        Text("Bookings are saved on this device. Online syncing will be added in the next milestone.", fontSize = 12.sp, color = Color.Gray)
     }
 }
 
