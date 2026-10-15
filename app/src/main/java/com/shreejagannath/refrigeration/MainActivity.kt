@@ -548,7 +548,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
         Spacer(Modifier.height(8.dp))
         Box {
             OutlinedButton(onClick = { filterExpanded = true }, modifier = Modifier.fillMaxWidth()) {
-                Text(tr(language, "Status filter", "ସ୍ଥିତି ଫିଲ୍ଟର") + ": $selectedFilter")
+                Text(tr(language, "Status filter", "ସ୍ଥିତି ଫିଲ୍ଟର") + ": ${statusLabel(language, selectedFilter)}")
             }
             DropdownMenu(expanded = filterExpanded, onDismissRequest = { filterExpanded = false }) {
                 filters.forEach { filter ->
@@ -582,7 +582,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                                     Text("${tr(language, "Booking", "ବୁକିଂ")} #${b.id} • ${applianceLabel(language, b.appliance)}", fontWeight = FontWeight.Bold, color = Navy)
                                     Text(b.customer)
                                 }
-                                Status(b.status)
+                                Status(b.status, language)
                             }
                             Spacer(Modifier.height(8.dp))
                             Text(b.issue)
