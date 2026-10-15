@@ -952,14 +952,15 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
             onClick = {
                 fun csvCell(value: String): String = "\"" + value.replace("\"", "\"\"").replace("\n", " ").replace("\r", " ") + "\""
                 val rows = mutableListOf(
-                    listOf("Booking ID", "Created At", "Customer", "Phone", "Appliance", "Issue", "Status", "Address", "Preferred Visit", "PIN Code").joinToString(",")
+                    listOf("Booking ID", "Created At", "Customer", "Phone", "Appliance", "Issue", "Status", "Address", "Preferred Visit", "PIN Code", "GPS Latitude", "GPS Longitude").joinToString(",")
                 )
                 bookings.sortedByDescending { it.createdAt }.forEach { booking ->
                     rows += listOf(
                         booking.id.toString(),
                         SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(booking.createdAt)),
                         booking.customer, booking.phone, booking.appliance, booking.issue, booking.status,
-                        booking.address, booking.preferredSlot, booking.pincode
+                        booking.address, booking.preferredSlot, booking.pincode,
+                        booking.latitude?.toString().orEmpty(), booking.longitude?.toString().orEmpty()
                     ).joinToString(",") { csvCell(it) }
                 }
                 reportText = rows.joinToString("\n")
@@ -1034,12 +1035,14 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                                 ) { Text(tr(language, "Call customer", "ଗ୍ରାହକଙ୍କୁ କଲ୍ କରନ୍ତୁ")) }
                                 OutlinedButton(
                                     onClick = {
-                                        val fullAddress = listOf(b.address, b.pincode, "India")
-                                            .filter { it.isNotBlank() }
-                                            .joinToString(", ")
-                                        val mapsUri = Uri.parse(
-                                            "https://www.google.com/maps/search/?api=1&query=${Uri.encode(fullAddress)}"
-                                        )
+                                        val mapsUri = if (b.latitude != null && b.longitude != null) {
+                                            Uri.parse("https://www.google.com/maps/dir/?api=1&destination=${b.latitude},${b.longitude}")
+                                        } else {
+                                            val fullAddress = listOf(b.address, b.pincode, "India")
+                                                .filter { it.isNotBlank() }
+                                                .joinToString(", ")
+                                            Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encode(fullAddress)}")
+                                        }
                                         val mapIntent = Intent(Intent.ACTION_VIEW, mapsUri)
                                         runCatching {
                                             context.startActivity(mapIntent)
