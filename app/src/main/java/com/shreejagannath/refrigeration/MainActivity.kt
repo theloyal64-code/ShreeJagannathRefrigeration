@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.json.JSONArray
@@ -816,7 +817,7 @@ private fun AdminLogin(language: AppLanguage, onSuccess: () -> Unit) {
         Spacer(Modifier.height(18.dp))
         OutlinedTextField(username, { username = it }, label = { Text(tr(language, "Admin username", "ଆଡମିନ୍ ୟୁଜରନେମ୍")) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
         Spacer(Modifier.height(10.dp))
-        OutlinedTextField(password, { password = it }, label = { Text(tr(language, "Password", "ପାସୱାର୍ଡ")) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+        OutlinedTextField(password, { password = it }, label = { Text(tr(language, "Password", "ପାସୱାର୍ଡ")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
         if (error.isNotBlank()) { Spacer(Modifier.height(8.dp)); Text(error, color = MaterialTheme.colorScheme.error) }
         Spacer(Modifier.height(16.dp))
         Button(onClick = {
