@@ -207,20 +207,48 @@ private fun MainApp() {
     }
 }
 
+private fun fetchCommonsPhoto(searchTerm: String): android.graphics.Bitmap? {
+    return runCatching {
+        val encoded = java.net.URLEncoder.encode(searchTerm, "UTF-8")
+        val api = java.net.URL("https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=$encoded&gsrnamespace=6&gsrlimit=8&prop=imageinfo&iiprop=url&iiurlwidth=420&format=json")
+        val connection = api.openConnection() as java.net.HttpURLConnection
+        connection.connectTimeout = 10000
+        connection.readTimeout = 15000
+        connection.setRequestProperty("User-Agent", "ShreeJagannathRefrigeration/1.0 (Android app)")
+        val json = connection.inputStream.bufferedReader().use { JSONObject(it.readText()) }
+        val pages = json.optJSONObject("query")?.optJSONObject("pages") ?: return null
+        val candidates = (0 until pages.length()).mapNotNull { index ->
+            pages.optJSONObject(pages.names()?.optString(index))?.optJSONArray("imageinfo")?.optJSONObject(0)?.optString("thumburl")
+        }
+        candidates.firstNotNullOfOrNull { imageUrl ->
+            runCatching {
+                val imageConnection = java.net.URL(imageUrl).openConnection() as java.net.HttpURLConnection
+                imageConnection.connectTimeout = 10000
+                imageConnection.readTimeout = 15000
+                imageConnection.inputStream.use { android.graphics.BitmapFactory.decodeStream(it) }
+            }.getOrNull()
+        }
+    }.getOrNull()
+}
+
 @Composable
 private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, onCustomer: () -> Unit, onAdmin: () -> Unit) {
-    val context = LocalContext.current
     var templeBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    val appliancePhotos = remember { mutableStateListOf<android.graphics.Bitmap?>(null, null, null, null, null) }
     LaunchedEffect(Unit) {
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            runCatching {
+            templeBitmap = runCatching {
                 val url = java.net.URL("https://commons.wikimedia.org/wiki/Special:FilePath/Jagannath_Temple_Puri.JPG?width=1200")
-                (url.openConnection() as java.net.HttpURLConnection).run {
-                    connectTimeout = 10000
-                    readTimeout = 15000
-                    inputStream.use { android.graphics.BitmapFactory.decodeStream(it) }
-                }
-            }.onSuccess { bitmap -> templeBitmap = bitmap }
+                val connection = url.openConnection() as java.net.HttpURLConnection
+                connection.connectTimeout = 10000
+                connection.readTimeout = 15000
+                connection.setRequestProperty("User-Agent", "ShreeJagannathRefrigeration/1.0")
+                connection.inputStream.use { android.graphics.BitmapFactory.decodeStream(it) }
+            }.getOrNull()
+            val queries = listOf("wall mounted air conditioner indoor unit", "stainless steel refrigerator appliance", "front loading washing machine appliance", "microwave oven kitchen appliance", "wall mounted electric water geyser")
+            queries.forEachIndexed { index, query ->
+                appliancePhotos[index] = fetchCommonsPhoto(query)
+            }
         }
     }
     Column(
@@ -240,31 +268,35 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
         Card(Modifier.fillMaxWidth().height(350.dp), shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 8.dp, bottomEnd = 8.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFDAEFFF))) {
             Box(Modifier.fillMaxSize()) {
                 if (templeBitmap != null) {
-                    androidx.compose.foundation.Image(
-                        bitmap = templeBitmap!!.asImageBitmap(),
-                        contentDescription = "Photograph of Shree Jagannath Temple, Puri",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                    )
+                    androidx.compose.foundation.Image(bitmap = templeBitmap!!.asImageBitmap(), contentDescription = "Photograph of Shree Jagannath Temple, Puri", modifier = Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
                 } else {
                     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF1687F8), Color(0xFFFFD49B)))), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Navy)
+                        Text("ଶ୍ରୀ ଜଗନ୍ନାଥ ମନ୍ଦିର • PURI", color = Navy, fontWeight = FontWeight.Bold)
                     }
                 }
-                Box(Modifier.fillMaxWidth().height(72.dp).align(Alignment.BottomCenter).background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xCCFFFDF8)))))
+                Box(Modifier.fillMaxWidth().height(96.dp).align(Alignment.BottomCenter).background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xF5FFFDF8)))))
                 Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("SHREE JAGANNATH", color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
-                    Text("REFRIGERATION", color = Color(0xFFFFD18B), fontSize = 19.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 2.sp)
+                    Text("SHREE", color = Navy, fontSize = 17.sp, fontWeight = FontWeight.Bold, letterSpacing = 5.sp)
+                    Text("JAGANNATH", color = Navy, fontSize = 35.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+                    Text("REFRIGERATION", color = Color(0xFF292929), fontSize = 20.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
                 }
             }
         }
+        Spacer(Modifier.height(6.dp))
         Text(tr(language, "Home Appliance Repair & Service", "ଘରୋଇ ଉପକରଣ ମରାମତି ଓ ସେବା"), color = Color.DarkGray, fontSize = 15.sp, letterSpacing = 0.4.sp)
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(14.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             val cards = listOf(Triple("AC", "❄", Color(0xFFD7F0FF)), Triple("Fridge", "▣", Color(0xFFD8FBE8)), Triple("Washer", "▤", Color(0xFFFFE2ED)), Triple("Micro", "▦", Color(0xFFFFEDC4)), Triple("Geyser", "♨", Color(0xFFE5E2FF)))
-            cards.forEach { (label, icon, tint) ->
-                Column(Modifier.weight(1f).height(118.dp).background(tint, RoundedCornerShape(16.dp)).padding(vertical = 12.dp, horizontal = 2.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
-                    Text(icon, fontSize = 29.sp, color = Navy)
+            cards.forEachIndexed { index, (label, icon, tint) ->
+                Column(Modifier.weight(1f).height(128.dp).background(tint, RoundedCornerShape(16.dp)).padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
+                    Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                        val photo = appliancePhotos[index]
+                        if (photo != null) {
+                            androidx.compose.foundation.Image(bitmap = photo.asImageBitmap(), contentDescription = "$label appliance", modifier = Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Fit)
+                        } else {
+                            Text(icon, fontSize = 29.sp, color = Navy)
+                        }
+                    }
                     Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Navy, maxLines = 1)
                     Text(tr(language, "Service", "ସେବା"), fontSize = 9.sp, color = Navy)
                 }
@@ -288,8 +320,8 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
                 listOf("❄ AC", "▣ Fridge", "▤ Washer", "▦ Micro", "♨ Geyser").forEach { Text(it, fontSize = 10.sp, color = Navy, fontWeight = FontWeight.SemiBold) }
             }
         }
-        Spacer(Modifier.height(12.dp))
-        Text("Temple photograph: Nikyam6 / Wikimedia Commons, CC BY-SA 4.0", fontSize = 8.sp, color = Color.Gray)
+        Spacer(Modifier.height(8.dp))
+        Text("Photographs from Wikimedia Commons; individual licenses apply.", fontSize = 8.sp, color = Color.Gray)
     }
 }
 
