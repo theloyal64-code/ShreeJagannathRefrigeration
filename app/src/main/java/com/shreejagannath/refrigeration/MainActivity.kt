@@ -277,7 +277,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                 issues.forEach { option -> DropdownMenuItem(text = { Text(issueLabel(language, option)) }, leadingIcon = { Text(problemEmoji(option), fontSize = 22.sp) }, onClick = { issue = option; issueExpanded = false }) }
             }
         }
-        if (issue.isNotBlank()) { Spacer(Modifier.height(10.dp)); IssueIllustration(appliance.name, issue) }
+        if (issue.isNotBlank()) { Spacer(Modifier.height(10.dp)); IssueIllustration(appliance.name, issue, language) }
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(address, { address = it }, label = { Text(tr(language, "Full address / area *", "ପୂରା ଠିକଣା / ଅଞ୍ଚଳ *")) }, modifier = Modifier.fillMaxWidth(), minLines = 2)
         Spacer(Modifier.height(10.dp))
@@ -343,7 +343,7 @@ private fun problemEmoji(issue: String): String = when {
 }
 
 @Composable
-private fun IssueIllustration(appliance: String, issue: String) {
+private fun IssueIllustration(appliance: String, issue: String, language: AppLanguage) {
     Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F5FA)), shape = RoundedCornerShape(14.dp)) {
         Column(Modifier.fillMaxWidth().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(tr(language, "Problem area guide", "ସମସ୍ୟା ଚିହ୍ନଟ ଗାଇଡ୍"), fontWeight = FontWeight.Bold, color = Navy)
