@@ -220,7 +220,7 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F4FF))
         ) {
-            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF1687F8), Color(0xFFFFE6B6, alpha = 0.95f))))) {
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF1687F8), Color(0xFFFFE6B6))))) {
                 Canvas(Modifier.fillMaxSize()) {
                     val w = size.width
                     val h = size.height
