@@ -479,6 +479,12 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
     }.sortedByDescending { it.createdAt }
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Stat(tr(language, "Total", "ମୋଟ"), bookings.size.toString(), Modifier.weight(1f))
+            Stat(tr(language, "Pending", "ବିଚାରାଧୀନ"), bookings.count { it.status == "Pending" }.toString(), Modifier.weight(1f))
+            Stat(tr(language, "Completed", "ସମ୍ପୂର୍ଣ୍ଣ"), bookings.count { it.status == "Completed" }.toString(), Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(10.dp))
         OutlinedTextField(
             value = search,
             onValueChange = { search = it },
