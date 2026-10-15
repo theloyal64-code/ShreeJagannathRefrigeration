@@ -42,6 +42,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Path
@@ -213,7 +214,7 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
     LaunchedEffect(Unit) {
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             runCatching {
-                val url = java.net.URL("https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Jagannath_Temple_Puri_02.10.2015.jpg/960px-Jagannath_Temple_Puri_02.10.2015.jpg")
+                val url = java.net.URL("https://commons.wikimedia.org/wiki/Special:FilePath/Jagannath_Temple_Puri.JPG?width=1200")
                 (url.openConnection() as java.net.HttpURLConnection).run {
                     connectTimeout = 10000
                     readTimeout = 15000
