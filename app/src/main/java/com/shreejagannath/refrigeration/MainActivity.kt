@@ -271,6 +271,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
     var pincode by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
     var issueExpanded by remember { mutableStateOf(false) }
+    var showSubmitConfirmation by remember { mutableStateOf(false) }
     val issues = issueOptions[appliance.name] ?: listOf("Not working", "Making noise", "Leakage", "Other")
     val context = LocalContext.current
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
@@ -347,10 +348,38 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                 address.isBlank() -> tr(language, "Please enter your address.", "ଦୟାକରି ଠିକଣା ଲେଖନ୍ତୁ।")
                 else -> ""
             }
-            if (error.isBlank()) onSubmit(name.trim(), phone, issue.trim(), address.trim(), preferredSlot.trim(), pincode)
-        }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) { Text(tr(language, "Submit Service Request", "ସେବା ଅନୁରୋଧ ପଠାନ୍ତୁ")) }
+            if (error.isBlank()) showSubmitConfirmation = true
+        }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) { Text(tr(language, "Review Request", "ଅନୁରୋଧ ଯାଞ୍ଚ କରନ୍ତୁ")) }
         Spacer(Modifier.height(10.dp))
         Text(tr(language, "No payment is collected in-app. The team will confirm your visit time and charges.", "ଆପ୍‌ରେ କୌଣସି ପେମେଣ୍ଟ ନିଆଯାଏ ନାହିଁ। ଟିମ୍ ଆପଣଙ୍କ ସମୟ ଓ ଖର୍ଚ୍ଚ ନିଶ୍ଚିତ କରିବ।"), fontSize = 12.sp, color = Color.Gray)
+    }
+    if (showSubmitConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showSubmitConfirmation = false },
+            title = { Text(tr(language, "Confirm service request", "ସେବା ଅନୁରୋଧ ନିଶ୍ଚିତ କରନ୍ତୁ")) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text("${tr(language, "Customer", "ଗ୍ରାହକ")}: ${name.trim()}")
+                    Text("${tr(language, "Mobile", "ମୋବାଇଲ୍")}: $phone")
+                    Text("${tr(language, "Appliance", "ଉପକରଣ")}: ${applianceLabel(language, appliance.name)}")
+                    Text("${tr(language, "Problem", "ସମସ୍ୟା")}: ${issueLabel(language, issue)}")
+                    Text("${tr(language, "Address", "ଠିକଣା")}: ${address.trim()}")
+                    if (preferredSlot.isNotBlank()) Text("${tr(language, "Preferred visit", "ପସନ୍ଦର ସମୟ")}: $preferredSlot")
+                    if (pincode.isNotBlank()) Text("${tr(language, "PIN code", "ପିନ୍ କୋଡ୍")}: $pincode")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showSubmitConfirmation = false
+                    onSubmit(name.trim(), phone, issue.trim(), address.trim(), preferredSlot.trim(), pincode)
+                }) { Text(tr(language, "Confirm booking", "ବୁକିଂ ନିଶ୍ଚିତ କରନ୍ତୁ")) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSubmitConfirmation = false }) {
+                    Text(tr(language, "Edit details", "ବିବରଣୀ ବଦଳାନ୍ତୁ"))
+                }
+            }
+        )
     }
 }
 
