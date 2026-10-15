@@ -7,6 +7,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,7 +38,7 @@ private const val BOOKING_PREFS = "shree_jagannath_bookings"
 private const val BOOKINGS_KEY = "bookings"
 
 data class Appliance(val name: String, val detail: String, val emoji: String)
-data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val status: String = "Pending")
+data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val preferredSlot: String = "", val pincode: String = "", val status: String = "Pending")
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,6 +61,8 @@ private fun loadBookings(context: Context): List<ServiceBooking> {
                 appliance = item.optString("appliance"),
                 issue = item.optString("issue"),
                 address = item.optString("address"),
+                preferredSlot = item.optString("preferredSlot"),
+                pincode = item.optString("pincode"),
                 status = item.optString("status", "Pending")
             )
         }
@@ -77,6 +81,8 @@ private fun saveBookings(context: Context, bookings: List<ServiceBooking>) {
             put("appliance", booking.appliance)
             put("issue", booking.issue)
             put("address", booking.address)
+            put("preferredSlot", booking.preferredSlot)
+            put("pincode", booking.pincode)
             put("status", booking.status)
         })
     }
@@ -136,8 +142,8 @@ private fun MainApp() {
                     "customer" -> CustomerHome(appliances, bookings,
                         onChoose = { chosen = it; screen = "form" },
                         onHistory = { screen = "history" })
-                    "form" -> RequestForm(chosen, onSubmit = { name, phone, issue, address ->
-                        bookings = bookings + ServiceBooking(nextId++, name, phone, chosen.name, issue, address)
+                    "form" -> RequestForm(chosen, onSubmit = { name, phone, issue, address, preferredSlot, pincode ->
+                        bookings = bookings + ServiceBooking(nextId++, name, phone, chosen.name, issue, address, preferredSlot, pincode)
                         screen = "history"
                     })
                     "history" -> BookingHistory(bookings)
@@ -215,13 +221,15 @@ private fun CustomerHome(appliances: List<Appliance>, bookings: List<ServiceBook
 }
 
 @Composable
-private fun RequestForm(appliance: Appliance, onSubmit: (String, String, String, String) -> Unit) {
+private fun RequestForm(appliance: Appliance, onSubmit: (String, String, String, String, String, String) -> Unit) {
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var issue by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
+    var preferredSlot by remember { mutableStateOf("") }
+    var pincode by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
-    Column(Modifier.fillMaxSize().padding(20.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         Text("${appliance.emoji} ${appliance.name}", fontSize = 23.sp, fontWeight = FontWeight.Bold, color = Navy)
         Text("Tell us a few details so the mechanic can review your request.", color = Color.Gray)
         Spacer(Modifier.height(16.dp))
@@ -232,6 +240,10 @@ private fun RequestForm(appliance: Appliance, onSubmit: (String, String, String,
         OutlinedTextField(issue, { issue = it }, label = { Text("Describe the problem *") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(address, { address = it }, label = { Text("Full address / area *") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+        Spacer(Modifier.height(10.dp))
+        OutlinedTextField(preferredSlot, { preferredSlot = it }, label = { Text("Preferred visit date & time (optional)") }, placeholder = { Text("e.g. Tomorrow, 10 AM–12 PM") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+        Spacer(Modifier.height(10.dp))
+        OutlinedTextField(pincode, { pincode = it.filter(Char::isDigit).take(6) }, label = { Text("Area PIN code (optional)") }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
         if (error.isNotBlank()) { Spacer(Modifier.height(8.dp)); Text(error, color = MaterialTheme.colorScheme.error) }
         Spacer(Modifier.height(16.dp))
         Button(onClick = {
@@ -242,10 +254,10 @@ private fun RequestForm(appliance: Appliance, onSubmit: (String, String, String,
                 address.isBlank() -> "Please enter your address."
                 else -> ""
             }
-            if (error.isBlank()) onSubmit(name.trim(), phone, issue.trim(), address.trim())
+            if (error.isBlank()) onSubmit(name.trim(), phone, issue.trim(), address.trim(), preferredSlot.trim(), pincode)
         }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) { Text("Submit Service Request") }
         Spacer(Modifier.height(10.dp))
-        Text("Bookings are saved on this device. Online syncing will be added in the next milestone.", fontSize = 12.sp, color = Color.Gray)
+        Text("No payment is collected in-app. The team will confirm your visit time and charges.", fontSize = 12.sp, color = Color.Gray)
     }
 }
 
@@ -265,6 +277,8 @@ private fun BookingHistory(bookings: List<ServiceBooking>) {
                     }
                     Spacer(Modifier.height(8.dp))
                     Text("Address: ${b.address}", fontSize = 13.sp)
+                    if (b.preferredSlot.isNotBlank()) Text("Preferred visit: ${b.preferredSlot}", fontSize = 13.sp, color = Navy)
+                    if (b.pincode.isNotBlank()) Text("PIN code: ${b.pincode}", fontSize = 13.sp)
                 }
             }
         }
@@ -323,6 +337,8 @@ private fun AdminHome(bookings: List<ServiceBooking>, onStatus: (Int, String) ->
                         Text(b.issue)
                         Text("Address: ${b.address}", fontSize = 13.sp, color = Color.Gray)
                         Text("Phone: ${b.phone}", fontSize = 13.sp, color = Color.Gray)
+                        if (b.preferredSlot.isNotBlank()) Text("Preferred visit: ${b.preferredSlot}", fontSize = 13.sp, color = Navy)
+                        if (b.pincode.isNotBlank()) Text("PIN code: ${b.pincode}", fontSize = 13.sp, color = Navy)
                         Spacer(Modifier.height(10.dp))
                         if (b.status == "Pending") Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(onClick = { onStatus(b.id, "Accepted") }, modifier = Modifier.weight(1f)) { Text("Accept") }
