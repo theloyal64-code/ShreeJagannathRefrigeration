@@ -290,6 +290,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             error = when {
                 name.isBlank() -> tr(language, "Please enter your name.", "ଦୟାକରି ନାମ ଲେଖନ୍ତୁ।")
                 phone.length != 10 -> tr(language, "Enter a valid 10-digit mobile number.", "ଠିକ୍ ୧୦ ଅଙ୍କର ମୋବାଇଲ୍ ନମ୍ବର ଦିଅନ୍ତୁ।")
+                pincode.isNotBlank() && pincode.length != 6 -> tr(language, "Enter a valid 6-digit PIN code or leave it blank.", "ଠିକ୍ ୬ ଅଙ୍କର ପିନ୍ କୋଡ୍ ଦିଅନ୍ତୁ କିମ୍ବା ଖାଲି ରଖନ୍ତୁ।")
                 issue.isBlank() -> tr(language, "Please select a problem.", "ଦୟାକରି ସମସ୍ୟା ବାଛନ୍ତୁ।")
                 address.isBlank() -> tr(language, "Please enter your address.", "ଦୟାକରି ଠିକଣା ଲେଖନ୍ତୁ।")
                 else -> ""
@@ -423,14 +424,15 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 OutlinedButton(
                                     onClick = {
-                                        val details = "SHREE JAGANNATH REFRIGERATION\nService Booking #${b.id}\nAppliance: ${b.appliance}\nIssue: ${b.issue}\nStatus: ${b.status}\nCustomer: ${b.customer}\nPhone: ${b.phone}\nAddress: ${b.address}" +
-                                            if (b.preferredSlot.isNotBlank()) "\nPreferred visit: ${b.preferredSlot}" else ""
+                                        val details = "SHREE JAGANNATH REFRIGERATION\nService Booking #${b.id}\nAppliance: ${b.appliance}\nIssue: ${b.issue}\nStatus: ${b.status}\nRequested: ${SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(b.createdAt))}\nCustomer: ${b.customer}\nPhone: ${b.phone}\nAddress: ${b.address}" +
+                                            (if (b.preferredSlot.isNotBlank()) "\nPreferred visit: ${b.preferredSlot}" else "") +
+                                            (if (b.pincode.isNotBlank()) "\nPIN code: ${b.pincode}" else "")
                                         val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                             type = "text/plain"
                                             putExtra(Intent.EXTRA_SUBJECT, "Service Booking #${b.id}")
                                             putExtra(Intent.EXTRA_TEXT, details)
                                         }
-                                        context.startActivity(Intent.createChooser(shareIntent, "Share booking details"))
+                                        context.startActivity(Intent.createChooser(shareIntent, tr(language, "Share booking details", "ବୁକିଂ ବିବରଣୀ ସେୟାର୍ କରନ୍ତୁ")))
                                     },
                                     modifier = Modifier.weight(1f)
                                 ) { Text(tr(language, "Share Details", "ବିବରଣୀ ସେୟାର୍")) }
@@ -585,7 +587,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                                 Status(b.status, language)
                             }
                             Spacer(Modifier.height(8.dp))
-                            Text(b.issue)
+                            Text(issueLabel(language, b.issue))
                             Text("${tr(language, "Phone", "ଫୋନ୍")}: ${b.phone}", fontSize = 13.sp, color = Color.Gray)
                             Text("${tr(language, "Address", "ଠିକଣା")}: ${b.address}", fontSize = 13.sp, color = Color.Gray)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -616,7 +618,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                                         listOf("On the Way", "In Progress", "Completed", "Cancelled").forEach { status ->
                                             DropdownMenuItem(
-                                                text = { Text(status) },
+                                                text = { Text(statusLabel(language, status)) },
                                                 onClick = { onStatus(b.id, status); expanded = false }
                                             )
                                         }
