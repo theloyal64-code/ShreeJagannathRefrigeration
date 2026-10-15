@@ -37,6 +37,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -63,11 +64,11 @@ data class Appliance(val name: String, val detail: String, val emoji: String)
 private enum class AppLanguage { ENGLISH, ODIA }
 private fun tr(language: AppLanguage, english: String, odia: String): String = if (language == AppLanguage.ODIA) odia else english
 private val issueOptions = mapOf(
-    "AC Service" to listOf("Not cooling", "Water leakage", "Making noise", "Not turning on", "Bad smell", "Installation / servicing"),
-    "Refrigerator" to listOf("Not cooling", "Water leakage", "Making noise", "Not turning on", "Ice build-up", "Door / gasket problem"),
-    "Washing Machine" to listOf("Not starting", "Not draining water", "Not spinning", "Water leakage", "Making noise", "Door / lid problem"),
-    "Microwave Oven" to listOf("Not heating", "Not turning on", "Sparking inside", "Turntable not moving", "Making noise", "Door problem"),
-    "Geyser" to listOf("No hot water", "Water leakage", "Not turning on", "Trips electricity", "Making noise", "Installation / servicing")
+    "AC Service" to listOf("Not cooling", "Weak airflow", "Water leakage", "Making noise", "Not turning on", "Remote not working", "Bad smell", "Ice on indoor unit", "High electricity use", "Installation / servicing"),
+    "Refrigerator" to listOf("Not cooling", "Overcooling", "Water leakage", "Making noise", "Not turning on", "Ice build-up", "Door / gasket problem", "Light not working", "Compressor runs continuously", "Bad smell", "Freezer not freezing"),
+    "Washing Machine" to listOf("Not starting", "Not draining water", "Not spinning", "Water leakage", "Making noise", "Door / lid problem", "Not taking water", "Too much vibration", "Clothes still wet", "Detergent not dispensing", "Error code on display"),
+    "Microwave Oven" to listOf("Not heating", "Not turning on", "Sparking inside", "Turntable not moving", "Making noise", "Door problem", "Display not working", "Uneven heating", "Burning smell", "Buttons not responding"),
+    "Geyser" to listOf("No hot water", "Water not heating enough", "Water leakage", "Not turning on", "Trips electricity", "Making noise", "Takes too long to heat", "Hot water runs out quickly", "Rusty water", "Installation / servicing")
 )
 data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val preferredSlot: String = "", val pincode: String = "", val status: String = "Pending", val createdAt: Long = System.currentTimeMillis())
 
@@ -408,6 +409,27 @@ private fun issueLabel(language: AppLanguage, issue: String): String {
         "Not turning on" -> "ଚାଲୁ ହେଉନାହିଁ"
         "Bad smell" -> "ଖରାପ ଗନ୍ଧ ଆସୁଛି"
         "Installation / servicing" -> "ଇନଷ୍ଟଲେସନ୍ / ସର୍ଭିସିଂ"
+        "Weak airflow" -> "ବାୟୁ ପ୍ରବାହ କମ୍"
+        "Remote not working" -> "ରିମୋଟ୍ କାମ କରୁନାହିଁ"
+        "Ice on indoor unit" -> "ଭିତର ୟୁନିଟ୍‌ରେ ବରଫ ଜମୁଛି"
+        "High electricity use" -> "ବିଦ୍ୟୁତ୍ ଖର୍ଚ୍ଚ ଅଧିକ"
+        "Overcooling" -> "ଅତ୍ୟଧିକ ଥଣ୍ଡା ହେଉଛି"
+        "Light not working" -> "ଲାଇଟ୍ ଜଳୁନାହିଁ"
+        "Compressor runs continuously" -> "କମ୍ପ୍ରେସର୍ ଲଗାତାର ଚାଲୁଛି"
+        "Freezer not freezing" -> "ଫ୍ରିଜର୍ ବରଫ କରୁନାହିଁ"
+        "Not taking water" -> "ପାଣି ନେଉନାହିଁ"
+        "Too much vibration" -> "ଅଧିକ କମ୍ପନ ହେଉଛି"
+        "Clothes still wet" -> "କପଡ଼ା ଓଦା ରହୁଛି"
+        "Detergent not dispensing" -> "ଡିଟର୍ଜେଣ୍ଟ୍ ବାହାରୁନାହିଁ"
+        "Error code on display" -> "ଡିସପ୍ଲେରେ ଏରର୍ ଦେଖାଉଛି"
+        "Display not working" -> "ଡିସପ୍ଲେ କାମ କରୁନାହିଁ"
+        "Uneven heating" -> "ସମାନ ଭାବେ ଗରମ ହେଉନାହିଁ"
+        "Burning smell" -> "ପୋଡ଼ା ଗନ୍ଧ ଆସୁଛି"
+        "Buttons not responding" -> "ବଟନ୍ କାମ କରୁନାହିଁ"
+        "Water not heating enough" -> "ପାଣି ଯଥେଷ୍ଟ ଗରମ ହେଉନାହିଁ"
+        "Takes too long to heat" -> "ଗରମ ହେବାକୁ ଅଧିକ ସମୟ ଲାଗୁଛି"
+        "Hot water runs out quickly" -> "ଗରମ ପାଣି ଶୀଘ୍ର ସରିଯାଉଛି"
+        "Rusty water" -> "କଳଙ୍କି ରଙ୍ଗର ପାଣି ଆସୁଛି"
         "Ice build-up" -> "ବରଫ ଜମୁଛି"
         "Door / gasket problem" -> "ଦ୍ୱାର / ଗାସକେଟ୍ ସମସ୍ୟା"
         "Not starting" -> "ଚାଲୁ ହେଉନାହିଁ"
@@ -433,7 +455,7 @@ private fun problemEmoji(issue: String): String = when {
     issue.contains("leak", true) || issue.contains("drain", true) -> "💧"
     issue.contains("noise", true) -> "🔊"
     issue.contains("turn", true) || issue.contains("start", true) -> "⚡"
-    issue.contains("door", true) -> "🚪"
+    issue.contains("door", true) || issue.contains("lid", true) || issue.contains("gasket", true) -> "🔒"
     issue.contains("ice", true) -> "🧊"
     issue.contains("spin", true) -> "🌀"
     issue.contains("smell", true) -> "🌬️"
@@ -447,24 +469,25 @@ private fun ApplianceDrawing(appliance: String, issue: String, showMarker: Boole
     val edge = Color(0xFF64748B)
     val dark = Color(0xFF334155)
     Canvas(modifier) {
+        drawRoundRect(Color(0x180F172A), Offset(size.width*0.18f, size.height*0.86f), Size(size.width*0.66f, size.height*0.055f), androidx.compose.ui.geometry.CornerRadius(size.width*0.05f))
         val w = size.width
         val h = size.height
         when (appliance) {
             "AC Service" -> {
-                drawRoundRect(body, Offset(w*0.16f,h*0.24f), Size(w*0.68f,h*0.48f), androidx.compose.ui.geometry.CornerRadius(14f))
+                drawRoundRect(Brush.verticalGradient(listOf(Color(0xFFF8FBFF), Color(0xFFB8C7D8), Color(0xFF7E91A8))), Offset(w*0.16f,h*0.24f), Size(w*0.68f,h*0.48f), androidx.compose.ui.geometry.CornerRadius(14f))
                 drawRoundRect(edge, Offset(w*0.16f,h*0.24f), Size(w*0.68f,h*0.48f), androidx.compose.ui.geometry.CornerRadius(14f), style=Stroke(3f))
                 for (i in 0..5) drawLine(dark, Offset(w*0.24f,h*(0.52f+i*0.025f)), Offset(w*0.76f,h*(0.52f+i*0.025f)), strokeWidth=2.5f)
                 drawCircle(edge, 3.5f, Offset(w*0.73f,h*0.34f))
             }
             "Refrigerator" -> {
-                drawRoundRect(body, Offset(w*0.27f,h*0.08f), Size(w*0.46f,h*0.84f), androidx.compose.ui.geometry.CornerRadius(12f))
+                drawRoundRect(Brush.horizontalGradient(listOf(Color(0xFFF9FCFF), Color(0xFFD7E1EB), Color(0xFF9AAEC2))), Offset(w*0.27f,h*0.08f), Size(w*0.46f,h*0.84f), androidx.compose.ui.geometry.CornerRadius(12f))
                 drawRoundRect(edge, Offset(w*0.27f,h*0.08f), Size(w*0.46f,h*0.84f), androidx.compose.ui.geometry.CornerRadius(12f), style=Stroke(3f))
                 drawLine(edge, Offset(w*0.28f,h*0.43f), Offset(w*0.72f,h*0.43f), strokeWidth=3f)
                 drawLine(edge, Offset(w*0.64f,h*0.20f), Offset(w*0.64f,h*0.36f), strokeWidth=4f)
                 drawLine(edge, Offset(w*0.64f,h*0.54f), Offset(w*0.64f,h*0.78f), strokeWidth=4f)
             }
             "Washing Machine" -> {
-                drawRoundRect(body, Offset(w*0.20f,h*0.12f), Size(w*0.60f,h*0.78f), androidx.compose.ui.geometry.CornerRadius(12f))
+                drawRoundRect(Brush.horizontalGradient(listOf(Color(0xFFF9FCFF), Color(0xFFD3DFEA), Color(0xFF91A6BB))), Offset(w*0.20f,h*0.12f), Size(w*0.60f,h*0.78f), androidx.compose.ui.geometry.CornerRadius(12f))
                 drawRoundRect(edge, Offset(w*0.20f,h*0.12f), Size(w*0.60f,h*0.78f), androidx.compose.ui.geometry.CornerRadius(12f), style=Stroke(3f))
                 drawLine(edge, Offset(w*0.22f,h*0.30f), Offset(w*0.78f,h*0.30f), strokeWidth=3f)
                 drawCircle(Color(0xFF8DA8C4), w*0.19f, Offset(w*0.50f,h*0.59f))
@@ -473,7 +496,7 @@ private fun ApplianceDrawing(appliance: String, issue: String, showMarker: Boole
                 drawCircle(edge, 3f, Offset(w*0.31f,h*0.21f))
             }
             "Microwave Oven" -> {
-                drawRoundRect(body, Offset(w*0.12f,h*0.22f), Size(w*0.76f,h*0.56f), androidx.compose.ui.geometry.CornerRadius(10f))
+                drawRoundRect(Brush.horizontalGradient(listOf(Color(0xFFF9FCFF), Color(0xFFD6E1EB), Color(0xFF8EA2B8))), Offset(w*0.12f,h*0.22f), Size(w*0.76f,h*0.56f), androidx.compose.ui.geometry.CornerRadius(10f))
                 drawRoundRect(edge, Offset(w*0.12f,h*0.22f), Size(w*0.76f,h*0.56f), androidx.compose.ui.geometry.CornerRadius(10f), style=Stroke(3f))
                 drawRoundRect(Color(0xFF9CB4CA), Offset(w*0.19f,h*0.30f), Size(w*0.48f,h*0.40f), androidx.compose.ui.geometry.CornerRadius(5f))
                 drawCircle(Color.White, w*0.12f, Offset(w*0.43f,h*0.50f), style=Stroke(2.5f))
@@ -482,7 +505,7 @@ private fun ApplianceDrawing(appliance: String, issue: String, showMarker: Boole
                 drawCircle(edge, 3f, Offset(w*0.76f,h*0.59f))
             }
             else -> {
-                drawRoundRect(body, Offset(w*0.31f,h*0.12f), Size(w*0.38f,h*0.76f), androidx.compose.ui.geometry.CornerRadius(w*0.16f))
+                drawRoundRect(Brush.horizontalGradient(listOf(Color(0xFFF9FCFF), Color(0xFFD6E1EB), Color(0xFF8EA2B8))), Offset(w*0.31f,h*0.12f), Size(w*0.38f,h*0.76f), androidx.compose.ui.geometry.CornerRadius(w*0.16f))
                 drawRoundRect(edge, Offset(w*0.31f,h*0.12f), Size(w*0.38f,h*0.76f), androidx.compose.ui.geometry.CornerRadius(w*0.16f), style=Stroke(3f))
                 drawLine(edge, Offset(w*0.36f,h*0.29f), Offset(w*0.64f,h*0.29f), strokeWidth=3f)
                 drawCircle(Color(0xFF8DA8C4), w*0.06f, Offset(w*0.50f,h*0.20f))
