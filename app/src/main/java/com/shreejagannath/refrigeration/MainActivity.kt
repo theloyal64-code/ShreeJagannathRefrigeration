@@ -962,11 +962,25 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                                 ) { Text(tr(language, "Call customer", "ଗ୍ରାହକଙ୍କୁ କଲ୍ କରନ୍ତୁ")) }
                                 OutlinedButton(
                                     onClick = {
-                                        val mapIntent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=${Uri.encode(b.address)}"))
-                                        if (mapIntent.resolveActivity(context.packageManager) != null) context.startActivity(mapIntent)
+                                        val fullAddress = listOf(b.address, b.pincode, "India")
+                                            .filter { it.isNotBlank() }
+                                            .joinToString(", ")
+                                        val mapsUri = Uri.parse(
+                                            "https://www.google.com/maps/search/?api=1&query=${Uri.encode(fullAddress)}"
+                                        )
+                                        val mapIntent = Intent(Intent.ACTION_VIEW, mapsUri)
+                                        runCatching {
+                                            context.startActivity(mapIntent)
+                                        }.onFailure {
+                                            Toast.makeText(
+                                                context,
+                                                tr(language, "Could not open Google Maps. Please install or enable a maps app.", "ଗୁଗୁଲ୍ ମ୍ୟାପ୍ ଖୋଲିହେଲା ନାହିଁ। ମ୍ୟାପ୍ ଆପ୍ ଇନଷ୍ଟଲ୍ କରନ୍ତୁ।"),
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        }
                                     },
                                     modifier = Modifier.weight(1f)
-                                ) { Text(tr(language, "Open address", "ଠିକଣା ଖୋଲନ୍ତୁ")) }
+                                ) { Text(tr(language, "Open in Google Maps", "ଗୁଗୁଲ୍ ମ୍ୟାପ୍‌ରେ ଖୋଲନ୍ତୁ")) }
                             }
                             if (b.preferredSlot.isNotBlank()) Text("${tr(language, "Preferred visit: ", "ପସନ୍ଦର ସମୟ: ")}${b.preferredSlot}", fontSize = 13.sp, color = Navy)
                             if (b.pincode.isNotBlank()) Text("${tr(language, "PIN code: ", "ପିନ୍ କୋଡ୍: ")}${b.pincode}", fontSize = 13.sp, color = Navy)
