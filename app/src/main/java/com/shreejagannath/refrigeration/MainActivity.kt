@@ -309,7 +309,12 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                                 selectedDate.set(Calendar.HOUR_OF_DAY, hour)
                                 selectedDate.set(Calendar.MINUTE, minute)
                                 selectedDate.set(Calendar.SECOND, 0)
-                                preferredSlot = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(selectedDate.time)
+                                if (selectedDate.timeInMillis <= System.currentTimeMillis()) {
+                                    error = tr(language, "Choose a future visit time.", "ଦୟାକରି ଭବିଷ୍ୟତର ସମୟ ବାଛନ୍ତୁ।")
+                                } else {
+                                    preferredSlot = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(selectedDate.time)
+                                    error = ""
+                                }
                             },
                             now.get(Calendar.HOUR_OF_DAY),
                             now.get(Calendar.MINUTE),
@@ -336,7 +341,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
         Button(onClick = {
             error = when {
                 name.isBlank() -> tr(language, "Please enter your name.", "ଦୟାକରି ନାମ ଲେଖନ୍ତୁ।")
-                phone.length != 10 -> tr(language, "Enter a valid 10-digit mobile number.", "ଠିକ୍ ୧୦ ଅଙ୍କର ମୋବାଇଲ୍ ନମ୍ବର ଦିଅନ୍ତୁ।")
+                (phone.length != 10 || phone.firstOrNull() !in '6'..'9') -> tr(language, "Enter a valid Indian 10-digit mobile number.", "ଠିକ୍ ୧୦ ଅଙ୍କର ଭାରତୀୟ ମୋବାଇଲ୍ ନମ୍ବର ଦିଅନ୍ତୁ।")
                 pincode.isNotBlank() && pincode.length != 6 -> tr(language, "Enter a valid 6-digit PIN code or leave it blank.", "ଠିକ୍ ୬ ଅଙ୍କର ପିନ୍ କୋଡ୍ ଦିଅନ୍ତୁ କିମ୍ବା ଖାଲି ରଖନ୍ତୁ।")
                 issue.isBlank() -> tr(language, "Please select a problem.", "ଦୟାକରି ସମସ୍ୟା ବାଛନ୍ତୁ।")
                 address.isBlank() -> tr(language, "Please enter your address.", "ଦୟାକରି ଠିକଣା ଲେଖନ୍ତୁ।")
@@ -501,6 +506,7 @@ private fun IssueIllustration(appliance: String, issue: String, language: AppLan
 @Composable
 private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage, onCancel: (Int) -> Unit) {
     val context = LocalContext.current
+    var pendingCancelId by remember { mutableStateOf<Int?>(null) }
     var search by remember { mutableStateOf("") }
     var selectedStatus by remember { mutableStateOf("All") }
     val historyStatuses = listOf("All", "Pending", "Accepted", "On the Way", "In Progress", "Completed", "Rejected", "Cancelled")
@@ -584,7 +590,7 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
                                     modifier = Modifier.weight(1f)
                                 ) { Text(tr(language, "Share Details", "ବିବରଣୀ ସେୟାର୍")) }
                                 if (b.status == "Pending") {
-                                    OutlinedButton(onClick = { onCancel(b.id) }, modifier = Modifier.weight(1f)) {
+                                    OutlinedButton(onClick = { pendingCancelId = b.id }, modifier = Modifier.weight(1f)) {
                                         Text(tr(language, "Cancel Request", "ଅନୁରୋଧ ବାତିଲ୍"))
                                     }
                                 }
@@ -594,6 +600,23 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
                 }
             }
         }
+    }
+    pendingCancelId?.let { bookingId ->
+        AlertDialog(
+            onDismissRequest = { pendingCancelId = null },
+            title = { Text(tr(language, "Cancel this request?", "ଏହି ଅନୁରୋଧ ବାତିଲ୍ କରିବେ କି?")) },
+            text = { Text(tr(language, "This cannot be undone from the customer screen.", "ଗ୍ରାହକ ସ୍କ୍ରିନ୍‌ରୁ ଏହାକୁ ପୁନଃ ପରିବର୍ତ୍ତନ କରିହେବ ନାହିଁ।")) },
+            confirmButton = {
+                TextButton(onClick = { onCancel(bookingId); pendingCancelId = null }) {
+                    Text(tr(language, "Cancel request", "ଅନୁରୋଧ ବାତିଲ୍"))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingCancelId = null }) {
+                    Text(tr(language, "Keep booking", "ବୁକିଂ ରଖନ୍ତୁ"))
+                }
+            }
+        )
     }
 }
 
