@@ -46,6 +46,7 @@ private val Orange = Color(0xFFF28C28)
 private val Page = Color(0xFFF5F7FA)
 private const val BOOKING_PREFS = "shree_jagannath_bookings"
 private const val BOOKINGS_KEY = "bookings"
+private const val LANGUAGE_KEY = "app_language"
 
 data class Appliance(val name: String, val detail: String, val emoji: String)
 private enum class AppLanguage { ENGLISH, ODIA }
@@ -125,7 +126,9 @@ private fun MainApp() {
         Appliance("Geyser", "Installation • Repair", "🚿")
     )
     var screen by remember { mutableStateOf("welcome") }
-    var language by remember { mutableStateOf(AppLanguage.ENGLISH) }
+    var language by remember {
+        mutableStateOf(if (context.getSharedPreferences(BOOKING_PREFS, Context.MODE_PRIVATE).getString(LANGUAGE_KEY, "ENGLISH") == "ODIA") AppLanguage.ODIA else AppLanguage.ENGLISH)
+    }
     var chosen by remember { mutableStateOf(appliances[0]) }
     var bookings by remember { mutableStateOf(loadBookings(context)) }
     var nextId by remember { mutableIntStateOf((bookings.maxOfOrNull { it.id } ?: 1000) + 1) }
@@ -133,16 +136,20 @@ private fun MainApp() {
     LaunchedEffect(bookings) {
         saveBookings(context, bookings)
     }
+    LaunchedEffect(language) {
+        context.getSharedPreferences(BOOKING_PREFS, Context.MODE_PRIVATE).edit()
+            .putString(LANGUAGE_KEY, language.name).apply()
+    }
 
     MaterialTheme(colorScheme = lightColorScheme(primary = Navy, secondary = Orange, background = Page)) {
         Scaffold(topBar = {
             if (screen != "welcome") TopAppBar(
                 title = { Text(when (screen) {
-                    "customer" -> "Book a Service"
-                    "form" -> "Service Request"
-                    "history" -> "My Bookings"
-                    "adminLogin" -> "Admin Login"
-                    "admin" -> "Mechanic Dashboard"
+                    "customer" -> tr(language, "Book a Service", "ସେବା ବୁକ୍ କରନ୍ତୁ")
+                    "form" -> tr(language, "Service Request", "ସେବା ଅନୁରୋଧ")
+                    "history" -> tr(language, "My Bookings", "ମୋ ବୁକିଂ")
+                    "adminLogin" -> tr(language, "Admin Login", "ଆଡମିନ୍ ଲଗଇନ୍")
+                    "admin" -> tr(language, "Mechanic Dashboard", "ମେକାନିକ୍ ଡ୍ୟାସବୋର୍ଡ")
                     else -> "Shree Jagannath"
                 }, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
@@ -164,9 +171,9 @@ private fun MainApp() {
                         bookings = bookings + ServiceBooking(nextId++, name, phone, chosen.name, issue, address, preferredSlot, pincode)
                         screen = "history"
                     })
-                    "history" -> BookingHistory(bookings, onCancel = { id -> bookings = bookings.map { if (it.id == id && it.status == "Pending") it.copy(status = "Cancelled") else it } })
-                    "adminLogin" -> AdminLogin(onSuccess = { screen = "admin" })
-                    "admin" -> AdminHome(bookings, onStatus = { id, status ->
+                    "history" -> BookingHistory(bookings, language, onCancel = { id -> bookings = bookings.map { if (it.id == id && it.status == "Pending") it.copy(status = "Cancelled") else it } })
+                    "adminLogin" -> AdminLogin(language, onSuccess = { screen = "admin" })
+                    "admin" -> AdminHome(bookings, language, onStatus = { id, status ->
                         bookings = bookings.map { if (it.id == id) it.copy(status = status) else it }
                     })
                 }
@@ -326,7 +333,7 @@ private fun IssueIllustration(appliance: String, issue: String) {
 }
 
 @Composable
-private fun BookingHistory(bookings: List<ServiceBooking>, onCancel: (Int) -> Unit) {
+private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage, onCancel: (Int) -> Unit) {
     val context = LocalContext.current
     var search by remember { mutableStateOf("") }
     val visibleBookings = bookings.filter { booking ->
@@ -343,14 +350,14 @@ private fun BookingHistory(bookings: List<ServiceBooking>, onCancel: (Int) -> Un
             onValueChange = { search = it },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            label = { Text("Search booking ID, appliance or status") },
+            label = { Text(tr(language, "Search booking ID, appliance or status", "ବୁକିଂ ନମ୍ବର, ଉପକରଣ କିମ୍ବା ସ୍ଥିତି ଖୋଜନ୍ତୁ")) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search bookings") }
         )
         Spacer(Modifier.height(8.dp))
         if (bookings.isEmpty()) {
-            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text("No bookings yet.") }
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text(tr(language, "No bookings yet.", "ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ବୁକିଂ ନାହିଁ।")) }
         } else if (visibleBookings.isEmpty()) {
-            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text("No matching bookings.", color = Color.Gray) }
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text(tr(language, "No matching bookings.", "ମେଳ ଖାଉଥିବା ବୁକିଂ ମିଳିଲା ନାହିଁ।"), color = Color.Gray) }
         } else {
             LazyColumn(Modifier.weight(1f)) {
                 items(visibleBookings, key = { it.id }) { b ->
@@ -365,8 +372,8 @@ private fun BookingHistory(bookings: List<ServiceBooking>, onCancel: (Int) -> Un
                                 Status(b.status)
                             }
                             Spacer(Modifier.height(8.dp))
-                            Text("Mobile: ${b.phone}", fontSize = 13.sp, color = Color.Gray)
-                            Text("Address: ${b.address}", fontSize = 13.sp)
+                            Text("${tr(language, "Mobile", "ମୋବାଇଲ୍")}: ${b.phone}", fontSize = 13.sp, color = Color.Gray)
+                            Text("${tr(language, "Address", "ଠିକଣା")}: ${b.address}", fontSize = 13.sp)
                             Spacer(Modifier.height(12.dp))
                             BookingProgress(b.status)
                             if (b.preferredSlot.isNotBlank()) Text("Preferred visit: ${b.preferredSlot}", fontSize = 13.sp, color = Navy)
@@ -408,7 +415,7 @@ private fun BookingProgress(status: String) {
     }
     val current = steps.indexOf(status).coerceAtLeast(0)
     Column {
-        Text("Service progress", fontWeight = FontWeight.SemiBold, color = Navy, fontSize = 13.sp)
+        Text(tr(language, "Service progress", "ସେବାର ପ୍ରଗତି"), fontWeight = FontWeight.SemiBold, color = Navy, fontSize = 13.sp)
         Spacer(Modifier.height(8.dp))
         steps.forEachIndexed { index, step ->
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -436,28 +443,28 @@ private fun BookingProgress(status: String) {
 }
 
 @Composable
-private fun AdminLogin(onSuccess: () -> Unit) {
+private fun AdminLogin(language: AppLanguage, onSuccess: () -> Unit) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center) {
-        Text("Admin Access", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Navy)
-        Text("Demo-only login. Secure backend authentication is required before release.")
+        Text(tr(language, "Admin Access", "ଆଡମିନ୍ ପ୍ରବେଶ"), fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Navy)
+        Text(tr(language, "Demo-only login. Secure backend authentication is required before release.", "ଏହା ଡେମୋ ଲଗଇନ୍। ପ୍ରକାଶ ପୂର୍ବରୁ ସୁରକ୍ଷିତ ଲଗଇନ୍ ଆବଶ୍ୟକ।"))
         Spacer(Modifier.height(18.dp))
-        OutlinedTextField(username, { username = it }, label = { Text("Admin username") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+        OutlinedTextField(username, { username = it }, label = { Text(tr(language, "Admin username", "ଆଡମିନ୍ ୟୁଜରନେମ୍")) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
         Spacer(Modifier.height(10.dp))
-        OutlinedTextField(password, { password = it }, label = { Text("Password") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+        OutlinedTextField(password, { password = it }, label = { Text(tr(language, "Password", "ପାସୱାର୍ଡ")) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
         if (error.isNotBlank()) { Spacer(Modifier.height(8.dp)); Text(error, color = MaterialTheme.colorScheme.error) }
         Spacer(Modifier.height(16.dp))
         Button(onClick = {
             if (username == "admin" && password == "demo1234") onSuccess()
-            else error = "Demo login: admin / demo1234"
-        }, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("Login") }
+            else error = tr(language, "Demo login: admin / demo1234", "ଡେମୋ ଲଗଇନ୍: admin / demo1234")
+        }, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text(tr(language, "Login", "ଲଗଇନ୍")) }
     }
 }
 
 @Composable
-private fun AdminHome(bookings: List<ServiceBooking>, onStatus: (Int, String) -> Unit) {
+private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onStatus: (Int, String) -> Unit) {
     val context = LocalContext.current
     var search by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("All") }
@@ -479,8 +486,8 @@ private fun AdminHome(bookings: List<ServiceBooking>, onStatus: (Int, String) ->
 
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Spacer(Modifier.height(14.dp))
-        Text("Namaskar, Mechanic 👋", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Navy)
-        Text("Review requests, find customers and update service status.", color = Color.Gray)
+        Text(tr(language, "Namaskar, Mechanic 👋", "ନମସ୍କାର, ମେକାନିକ୍ 👋"), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Navy)
+        Text(tr(language, "Review requests, find customers and update service status.", "ଅନୁରୋଧ ଦେଖନ୍ତୁ, ଗ୍ରାହକ ଖୋଜନ୍ତୁ ଏବଂ ସେବା ସ୍ଥିତି ବଦଳାନ୍ତୁ।"), color = Color.Gray)
         Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Stat("New", bookings.count { it.status == "Pending" }.toString(), Modifier.weight(1f))
@@ -493,13 +500,13 @@ private fun AdminHome(bookings: List<ServiceBooking>, onStatus: (Int, String) ->
             onValueChange = { search = it },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            label = { Text("Search ID, customer, phone, appliance, area or PIN") },
+            label = { Text(tr(language, "Search ID, customer, phone, appliance, area or PIN", "ଆଇଡି, ଗ୍ରାହକ, ଫୋନ୍, ଉପକରଣ କିମ୍ବା ପିନ୍ ଖୋଜନ୍ତୁ")) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search bookings") }
         )
         Spacer(Modifier.height(8.dp))
         Box {
             OutlinedButton(onClick = { filterExpanded = true }, modifier = Modifier.fillMaxWidth()) {
-                Text("Status filter: $selectedFilter")
+                Text(tr(language, "Status filter", "ସ୍ଥିତି ଫିଲ୍ଟର") + ": $selectedFilter")
             }
             DropdownMenu(expanded = filterExpanded, onDismissRequest = { filterExpanded = false }) {
                 filters.forEach { filter ->
@@ -514,7 +521,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, onStatus: (Int, String) ->
         Text("Showing ${visibleBookings.size} of ${bookings.size} requests", fontSize = 12.sp, color = Color.Gray)
         Spacer(Modifier.height(8.dp))
         if (bookings.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("No service requests yet.") }
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(tr(language, "No service requests yet.", "ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ସେବା ଅନୁରୋଧ ନାହିଁ।")) }
         } else if (visibleBookings.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Text("No matching requests. Try another search or status filter.", color = Color.Gray)
@@ -543,14 +550,14 @@ private fun AdminHome(bookings: List<ServiceBooking>, onStatus: (Int, String) ->
                                 OutlinedButton(
                                     onClick = { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${b.phone}"))) },
                                     modifier = Modifier.weight(1f)
-                                ) { Text("Call customer") }
+                                ) { Text(tr(language, "Call customer", "ଗ୍ରାହକଙ୍କୁ କଲ୍ କରନ୍ତୁ")) }
                                 OutlinedButton(
                                     onClick = {
                                         val mapIntent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=${Uri.encode(b.address)}"))
                                         if (mapIntent.resolveActivity(context.packageManager) != null) context.startActivity(mapIntent)
                                     },
                                     modifier = Modifier.weight(1f)
-                                ) { Text("Open address") }
+                                ) { Text(tr(language, "Open address", "ଠିକଣା ଖୋଲନ୍ତୁ")) }
                             }
                             if (b.preferredSlot.isNotBlank()) Text("Preferred visit: ${b.preferredSlot}", fontSize = 13.sp, color = Navy)
                             if (b.pincode.isNotBlank()) Text("PIN code: ${b.pincode}", fontSize = 13.sp, color = Navy)
