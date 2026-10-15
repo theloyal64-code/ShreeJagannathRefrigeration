@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.HomeRepairService
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
@@ -279,10 +280,49 @@ private fun BookingHistory(bookings: List<ServiceBooking>) {
                         Status(b.status)
                     }
                     Spacer(Modifier.height(8.dp))
+                    Text("Mobile: ${b.phone}", fontSize = 13.sp, color = Color.Gray)
                     Text("Address: ${b.address}", fontSize = 13.sp)
+                    Spacer(Modifier.height(12.dp))
+                    BookingProgress(b.status)
                     if (b.preferredSlot.isNotBlank()) Text("Preferred visit: ${b.preferredSlot}", fontSize = 13.sp, color = Navy)
                     if (b.pincode.isNotBlank()) Text("PIN code: ${b.pincode}", fontSize = 13.sp)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BookingProgress(status: String) {
+    val steps = listOf("Pending", "Accepted", "On the Way", "In Progress", "Completed")
+    if (status == "Rejected" || status == "Cancelled") {
+        Text("Request $status", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+        return
+    }
+    val current = steps.indexOf(status).coerceAtLeast(0)
+    Column {
+        Text("Service progress", fontWeight = FontWeight.SemiBold, color = Navy, fontSize = 13.sp)
+        Spacer(Modifier.height(8.dp))
+        steps.forEachIndexed { index, step ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.size(22.dp).background(
+                        if (index <= current) Navy else Color(0xFFE1E6ED),
+                        RoundedCornerShape(50)
+                    ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (index < current) {
+                        Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                    } else {
+                        Text("${index + 1}", color = if (index == current) Color.White else Color.DarkGray, fontSize = 10.sp)
+                    }
+                }
+                Spacer(Modifier.width(8.dp))
+                Text(step, color = if (index == current) Navy else Color.Gray, fontWeight = if (index == current) FontWeight.Bold else FontWeight.Normal, fontSize = 13.sp)
+            }
+            if (index < steps.lastIndex) {
+                Box(Modifier.padding(start = 10.dp).width(2.dp).height(7.dp).background(if (index < current) Navy else Color(0xFFE1E6ED)))
             }
         }
     }
