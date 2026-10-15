@@ -292,6 +292,44 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
     var showSubmitConfirmation by remember { mutableStateOf(false) }
     val issues = issueOptions[appliance.name] ?: listOf("Not working", "Making noise", "Leakage", "Other")
     val context = LocalContext.current
+    fun captureCurrentLocation() {
+        val manager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        try {
+            val provider = when {
+                manager.isProviderEnabled(LocationManager.GPS_PROVIDER) -> LocationManager.GPS_PROVIDER
+                manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) -> LocationManager.NETWORK_PROVIDER
+                else -> null
+            }
+            if (provider == null) {
+                locating = false
+                Toast.makeText(context, tr(language, "Turn on device location and try again.", "ଫୋନ୍‌ର ଲୋକେସନ୍ ଚାଲୁ କରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                return
+            }
+            val listener = object : LocationListener {
+                override fun onLocationChanged(location: Location) {
+                    latitude = location.latitude
+                    longitude = location.longitude
+                    locating = false
+                    Toast.makeText(context, tr(language, "GPS location saved for this booking.", "ଏହି ବୁକିଂ ପାଇଁ GPS ଲୋକେସନ୍ ସେଭ୍ ହେଲା।"), Toast.LENGTH_SHORT).show()
+                }
+            }
+            @Suppress("DEPRECATION")
+            manager.requestSingleUpdate(provider, listener, Looper.getMainLooper())
+            Toast.makeText(context, tr(language, "Getting location…", "ଲୋକେସନ୍ ନିଆଯାଉଛି…"), Toast.LENGTH_SHORT).show()
+        } catch (_: Exception) {
+            locating = false
+            Toast.makeText(context, tr(language, "Could not get location. Please enter address manually.", "ଲୋକେସନ୍ ମିଳିଲା ନାହିଁ। ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+        }
+    }
+    val locationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
+        if (grants[Manifest.permission.ACCESS_FINE_LOCATION] == true || grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true) {
+            locating = true
+            captureCurrentLocation()
+        } else {
+            locating = false
+            Toast.makeText(context, tr(language, "Location permission denied. You can still enter your address.", "ଲୋକେସନ୍ ଅନୁମତି ମିଳିଲା ନାହିଁ। ଠିକଣା ଲେଖିପାରିବେ।"), Toast.LENGTH_LONG).show()
+        }
+    }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         Text("${appliance.emoji} ${applianceLabel(language, appliance.name)}", fontSize = 23.sp, fontWeight = FontWeight.Bold, color = Navy)
         Text(tr(language, "Choose the problem below—no long description needed.", "ତଳୁ ସମସ୍ୟା ବାଛନ୍ତୁ—ଲମ୍ବା ବର୍ଣ୍ଣନା ଦରକାର ନାହିଁ।"), color = Color.Gray)
@@ -310,6 +348,26 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
         if (issue.isNotBlank()) { Spacer(Modifier.height(10.dp)); IssueIllustration(appliance.name, issue, language) }
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(address, { address = it }, label = { Text(tr(language, "Full address / area *", "ପୂରା ଠିକଣା / ଅଞ୍ଚଳ *")) }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(onClick = {
+            val fine = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            val coarse = context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            if (fine || coarse) {
+                locating = true
+                captureCurrentLocation()
+            } else {
+                locationPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+            }
+        }, modifier = Modifier.fillMaxWidth(), enabled = !locating) {
+            Text(when {
+                locating -> tr(language, "Getting GPS location…", "GPS ଲୋକେସନ୍ ନିଆଯାଉଛି…")
+                latitude != null && longitude != null -> tr(language, "GPS location saved ✓ (tap to refresh)", "GPS ଲୋକେସନ୍ ସେଭ୍ ହେଲା ✓")
+                else -> tr(language, "Use current GPS location (optional)", "ବର୍ତ୍ତମାନ GPS ଲୋକେସନ୍ ବ୍ୟବହାର କରନ୍ତୁ (ଇଚ୍ଛାଧୀନ)")
+            })
+        }
+        if (latitude != null && longitude != null) {
+            Text(tr(language, "Location will be shared with the mechanic for this booking.", "ଏହି ବୁକିଂ ପାଇଁ ଲୋକେସନ୍ ମେକାନିକ୍‌ଙ୍କ ସହ ସେୟାର୍ ହେବ।"), fontSize = 12.sp, color = Color(0xFF16804A))
+        }
         Spacer(Modifier.height(10.dp))
         OutlinedButton(
             onClick = {
