@@ -287,7 +287,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(address, { address = it }, label = { Text(tr(language, "Full address / area *", "ପୂରା ଠିକଣା / ଅଞ୍ଚଳ *")) }, modifier = Modifier.fillMaxWidth(), minLines = 2)
         Spacer(Modifier.height(10.dp))
-        OutlinedTextField(preferredSlot, { preferredSlot = it }, label = { Text(tr(language, "Preferred visit date & time (optional)", "ପସନ୍ଦର ତାରିଖ ଓ ସମୟ (ଇଚ୍ଛାଧୀନ)")) }, placeholder = { Text("e.g. Tomorrow, 10 AM–12 PM") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+        OutlinedTextField(preferredSlot, { preferredSlot = it }, label = { Text(tr(language, "Preferred visit date & time (optional)", "ପସନ୍ଦର ତାରିଖ ଓ ସମୟ (ଇଚ୍ଛାଧୀନ)")) }, placeholder = { Text(tr(language, "e.g. Tomorrow, 10 AM–12 PM", "ଯଥା: ଆସନ୍ତାକାଲି, ସକାଳ ୧୦–୧୨")) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(pincode, { pincode = it.filter(Char::isDigit).take(6) }, label = { Text(tr(language, "Area PIN code (optional)", "ପିନ୍ କୋଡ୍ (ଇଚ୍ଛାଧୀନ)")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
         if (error.isNotBlank()) { Spacer(Modifier.height(8.dp)); Text(error, color = MaterialTheme.colorScheme.error) }
@@ -464,9 +464,14 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
     val visibleBookings = bookings.filter { booking ->
         val query = search.trim()
         query.isBlank() || booking.id.toString().contains(query, ignoreCase = true) ||
+            booking.customer.contains(query, ignoreCase = true) ||
+            booking.phone.contains(query, ignoreCase = true) ||
             booking.appliance.contains(query, ignoreCase = true) ||
             booking.status.contains(query, ignoreCase = true) ||
-            booking.issue.contains(query, ignoreCase = true)
+            booking.issue.contains(query, ignoreCase = true) ||
+            booking.address.contains(query, ignoreCase = true) ||
+            booking.preferredSlot.contains(query, ignoreCase = true) ||
+            booking.pincode.contains(query, ignoreCase = true)
     }.sortedByDescending { it.id }
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Spacer(Modifier.height(8.dp))
@@ -475,7 +480,7 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
             onValueChange = { search = it },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            label = { Text(tr(language, "Search booking ID, appliance or status", "ବୁକିଂ ନମ୍ବର, ଉପକରଣ କିମ୍ବା ସ୍ଥିତି ଖୋଜନ୍ତୁ")) },
+            label = { Text(tr(language, "Search ID, customer, phone, appliance, issue or area", "ଆଇଡି, ଗ୍ରାହକ, ଫୋନ୍, ଉପକରଣ, ସମସ୍ୟା କିମ୍ବା ଠିକଣା ଖୋଜନ୍ତୁ")) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search bookings") }
         )
         Spacer(Modifier.height(8.dp))
