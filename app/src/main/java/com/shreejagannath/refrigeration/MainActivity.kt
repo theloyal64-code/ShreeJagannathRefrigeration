@@ -289,6 +289,27 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
                 }
             }
         }
+        Canvas(Modifier.fillMaxWidth().height(43.dp)) {
+            val w = size.width
+            val h = size.height
+            val blue = Path().apply {
+                moveTo(0f, h * 0.18f)
+                cubicTo(w * 0.18f, h * 0.98f, w * 0.30f, h * 0.95f, w * 0.48f, h * 0.45f)
+                cubicTo(w * 0.65f, -h * 0.02f, w * 0.78f, h * 0.15f, w, h * 0.72f)
+                lineTo(w, h)
+                lineTo(0f, h)
+                close()
+            }
+            drawPath(blue, Brush.horizontalGradient(listOf(Color(0xFF0B4B86), Color(0xFF0876C9), Color(0xFF0B3765))))
+            val orangeAccent = Path().apply {
+                moveTo(0f, h * 0.08f)
+                cubicTo(w * 0.14f, h * 0.55f, w * 0.20f, h * 0.55f, w * 0.31f, h * 0.34f)
+                lineTo(w * 0.28f, h * 0.49f)
+                cubicTo(w * 0.18f, h * 0.75f, w * 0.10f, h * 0.56f, 0f, h * 0.36f)
+                close()
+            }
+            drawPath(orangeAccent, Color(0xFFF28C28))
+        }
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Button(
                 onClick = onCustomer,
