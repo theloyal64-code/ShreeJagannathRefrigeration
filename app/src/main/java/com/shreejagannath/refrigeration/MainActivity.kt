@@ -1502,13 +1502,15 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
             onClick = {
                 fun csvCell(value: String): String = "\"" + value.replace("\"", "\"\"").replace("\n", " ").replace("\r", " ") + "\""
                 val rows = mutableListOf(
-                    listOf("Booking ID", "Created At", "Customer", "Phone", "Appliance", "Issue", "Status", "Address", "Preferred Visit", "PIN Code", "GPS Latitude", "GPS Longitude").joinToString(",")
+                    listOf("Booking ID", "Created At", "Customer", "Phone", "Appliance", "Issue", "Status", "Assigned Mechanic", "Status Updated At", "Address", "Preferred Visit", "PIN Code", "GPS Latitude", "GPS Longitude").joinToString(",")
                 )
                 bookings.sortedByDescending { it.createdAt }.forEach { booking ->
                     rows += listOf(
                         booking.id.toString(),
                         SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(booking.createdAt)),
                         booking.customer, booking.phone, booking.appliance, booking.issue, booking.status,
+                        booking.assignedMechanic.ifBlank { "Unassigned" },
+                        SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(booking.statusUpdatedAt)),
                         booking.address, booking.preferredSlot, booking.pincode,
                         booking.latitude?.toString().orEmpty(), booking.longitude?.toString().orEmpty()
                     ).joinToString(",") { csvCell(it) }
