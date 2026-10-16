@@ -168,6 +168,7 @@ private fun MainApp() {
     }
     var chosen by remember { mutableStateOf(appliances[0]) }
     var loggedInMechanic by remember { mutableStateOf("") }
+    var lastCreatedBookingId by remember { mutableIntStateOf(0) }
     var bookings by remember { mutableStateOf(loadBookings(context)) }
     var nextId by remember { mutableIntStateOf((bookings.maxOfOrNull { it.id } ?: 1000) + 1) }
 
@@ -186,6 +187,7 @@ private fun MainApp() {
                     "customer" -> tr(language, "Book a Service", "ସେବା ବୁକ୍ କରନ୍ତୁ")
                     "form" -> tr(language, "Service Request", "ସେବା ଅନୁରୋଧ")
                     "history" -> tr(language, "My Bookings", "ମୋ ବୁକିଂ")
+                    "bookingConfirmation" -> tr(language, "Booking Confirmed", "ବୁକିଂ ନିଶ୍ଚିତ")
                     "adminLogin" -> tr(language, "Team Login", "ଟିମ୍ ଲଗଇନ୍")
                     "admin" -> tr(language, "Admin Dashboard", "ଆଡମିନ୍ ଡ୍ୟାସବୋର୍ଡ")
                     "mechanic" -> tr(language, "Mechanic Dashboard", "ମେକାନିକ୍ ଡ୍ୟାସବୋର୍ଡ")
@@ -195,6 +197,7 @@ private fun MainApp() {
                     IconButton(onClick = { screen = when (screen) {
                         "form" -> "customer"
                         "history" -> "customer"
+                        "bookingConfirmation" -> "customer"
                         "admin", "mechanic" -> "welcome"
                         else -> "welcome"
                     } }) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
@@ -207,9 +210,17 @@ private fun MainApp() {
                     "customer" -> CustomerHome(appliances, bookings, language,
                         onChoose = { chosen = it; screen = "form" }, onHistory = { screen = "history" })
                     "form" -> RequestForm(chosen, language, onSubmit = { name, phone, issue, address, preferredSlot, pincode, latitude, longitude ->
-                        bookings = bookings + ServiceBooking(nextId++, name, phone, chosen.name, issue, address, preferredSlot, pincode, latitude = latitude, longitude = longitude)
-                        screen = "history"
+                        val newBooking = ServiceBooking(nextId++, name, phone, chosen.name, issue, address, preferredSlot, pincode, latitude = latitude, longitude = longitude)
+                        lastCreatedBookingId = newBooking.id
+                        bookings = bookings + newBooking
+                        screen = "bookingConfirmation"
                     })
+                    "bookingConfirmation" -> BookingConfirmation(
+                        booking = bookings.firstOrNull { it.id == lastCreatedBookingId },
+                        language = language,
+                        onViewBookings = { screen = "history" },
+                        onHome = { screen = "customer" }
+                    )
                     "history" -> BookingHistory(bookings, language, onCancel = { id -> bookings = bookings.map { if (it.id == id && it.status == "Pending") it.copy(status = "Cancelled") else it } })
                     "adminLogin" -> TeamLogin(language, onAdminSuccess = { screen = "admin" }, onMechanicSuccess = { mechanic ->
                         loggedInMechanic = mechanic
@@ -1039,6 +1050,66 @@ private fun IssueIllustration(appliance: String, issue: String, language: AppLan
             }
             Text(tr(language, "Marked", "ବଛାଯାଇଛି") + ": ${issueLabel(language, issue)}", fontWeight = FontWeight.SemiBold, color = Navy)
             Text(tr(language, "Illustrative guide — select the closest matching issue.", "ଏହା ଏକ ସାଧାରଣ ଗାଇଡ୍ — ମେଳ ଖାଉଥିବା ସମସ୍ୟା ବାଛନ୍ତୁ।"), fontSize = 11.sp, color = Color.Gray)
+        }
+    }
+}
+
+@Composable
+private fun BookingConfirmation(
+    booking: ServiceBooking?,
+    language: AppLanguage,
+    onViewBookings: () -> Unit,
+    onHome: () -> Unit
+) {
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Surface(color = Color(0xFFE3F5E9), shape = RoundedCornerShape(50)) {
+            Box(Modifier.size(82.dp), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF21834A), modifier = Modifier.size(54.dp))
+            }
+        }
+        Spacer(Modifier.height(18.dp))
+        Text(tr(language, "Service Booking Received!", "ସେବା ବୁକିଂ ଗ୍ରହଣ କରାଗଲା!"), fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = Navy)
+        Spacer(Modifier.height(8.dp))
+        Text(tr(language, "Keep your booking ID for future reference.", "ପରେ ଦରକାର ପାଇଁ ବୁକିଂ ଆଇଡି ରଖନ୍ତୁ।"), color = Color.Gray)
+        Spacer(Modifier.height(22.dp))
+        if (booking != null) {
+            Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)) {
+                Column(Modifier.fillMaxWidth().padding(20.dp)) {
+                    Text(tr(language, "BOOKING ID", "ବୁକିଂ ଆଇଡି"), color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("#${booking.id}", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = Orange)
+                    HorizontalDivider(Modifier.padding(vertical = 12.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(tr(language, "Current status", "ବର୍ତ୍ତମାନ ସ୍ଥିତି"), Modifier.weight(1f), color = Color.Gray)
+                        Text(statusLabel(language, booking.status), fontWeight = FontWeight.Bold, color = Navy)
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(tr(language, "Appliance", "ଉପକରଣ"), Modifier.weight(1f), color = Color.Gray)
+                        Text(booking.appliance, fontWeight = FontWeight.SemiBold, color = Navy)
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(tr(language, "Requested on", "ଅନୁରୋଧ ତାରିଖ"), Modifier.weight(1f), color = Color.Gray)
+                        Text(SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(booking.createdAt)), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Navy)
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Text(tr(language, "Your request is saved on this device. Our team will update the status when it is processed.", "ଆପଣଙ୍କ ଅନୁରୋଧ ଏହି ଡିଭାଇସରେ ସେଭ୍ ହୋଇଛି। ଟିମ୍ ପ୍ରକ୍ରିୟା କଲେ ସ୍ଥିତି ଅପଡେଟ୍ ହେବ।"), fontSize = 12.sp, color = Color.Gray)
+                }
+            }
+        } else {
+            Text(tr(language, "Booking details are unavailable. Open My Bookings to check your requests.", "ବୁକିଂ ବିବରଣୀ ମିଳୁନାହିଁ। ଆପଣଙ୍କ ଅନୁରୋଧ ଦେଖିବାକୁ ମୋ ବୁକିଂ ଖୋଲନ୍ତୁ।"), color = Color.Gray)
+        }
+        Spacer(Modifier.height(20.dp))
+        Button(onClick = onViewBookings, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+            Text(tr(language, "View My Bookings", "ମୋ ବୁକିଂ ଦେଖନ୍ତୁ"))
+        }
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(onClick = onHome, modifier = Modifier.fillMaxWidth().height(50.dp)) {
+            Text(tr(language, "Book Another Service", "ଅନ୍ୟ ସେବା ବୁକ୍ କରନ୍ତୁ"))
         }
     }
 }
