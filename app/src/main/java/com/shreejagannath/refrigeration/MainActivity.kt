@@ -115,6 +115,14 @@ private fun loadBookings(context: Context): List<ServiceBooking> {
     }
 }
 
+private fun canTransitionBookingStatus(current: String, next: String): Boolean = when (current) {
+    "Pending" -> next in listOf("Accepted", "Rejected", "Cancelled")
+    "Accepted" -> next in listOf("On the Way", "Cancelled")
+    "On the Way" -> next in listOf("In Progress", "Cancelled")
+    "In Progress" -> next in listOf("Completed", "Cancelled")
+    else -> false
+}
+
 private fun saveBookings(context: Context, bookings: List<ServiceBooking>) {
     val json = JSONArray()
     bookings.forEach { booking ->
@@ -199,7 +207,10 @@ private fun MainApp() {
                     "history" -> BookingHistory(bookings, language, onCancel = { id -> bookings = bookings.map { if (it.id == id && it.status == "Pending") it.copy(status = "Cancelled") else it } })
                     "adminLogin" -> AdminLogin(language, onSuccess = { screen = "admin" })
                     "admin" -> AdminHome(bookings, language, onStatus = { id, status ->
-                        bookings = bookings.map { if (it.id == id) it.copy(status = status) else it }
+                        val booking = bookings.firstOrNull { it.id == id }
+                        if (booking != null && canTransitionBookingStatus(booking.status, status)) {
+                            bookings = bookings.map { if (it.id == id) it.copy(status = status) else it }
+                        }
                     })
                 }
             }
