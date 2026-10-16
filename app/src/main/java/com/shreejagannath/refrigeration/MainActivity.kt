@@ -526,6 +526,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
     var error by remember { mutableStateOf("") }
     var issueExpanded by remember { mutableStateOf(false) }
     var showSubmitConfirmation by remember { mutableStateOf(false) }
+    var isSubmitting by remember { mutableStateOf(false) }
     val issues = issueOptions[appliance.name] ?: listOf("Not working", "Making noise", "Leakage", "Other")
     val context = LocalContext.current
     fun captureCurrentLocation() {
@@ -680,10 +681,18 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    showSubmitConfirmation = false
-                    onSubmit(name.trim(), phone, issue.trim(), address.trim(), preferredSlot.trim(), pincode, latitude, longitude)
-                }) { Text(tr(language, "Confirm booking", "ବୁକିଂ ନିଶ୍ଚିତ କରନ୍ତୁ")) }
+                TextButton(
+                    enabled = !isSubmitting,
+                    onClick = {
+                        if (!isSubmitting) {
+                            isSubmitting = true
+                            showSubmitConfirmation = false
+                            onSubmit(name.trim(), phone, issue.trim(), address.trim(), preferredSlot.trim(), pincode, latitude, longitude)
+                        }
+                    }
+                ) {
+                    Text(tr(language, "Confirm booking", "ବୁକିଂ ନିଶ୍ଚିତ କରନ୍ତୁ"))
+                }
             },
             dismissButton = {
                 TextButton(onClick = { showSubmitConfirmation = false }) {
