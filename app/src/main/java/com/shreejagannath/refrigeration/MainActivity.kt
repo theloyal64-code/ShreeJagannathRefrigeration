@@ -1054,6 +1054,29 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
             Stat(tr(language, "Completed", "ସମ୍ପୂର୍ଣ୍ଣ"), bookings.count { it.status == "Completed" }.toString(), Modifier.weight(1f))
         }
         Spacer(Modifier.height(10.dp))
+        Box {
+            OutlinedButton(onClick = { mechanicFilterExpanded = true }, modifier = Modifier.fillMaxWidth()) {
+                val mechanicFilterLabel = when (selectedMechanicFilter) {
+                    "All mechanics" -> tr(language, "All mechanics", "ସମସ୍ତ ମେକାନିକ୍")
+                    "Unassigned" -> tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି")
+                    else -> selectedMechanicFilter
+                }
+                Text(tr(language, "Mechanic view: ", "ମେକାନିକ୍ ଭ୍ୟୁ: ") + mechanicFilterLabel)
+            }
+            DropdownMenu(expanded = mechanicFilterExpanded, onDismissRequest = { mechanicFilterExpanded = false }) {
+                mechanicFilters.forEach { mechanic ->
+                    DropdownMenuItem(
+                        text = { Text(when (mechanic) {
+                            "All mechanics" -> tr(language, "All mechanics", "ସମସ୍ତ ମେକାନିକ୍")
+                            "Unassigned" -> tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି")
+                            else -> mechanic
+                        }) },
+                        onClick = { selectedMechanicFilter = mechanic; mechanicFilterExpanded = false }
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
         OutlinedTextField(
             value = search,
             onValueChange = { search = it },
@@ -1219,6 +1242,8 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
     var pendingStatusChange by remember { mutableStateOf<Pair<Int, String>?>(null) }
     var search by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("All") }
+    var selectedMechanicFilter by remember { mutableStateOf("All mechanics") }
+    var mechanicFilterExpanded by remember { mutableStateOf(false) }
     var filterExpanded by remember { mutableStateOf(false) }
     var reportText by remember { mutableStateOf("") }
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
@@ -1236,7 +1261,9 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
         }
     }
     val filters = listOf("All", "Pending", "Accepted", "On the Way", "In Progress", "Completed", "Rejected", "Cancelled")
+    val mechanicFilters = listOf("All mechanics", "Unassigned", "Mechanic 1", "Mechanic 2", "Senior Technician")
     val visibleBookings = bookings
+        .filter { selectedMechanicFilter == "All mechanics" || (if (selectedMechanicFilter == "Unassigned") it.assignedMechanic.isBlank() else it.assignedMechanic == selectedMechanicFilter) }
         .filter { selectedFilter == "All" || it.status == selectedFilter }
         .filter {
             val query = search.trim()
