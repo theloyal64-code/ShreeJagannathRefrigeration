@@ -233,105 +233,114 @@ private fun fetchCommonsPhoto(searchTerm: String): android.graphics.Bitmap? {
 
 @Composable
 private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, onCustomer: () -> Unit, onAdmin: () -> Unit) {
-    Column(Modifier.fillMaxSize().background(Color(0xFFF4F8FD)).verticalScroll(rememberScrollState())) {
-        Row(Modifier.fillMaxWidth().background(Color(0xFF0B3765)).padding(horizontal = 20.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.HomeRepairService, contentDescription = null, tint = Color.White, modifier = Modifier.size(42.dp))
-            Spacer(Modifier.width(10.dp))
+    Column(
+        Modifier.fillMaxSize().background(Color(0xFFF4F8FD)).padding(bottom = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(0.dp)
+    ) {
+        Row(Modifier.fillMaxWidth().background(Color(0xFF0B3765)).padding(horizontal = 16.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.HomeRepairService, contentDescription = null, tint = Color.White, modifier = Modifier.size(37.dp))
+            Spacer(Modifier.width(9.dp))
             Column(Modifier.weight(1f)) {
-                Text("SHREE JAGANNATH", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 18.sp)
-                Text("REFRIGERATION", color = Color(0xFFFF9B3D), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+                Text("SHREE JAGANNATH", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 17.sp, maxLines = 1)
+                Text("REFRIGERATION", color = Color(0xFFFF9B3D), fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(tr(language, "Home Appliances", "ଘରୋଇ ଉପକରଣ"), color = Color(0xFFE6EFF8), fontSize = 11.sp)
-                Text(tr(language, "Care Experts", "ସେବା ବିଶେଷଜ୍ଞ"), color = Color(0xFFE6EFF8), fontSize = 11.sp)
-                Box(Modifier.padding(top = 4.dp).width(52.dp).height(3.dp).background(Orange, RoundedCornerShape(50)))
+                Text(tr(language, "Home Appliances", "ଘରୋଇ ଉପକରଣ"), color = Color(0xFFE6EFF8), fontSize = 10.sp)
+                Text(tr(language, "Care Experts", "ସେବା ବିଶେଷଜ୍ଞ"), color = Color(0xFFE6EFF8), fontSize = 10.sp)
+                Box(Modifier.padding(top = 3.dp).width(45.dp).height(3.dp).background(Orange, RoundedCornerShape(50)))
             }
         }
-        Column(Modifier.fillMaxWidth().padding(horizontal = 22.dp)) {
-            Spacer(Modifier.height(22.dp))
-            Text(tr(language, "Your Appliances", "ଆପଣଙ୍କ ଉପକରଣ"), fontSize = 33.sp, lineHeight = 36.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF0B3765))
-            Text(tr(language, "Our Care", "ଆମର ଯତ୍ନ"), fontSize = 35.sp, lineHeight = 39.sp, fontWeight = FontWeight.ExtraBold, color = Orange)
-            Spacer(Modifier.height(7.dp))
-            Text(tr(language, "Fast  •  Reliable  •  Affordable", "ଦ୍ରୁତ  •  ଭରସାଯୋଗ୍ୟ  •  ସୁଲଭ"), fontSize = 15.sp, color = Color(0xFF4F6378), fontWeight = FontWeight.Medium)
-            Box(Modifier.padding(top = 10.dp).width(42.dp).height(4.dp).background(Orange, RoundedCornerShape(50)))
-            Spacer(Modifier.height(12.dp))
-            Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFE7F0FA))) {
-                Row(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(Color(0xFFEAF3FC), Color(0xFFD8E8F8)))).padding(horizontal = 8.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                        Appliance3DPreview("Refrigerator", 0f, Modifier.width(78.dp).height(116.dp))
-                        Text(tr(language, "Fridge", "ଫ୍ରିଜ୍"), fontSize = 10.sp, color = Navy, fontWeight = FontWeight.SemiBold)
-                    }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                        Appliance3DPreview("Washing Machine", 0f, Modifier.width(88.dp).height(116.dp))
-                        Text(tr(language, "Washer", "ୱାଶର୍"), fontSize = 10.sp, color = Navy, fontWeight = FontWeight.SemiBold)
-                    }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                        Appliance3DPreview("AC Service", 0f, Modifier.width(88.dp).height(116.dp))
-                        Text("AC", fontSize = 10.sp, color = Navy, fontWeight = FontWeight.SemiBold)
+        Row(
+            Modifier.fillMaxWidth().weight(1f).padding(horizontal = 16.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1.05f), verticalArrangement = Arrangement.Center) {
+                Text(tr(language, "Your Appliances", "ଆପଣଙ୍କ ଉପକରଣ"), fontSize = 27.sp, lineHeight = 29.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF0B3765))
+                Text(tr(language, "Our Care", "ଆମର ଯତ୍ନ"), fontSize = 30.sp, lineHeight = 33.sp, fontWeight = FontWeight.ExtraBold, color = Orange)
+                Spacer(Modifier.height(5.dp))
+                Text(tr(language, "Fast • Reliable • Affordable", "ଦ୍ରୁତ • ଭରସାଯୋଗ୍ୟ • ସୁଲଭ"), fontSize = 11.sp, lineHeight = 15.sp, color = Color(0xFF4F6378), fontWeight = FontWeight.SemiBold)
+                Box(Modifier.padding(top = 7.dp, bottom = 7.dp).width(35.dp).height(3.dp).background(Orange, RoundedCornerShape(50)))
+                listOf(
+                    "✓" to tr(language, "Expert Technicians", "ଦକ୍ଷ ଟେକ୍ନିସିଆନ୍"),
+                    "◷" to tr(language, "On-Time Service", "ଠିକ୍ ସମୟରେ ସେବା"),
+                    "₹" to tr(language, "Transparent Pricing", "ସ୍ପଷ୍ଟ ମୂଲ୍ୟ"),
+                    "★" to tr(language, "Trusted by Homes", "ଘରେ ଘରେ ଭରସା")
+                ).forEach { (symbol, label) ->
+                    Row(Modifier.padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Surface(color = Navy, shape = RoundedCornerShape(50)) {
+                            Box(Modifier.size(23.dp), contentAlignment = Alignment.Center) { Text(symbol, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+                        }
+                        Spacer(Modifier.width(6.dp))
+                        Text(label, color = Color(0xFF40576F), fontSize = 10.sp, lineHeight = 13.sp, fontWeight = FontWeight.Medium, maxLines = 2)
                     }
                 }
             }
-            Spacer(Modifier.height(13.dp))
-            val benefits = listOf(
-                "✓" to tr(language, "Expert Technicians", "ଦକ୍ଷ ଟେକ୍ନିସିଆନ୍"),
-                "◷" to tr(language, "On-Time Service", "ଠିକ୍ ସମୟରେ ସେବା"),
-                "₹" to tr(language, "Transparent Pricing", "ସ୍ପଷ୍ଟ ମୂଲ୍ୟ"),
-                "★" to tr(language, "Trusted by Homes", "ଘରେ ଘରେ ଭରସା")
-            )
-            benefits.forEach { (symbol, label) ->
-                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Surface(color = Navy, shape = RoundedCornerShape(50)) {
-                        Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) { Text(symbol, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold) }
-                    }
-                    Spacer(Modifier.width(10.dp))
-                    Text(label, color = Color(0xFF40576F), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Spacer(Modifier.width(4.dp))
+            Card(
+                Modifier.weight(0.95f).fillMaxHeight(0.82f),
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE3EFFB))
+            ) {
+                Column(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFFEAF3FC), Color(0xFFD3E5F7)))).padding(horizontal = 4.dp, vertical = 6.dp), verticalArrangement = Arrangement.SpaceEvenly, horizontalAlignment = Alignment.CenterHorizontally) {
+                    Appliance3DPreview("Refrigerator", 0f, Modifier.fillMaxWidth(0.74f).weight(1f))
+                    Appliance3DPreview("Washing Machine", 0f, Modifier.fillMaxWidth(0.84f).weight(1f))
+                    Appliance3DPreview("AC Service", 0f, Modifier.fillMaxWidth(0.94f).weight(0.78f))
+                    Text(tr(language, "Home Appliance Care", "ଘରୋଇ ଉପକରଣ ସେବା"), color = Navy, fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                 }
             }
-            Spacer(Modifier.height(15.dp))
-            Button(onClick = onCustomer, modifier = Modifier.fillMaxWidth().height(78.dp), shape = RoundedCornerShape(20.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0B4B86)), contentPadding = PaddingValues(horizontal = 18.dp)) {
-                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(34.dp))
-                Spacer(Modifier.width(14.dp))
+        }
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+            Button(
+                onClick = onCustomer,
+                modifier = Modifier.fillMaxWidth().height(66.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0B4B86)),
+                contentPadding = PaddingValues(horizontal = 16.dp)
+            ) {
+                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(30.dp))
+                Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.Start) {
-                    Text(tr(language, "Customer", "ଗ୍ରାହକ"), fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Text(tr(language, "Book a Service", "ସେବା ବୁକ୍ କରନ୍ତୁ"), fontSize = 13.sp, color = Color(0xFFE2EDF8))
-                }
-                Text("❯", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            }
-            Spacer(Modifier.height(10.dp))
-            OutlinedButton(onClick = onAdmin, modifier = Modifier.fillMaxWidth().height(74.dp), shape = RoundedCornerShape(20.dp), contentPadding = PaddingValues(horizontal = 18.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Navy)) {
-                Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(32.dp))
-                Spacer(Modifier.width(14.dp))
-                Column(Modifier.weight(1f), horizontalAlignment = Alignment.Start) {
-                    Text(tr(language, "Admin / Mechanic", "ଆଡମିନ୍ / ମେକାନିକ୍"), fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                    Text(tr(language, "Login to Continue", "ଲଗଇନ୍ କରି ଆଗକୁ ବଢ଼ନ୍ତୁ"), fontSize = 12.sp, color = Color(0xFF61768B))
+                    Text(tr(language, "Customer", "ଗ୍ରାହକ"), fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                    Text(tr(language, "Book a Service", "ସେବା ବୁକ୍ କରନ୍ତୁ"), fontSize = 12.sp, color = Color(0xFFE2EDF8))
                 }
                 Text("❯", fontSize = 23.sp, fontWeight = FontWeight.Bold)
             }
-            Spacer(Modifier.height(18.dp))
-            Text(tr(language, "We Service All Major Appliances", "ସମସ୍ତ ପ୍ରମୁଖ ଉପକରଣର ସେବା"), fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, color = Navy)
-            Box(Modifier.padding(top = 6.dp, bottom = 10.dp).width(38.dp).height(3.dp).background(Orange, RoundedCornerShape(50)))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = onAdmin,
+                modifier = Modifier.fillMaxWidth().height(62.dp),
+                shape = RoundedCornerShape(18.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Navy)
+            ) {
+                Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(28.dp))
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.Start) {
+                    Text(tr(language, "Admin / Mechanic", "ଆଡମିନ୍ / ମେକାନିକ୍"), fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    Text(tr(language, "Login to Continue", "ଲଗଇନ୍ କରି ଆଗକୁ ବଢ଼ନ୍ତୁ"), fontSize = 11.sp, color = Color(0xFF61768B))
+                }
+                Text("❯", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(tr(language, "We Service All Major Appliances", "ସମସ୍ତ ପ୍ରମୁଖ ଉପକରଣର ସେବା"), fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Navy, maxLines = 1)
+            Box(Modifier.padding(top = 4.dp, bottom = 6.dp).width(34.dp).height(3.dp).background(Orange, RoundedCornerShape(50)))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 listOf("❄" to "AC", "▯" to tr(language, "Fridge", "ଫ୍ରିଜ୍"), "◉" to tr(language, "Washer", "ୱାଶର୍"), "▣" to tr(language, "Microwave", "ମାଇକ୍ରୋୱେଭ୍")).forEach { (icon, label) ->
                     Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Surface(color = Color.White, shape = RoundedCornerShape(15.dp), shadowElevation = 1.dp) {
-                            Box(Modifier.fillMaxWidth().height(58.dp), contentAlignment = Alignment.Center) { Text(icon, color = Navy, fontSize = 29.sp, fontWeight = FontWeight.Bold) }
+                        Surface(color = Color.White, shape = RoundedCornerShape(12.dp), shadowElevation = 1.dp) {
+                            Box(Modifier.fillMaxWidth().height(39.dp), contentAlignment = Alignment.Center) { Text(icon, color = Navy, fontSize = 22.sp, fontWeight = FontWeight.Bold) }
                         }
-                        Spacer(Modifier.height(5.dp))
-                        Text(label, color = Navy, fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+                        Spacer(Modifier.height(3.dp))
+                        Text(label, color = Navy, fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                     }
                 }
             }
-            Spacer(Modifier.height(18.dp))
-            Divider(color = Color(0xFFD5E1ED))
-            Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                listOf("✓" to tr(language, "Quality Service", "ଗୁଣାତ୍ମକ ସେବା"), "₹" to tr(language, "Fair Pricing", "ଉଚିତ ମୂଲ୍ୟ"), "★" to tr(language, "Customer Care", "ଗ୍ରାହକ ସେବା")).forEach { (icon, label) ->
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                        Text(icon, color = Navy, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                        Text(label, color = Color(0xFF536A80), fontSize = 10.sp)
-                    }
-                }
+            Divider(Modifier.padding(top = 8.dp), color = Color(0xFFD5E1ED))
+            Row(Modifier.fillMaxWidth().padding(top = 5.dp, bottom = 3.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                Text("✓  " + tr(language, "Quality Service", "ଗୁଣାତ୍ମକ ସେବା"), color = Color(0xFF536A80), fontSize = 9.sp, fontWeight = FontWeight.Medium)
+                Text("₹  " + tr(language, "Fair Pricing", "ଉଚିତ ମୂଲ୍ୟ"), color = Color(0xFF536A80), fontSize = 9.sp, fontWeight = FontWeight.Medium)
+                Text("★  " + tr(language, "Customer Care", "ଗ୍ରାହକ ସେବା"), color = Color(0xFF536A80), fontSize = 9.sp, fontWeight = FontWeight.Medium)
             }
-            Spacer(Modifier.height(12.dp))
         }
     }
 }
