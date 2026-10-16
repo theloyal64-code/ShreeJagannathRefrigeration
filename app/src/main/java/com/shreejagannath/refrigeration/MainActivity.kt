@@ -1504,7 +1504,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                 val rows = mutableListOf(
                     listOf("Booking ID", "Created At", "Customer", "Phone", "Appliance", "Issue", "Status", "Assigned Mechanic", "Status Updated At", "Address", "Preferred Visit", "PIN Code", "GPS Latitude", "GPS Longitude").joinToString(",")
                 )
-                bookings.sortedByDescending { it.createdAt }.forEach { booking ->
+                visibleBookings.sortedByDescending { it.createdAt }.forEach { booking ->
                     rows += listOf(
                         booking.id.toString(),
                         SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(booking.createdAt)),
@@ -1519,7 +1519,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                 exportLauncher.launch("ShreeJagannath-Bookings.csv")
             },
             modifier = Modifier.fillMaxWidth()
-        ) { Text(tr(language, "Save Booking Report as CSV", "ବୁକିଂ ରିପୋର୍ଟ CSV ଭାବେ ସେଭ୍ କରନ୍ତୁ")) }
+        ) { Text(tr(language, "Export Filtered Bookings as CSV", "ଫିଲ୍ଟର୍ ହୋଇଥିବା ବୁକିଂ CSV କରନ୍ତୁ")) }
         Spacer(Modifier.height(14.dp))
         OutlinedTextField(
             value = search,
