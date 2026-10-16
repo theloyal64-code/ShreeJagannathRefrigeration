@@ -79,7 +79,7 @@ private val issueOptions = mapOf(
     "Microwave Oven" to listOf("Not heating", "Not turning on", "Sparking inside", "Turntable not moving", "Making noise", "Door problem", "Display not working", "Uneven heating", "Burning smell", "Buttons not responding"),
     "Geyser" to listOf("No hot water", "Water not heating enough", "Water leakage", "Not turning on", "Trips electricity", "Making noise", "Takes too long to heat", "Hot water runs out quickly", "Rusty water", "Installation / servicing")
 )
-data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val preferredSlot: String = "", val pincode: String = "", val status: String = "Pending", val createdAt: Long = System.currentTimeMillis(), val latitude: Double? = null, val longitude: Double? = null)
+data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val preferredSlot: String = "", val pincode: String = "", val status: String = "Pending", val createdAt: Long = System.currentTimeMillis(), val latitude: Double? = null, val longitude: Double? = null, val statusUpdatedAt: Long = createdAt)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -107,7 +107,8 @@ private fun loadBookings(context: Context): List<ServiceBooking> {
                 status = item.optString("status", "Pending"),
                 createdAt = item.optLong("createdAt", 0L).takeIf { it > 0L } ?: System.currentTimeMillis(),
                 latitude = if (item.isNull("latitude")) null else item.optDouble("latitude"),
-                longitude = if (item.isNull("longitude")) null else item.optDouble("longitude")
+                longitude = if (item.isNull("longitude")) null else item.optDouble("longitude"),
+                statusUpdatedAt = item.optLong("statusUpdatedAt", item.optLong("createdAt", System.currentTimeMillis())).takeIf { it > 0L } ?: System.currentTimeMillis()
             )
         }
     } catch (_: Exception) {
@@ -137,6 +138,7 @@ private fun saveBookings(context: Context, bookings: List<ServiceBooking>) {
             put("pincode", booking.pincode)
             put("status", booking.status)
             put("createdAt", booking.createdAt)
+            put("statusUpdatedAt", booking.statusUpdatedAt)
             put("latitude", booking.latitude ?: JSONObject.NULL)
             put("longitude", booking.longitude ?: JSONObject.NULL)
         })
@@ -209,7 +211,7 @@ private fun MainApp() {
                     "admin" -> AdminHome(bookings, language, onStatus = { id, status ->
                         val booking = bookings.firstOrNull { it.id == id }
                         if (booking != null && canTransitionBookingStatus(booking.status, status)) {
-                            bookings = bookings.map { if (it.id == id) it.copy(status = status) else it }
+                            bookings = bookings.map { if (it.id == id) it.copy(status = status, statusUpdatedAt = System.currentTimeMillis()) else it }
                         }
                     })
                 }
@@ -1090,6 +1092,12 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
                             Text("${tr(language, "Address", "ଠିକଣା")}: ${b.address}", fontSize = 13.sp)
                             Spacer(Modifier.height(12.dp))
                             BookingProgress(b.status, language)
+                            Text(
+                                tr(language, "Status last updated: ", "ସ୍ଥିତି ଶେଷଥର ବଦଳିଥିଲା: ") +
+                                    SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(b.statusUpdatedAt)),
+                                fontSize = 11.sp,
+                                color = Color.Gray
+                            )
                             if (b.preferredSlot.isNotBlank()) Text("${tr(language, "Preferred visit: ", "ପସନ୍ଦର ସମୟ: ")}${b.preferredSlot}", fontSize = 13.sp, color = Navy)
                             if (b.pincode.isNotBlank()) Text("${tr(language, "PIN code: ", "ପିନ୍ କୋଡ୍: ")}${b.pincode}", fontSize = 13.sp)
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
