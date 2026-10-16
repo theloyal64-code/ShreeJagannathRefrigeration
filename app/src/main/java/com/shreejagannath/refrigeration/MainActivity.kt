@@ -256,7 +256,7 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
             Box(Modifier.padding(top = 10.dp).width(42.dp).height(4.dp).background(Orange, RoundedCornerShape(50)))
             Spacer(Modifier.height(12.dp))
             Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFE7F0FA))) {
-                Row(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(Color(0xFFEAF3FC), Color(0xFFD8E8F8))).padding(horizontal = 8.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(Color(0xFFEAF3FC), Color(0xFFD8E8F8)))).padding(horizontal = 8.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
                         Appliance3DPreview("Refrigerator", 0f, Modifier.width(78.dp).height(116.dp))
                         Text(tr(language, "Fridge", "ଫ୍ରିଜ୍"), fontSize = 10.sp, color = Navy, fontWeight = FontWeight.SemiBold)
@@ -322,7 +322,7 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
                 }
             }
             Spacer(Modifier.height(18.dp))
-            HorizontalDivider(color = Color(0xFFD5E1ED))
+            Divider(color = Color(0xFFD5E1ED))
             Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 listOf("✓" to tr(language, "Quality Service", "ଗୁଣାତ୍ମକ ସେବା"), "₹" to tr(language, "Fair Pricing", "ଉଚିତ ମୂଲ୍ୟ"), "★" to tr(language, "Customer Care", "ଗ୍ରାହକ ସେବା")).forEach { (icon, label) ->
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
