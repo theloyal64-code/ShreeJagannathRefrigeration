@@ -221,7 +221,10 @@ private fun MainApp() {
                         onViewBookings = { screen = "history" },
                         onHome = { screen = "customer" }
                     )
-                    "history" -> BookingHistory(bookings, language, onCancel = { id -> bookings = bookings.map { if (it.id == id && it.status == "Pending") it.copy(status = "Cancelled") else it } })
+                    "history" -> BookingHistory(bookings, language, onCancel = { id ->
+                        val now = System.currentTimeMillis()
+                        bookings = bookings.map { if (it.id == id && it.status == "Pending") it.copy(status = "Cancelled", statusUpdatedAt = now) else it }
+                    })
                     "adminLogin" -> TeamLogin(language, onAdminSuccess = { screen = "admin" }, onMechanicSuccess = { mechanic ->
                         loggedInMechanic = mechanic
                         screen = "mechanic"
