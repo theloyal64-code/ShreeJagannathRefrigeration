@@ -167,6 +167,7 @@ private fun MainApp() {
         mutableStateOf(if (context.getSharedPreferences(BOOKING_PREFS, Context.MODE_PRIVATE).getString(LANGUAGE_KEY, "ENGLISH") == "ODIA") AppLanguage.ODIA else AppLanguage.ENGLISH)
     }
     var chosen by remember { mutableStateOf(appliances[0]) }
+    var loggedInMechanic by remember { mutableStateOf("") }
     var bookings by remember { mutableStateOf(loadBookings(context)) }
     var nextId by remember { mutableIntStateOf((bookings.maxOfOrNull { it.id } ?: 1000) + 1) }
 
@@ -185,15 +186,16 @@ private fun MainApp() {
                     "customer" -> tr(language, "Book a Service", "ସେବା ବୁକ୍ କରନ୍ତୁ")
                     "form" -> tr(language, "Service Request", "ସେବା ଅନୁରୋଧ")
                     "history" -> tr(language, "My Bookings", "ମୋ ବୁକିଂ")
-                    "adminLogin" -> tr(language, "Admin Login", "ଆଡମିନ୍ ଲଗଇନ୍")
-                    "admin" -> tr(language, "Mechanic Dashboard", "ମେକାନିକ୍ ଡ୍ୟାସବୋର୍ଡ")
+                    "adminLogin" -> tr(language, "Team Login", "ଟିମ୍ ଲଗଇନ୍")
+                    "admin" -> tr(language, "Admin Dashboard", "ଆଡମିନ୍ ଡ୍ୟାସବୋର୍ଡ")
+                    "mechanic" -> tr(language, "Mechanic Dashboard", "ମେକାନିକ୍ ଡ୍ୟାସବୋର୍ଡ")
                     else -> "Shree Jagannath"
                 }, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { screen = when (screen) {
                         "form" -> "customer"
                         "history" -> "customer"
-                        "admin" -> "welcome"
+                        "admin", "mechanic" -> "welcome"
                         else -> "welcome"
                     } }) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
                 }
@@ -209,7 +211,22 @@ private fun MainApp() {
                         screen = "history"
                     })
                     "history" -> BookingHistory(bookings, language, onCancel = { id -> bookings = bookings.map { if (it.id == id && it.status == "Pending") it.copy(status = "Cancelled") else it } })
-                    "adminLogin" -> AdminLogin(language, onSuccess = { screen = "admin" })
+                    "adminLogin" -> TeamLogin(language, onAdminSuccess = { screen = "admin" }, onMechanicSuccess = { mechanic ->
+                        loggedInMechanic = mechanic
+                        screen = "mechanic"
+                    })
+                    "mechanic" -> MechanicHome(
+                        bookings = bookings.filter { it.assignedMechanic == loggedInMechanic },
+                        mechanicName = loggedInMechanic,
+                        language = language,
+                        onLogout = { loggedInMechanic = ""; screen = "welcome" },
+                        onStatus = { id, status ->
+                            val booking = bookings.firstOrNull { it.id == id && it.assignedMechanic == loggedInMechanic }
+                            if (booking != null && canTransitionBookingStatus(booking.status, status)) {
+                                bookings = bookings.map { if (it.id == id) it.copy(status = status, statusUpdatedAt = System.currentTimeMillis()) else it }
+                            }
+                        }
+                    )
                     "admin" -> AdminHome(bookings, language, onStatus = { id, status ->
                         val booking = bookings.firstOrNull { it.id == id }
                         if (booking != null && canTransitionBookingStatus(booking.status, status)) {
@@ -1193,23 +1210,140 @@ private fun BookingProgress(status: String, language: AppLanguage) {
 }
 
 @Composable
-private fun AdminLogin(language: AppLanguage, onSuccess: () -> Unit) {
+private fun TeamLogin(language: AppLanguage, onAdminSuccess: () -> Unit, onMechanicSuccess: (String) -> Unit) {
+    var role by remember { mutableStateOf("Admin") }
+    var mechanic by remember { mutableStateOf("Mechanic 1") }
+    var mechanicMenu by remember { mutableStateOf(false) }
+    var roleMenu by remember { mutableStateOf(false) }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
-    Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center) {
-        Text(tr(language, "Admin Access", "ଆଡମିନ୍ ପ୍ରବେଶ"), fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Navy)
-        Text(tr(language, "Demo-only login. Secure backend authentication is required before release.", "ଏହା ଡେମୋ ଲଗଇନ୍। ପ୍ରକାଶ ପୂର୍ବରୁ ସୁରକ୍ଷିତ ଲଗଇନ୍ ଆବଶ୍ୟକ।"))
+    val mechanics = listOf("Mechanic 1", "Mechanic 2", "Senior Technician")
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.Center) {
+        Text(tr(language, "Team Access", "ଟିମ୍ ପ୍ରବେଶ"), fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Navy)
+        Text(tr(language, "Demo login only. Do not use these credentials for a live business.", "ଏହା କେବଳ ଡେମୋ ଲଗଇନ୍। ଲାଇଭ୍ ବ୍ୟବସାୟରେ ଏହି ଲଗଇନ୍ ବ୍ୟବହାର କରନ୍ତୁ ନାହିଁ।"), color = Color.Gray)
         Spacer(Modifier.height(18.dp))
-        OutlinedTextField(username, { username = it }, label = { Text(tr(language, "Admin username", "ଆଡମିନ୍ ୟୁଜରନେମ୍")) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+        Box {
+            OutlinedButton(onClick = { roleMenu = true }, modifier = Modifier.fillMaxWidth()) { Text(tr(language, "Login role: ", "ଲଗଇନ୍ ଭୂମିକା: ") + role) }
+            DropdownMenu(expanded = roleMenu, onDismissRequest = { roleMenu = false }) {
+                listOf("Admin", "Mechanic").forEach { item ->
+                    DropdownMenuItem(text = { Text(item) }, onClick = { role = item; error = ""; roleMenu = false })
+                }
+            }
+        }
         Spacer(Modifier.height(10.dp))
-        OutlinedTextField(password, { password = it }, label = { Text(tr(language, "Password", "ପାସୱାର୍ଡ")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
+        if (role == "Admin") {
+            OutlinedTextField(username, { username = it }, label = { Text(tr(language, "Admin username", "ଆଡମିନ୍ ୟୁଜରନେମ୍")) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            Spacer(Modifier.height(10.dp))
+            OutlinedTextField(password, { password = it }, label = { Text(tr(language, "Password", "ପାସୱାର୍ଡ")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
+        } else {
+            Box {
+                OutlinedButton(onClick = { mechanicMenu = true }, modifier = Modifier.fillMaxWidth()) { Text(tr(language, "Mechanic profile: ", "ମେକାନିକ୍ ପ୍ରୋଫାଇଲ୍: ") + mechanic) }
+                DropdownMenu(expanded = mechanicMenu, onDismissRequest = { mechanicMenu = false }) {
+                    mechanics.forEach { item -> DropdownMenuItem(text = { Text(item) }, onClick = { mechanic = item; mechanicMenu = false }) }
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            OutlinedTextField(pin, { pin = it; error = "" }, label = { Text(tr(language, "Demo PIN", "ଡେମୋ ପିନ୍")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
+        }
         if (error.isNotBlank()) { Spacer(Modifier.height(8.dp)); Text(error, color = MaterialTheme.colorScheme.error) }
         Spacer(Modifier.height(16.dp))
         Button(onClick = {
-            if (username == "admin" && password == "demo1234") onSuccess()
-            else error = tr(language, "Demo login: admin / demo1234", "ଡେମୋ ଲଗଇନ୍: admin / demo1234")
+            if (role == "Admin") {
+                if (username == "admin" && password == "demo1234") onAdminSuccess()
+                else error = tr(language, "Demo admin login: admin / demo1234", "ଡେମୋ ଆଡମିନ୍ ଲଗଇନ୍: admin / demo1234")
+            } else {
+                if (pin == "1234") onMechanicSuccess(mechanic)
+                else error = tr(language, "Demo mechanic PIN: 1234", "ଡେମୋ ମେକାନିକ୍ ପିନ୍: 1234")
+            }
         }, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text(tr(language, "Login", "ଲଗଇନ୍")) }
+    }
+}
+
+@Composable
+private fun MechanicHome(
+    bookings: List<ServiceBooking>,
+    mechanicName: String,
+    language: AppLanguage,
+    onLogout: () -> Unit,
+    onStatus: (Int, String) -> Unit
+) {
+    val context = LocalContext.current
+    val activeCount = bookings.count { it.status in listOf("Accepted", "On the Way", "In Progress") }
+    Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+        Spacer(Modifier.height(12.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(tr(language, "Namaskar,", "ନମସ୍କାର,") + " $mechanicName", fontSize = 23.sp, fontWeight = FontWeight.Bold, color = Navy)
+                Text(tr(language, "Your assigned service jobs", "ଆପଣଙ୍କୁ ଦିଆଯାଇଥିବା ସେବା କାମ"), color = Color.Gray)
+            }
+            TextButton(onClick = onLogout) { Text(tr(language, "Logout", "ଲଗଆଉଟ୍")) }
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Stat(tr(language, "Assigned", "ଦିଆଯାଇଛି"), bookings.size.toString(), Modifier.weight(1f))
+            Stat(tr(language, "Active", "ଚାଲୁ"), activeCount.toString(), Modifier.weight(1f))
+            Stat(tr(language, "Completed", "ସମ୍ପୂର୍ଣ୍ଣ"), bookings.count { it.status == "Completed" }.toString(), Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(12.dp))
+        if (bookings.isEmpty()) {
+            Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Build, contentDescription = null, tint = Navy, modifier = Modifier.size(38.dp))
+                    Spacer(Modifier.height(8.dp))
+                    Text(tr(language, "No bookings assigned yet", "ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ବୁକିଂ ଦିଆଯାଇନାହିଁ"), fontWeight = FontWeight.Bold, color = Navy)
+                }
+            }
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 20.dp)) {
+                items(bookings.sortedByDescending { it.createdAt }, key = { it.id }) { booking ->
+                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
+                        Column(Modifier.fillMaxWidth().padding(14.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("#${booking.id} • ${booking.appliance}", Modifier.weight(1f), fontWeight = FontWeight.Bold, color = Navy)
+                                Text(statusLabel(language, booking.status), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Orange)
+                            }
+                            Spacer(Modifier.height(6.dp))
+                            Text(booking.customer, fontWeight = FontWeight.SemiBold)
+                            Text(booking.issue, color = Color.Gray)
+                            Text(booking.phone)
+                            Text(booking.address, color = Color.Gray)
+                            if (booking.preferredSlot.isNotBlank()) Text(tr(language, "Preferred visit: ", "ପସନ୍ଦର ସମୟ: ") + booking.preferredSlot, color = Color.Gray)
+                            if (booking.pincode.isNotBlank()) Text(tr(language, "PIN: ", "ପିନ୍: ") + booking.pincode, color = Color.Gray)
+                            if (booking.latitude != null && booking.longitude != null) {
+                                TextButton(onClick = {
+                                    val uri = android.net.Uri.parse("google.navigation:q=${booking.latitude},${booking.longitude}")
+                                    runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri).apply { setPackage("com.google.android.apps.maps") }) }
+                                        .onFailure { Toast.makeText(context, tr(language, "Maps app unavailable.", "ମ୍ୟାପ୍ସ ଆପ୍ ଉପଲବ୍ଧ ନାହିଁ।"), Toast.LENGTH_SHORT).show() }
+                                }) { Text(tr(language, "Navigate to customer", "ଗ୍ରାହକଙ୍କ ପାଖକୁ ଯାଆନ୍ତୁ")) }
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(onClick = {
+                                    runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_DIAL, android.net.Uri.parse("tel:${booking.phone}"))) }
+                                }, modifier = Modifier.weight(1f)) { Text(tr(language, "Call customer", "ଗ୍ରାହକଙ୍କୁ କଲ୍")) }
+                            }
+                            val nextStatuses = when (booking.status) {
+                                "Pending" -> listOf("Accepted", "Rejected")
+                                "Accepted" -> listOf("On the Way")
+                                "On the Way" -> listOf("In Progress")
+                                "In Progress" -> listOf("Completed")
+                                else -> emptyList()
+                            }
+                            if (nextStatuses.isNotEmpty()) {
+                                Spacer(Modifier.height(8.dp))
+                                nextStatuses.forEach { next ->
+                                    Button(onClick = { onStatus(booking.id, next) }, modifier = Modifier.fillMaxWidth()) {
+                                        Text(tr(language, "Mark as ", "ସ୍ଥିତି କରନ୍ତୁ: ") + statusLabel(language, next))
+                                    }
+                                }
+                            }
+                            Text(tr(language, "Status last updated: ", "ସ୍ଥିତି ଶେଷ ଅପଡେଟ୍: ") + SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()).format(Date(booking.statusUpdatedAt)), fontSize = 11.sp, color = Color.Gray)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
