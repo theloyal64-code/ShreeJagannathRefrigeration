@@ -296,7 +296,7 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
             }
         }
         Row(
-            Modifier.fillMaxWidth().height(390.dp).padding(horizontal = 16.dp, vertical = 9.dp),
+            Modifier.fillMaxWidth().height(270.dp).padding(horizontal = 16.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1.05f), verticalArrangement = Arrangement.Center) {
@@ -335,7 +335,7 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
             }
         }
         // Clean transition between hero content and actions; removed mismatched ribbon.
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Button(
                 onClick = onCustomer,
