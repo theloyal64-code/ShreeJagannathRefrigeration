@@ -327,21 +327,57 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
             Text(tr(language, "We Service All Major Appliances", "ସମସ୍ତ ପ୍ରମୁଖ ଉପକରଣର ସେବା"), fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Navy, maxLines = 1)
             Box(Modifier.padding(top = 4.dp, bottom = 6.dp).width(34.dp).height(3.dp).background(Orange, RoundedCornerShape(50)))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                listOf("❄" to "AC", "▯" to tr(language, "Fridge", "ଫ୍ରିଜ୍"), "◉" to tr(language, "Washer", "ୱାଶର୍"), "▣" to tr(language, "Microwave", "ମାଇକ୍ରୋୱେଭ୍")).forEach { (icon, label) ->
+                listOf(
+                    "AC Service" to "AC",
+                    "Refrigerator" to tr(language, "Fridge", "ଫ୍ରିଜ୍"),
+                    "Washing Machine" to tr(language, "Washer", "ୱାଶର୍"),
+                    "Microwave Oven" to tr(language, "Microwave", "ମାଇକ୍ରୋୱେଭ୍")
+                ).forEach { (applianceType, label) ->
                     Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Surface(color = Color.White, shape = RoundedCornerShape(12.dp), shadowElevation = 1.dp) {
-                            Box(Modifier.fillMaxWidth().height(39.dp), contentAlignment = Alignment.Center) { Text(icon, color = Navy, fontSize = 22.sp, fontWeight = FontWeight.Bold) }
+                        Card(
+                            modifier = Modifier.fillMaxWidth().height(58.dp),
+                            shape = RoundedCornerShape(15.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                        ) {
+                            Box(
+                                Modifier.fillMaxSize().background(
+                                    Brush.linearGradient(listOf(Color.White, Color(0xFFE4EFFB)))
+                                ).padding(4.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Appliance3DPreview(applianceType, 0f, Modifier.fillMaxSize())
+                            }
                         }
-                        Spacer(Modifier.height(3.dp))
+                        Spacer(Modifier.height(5.dp))
                         Text(label, color = Navy, fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                     }
                 }
             }
-            Divider(Modifier.padding(top = 8.dp), color = Color(0xFFD5E1ED))
-            Row(Modifier.fillMaxWidth().padding(top = 5.dp, bottom = 3.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                Text("✓  " + tr(language, "Quality Service", "ଗୁଣାତ୍ମକ ସେବା"), color = Color(0xFF536A80), fontSize = 9.sp, fontWeight = FontWeight.Medium)
-                Text("₹  " + tr(language, "Fair Pricing", "ଉଚିତ ମୂଲ୍ୟ"), color = Color(0xFF536A80), fontSize = 9.sp, fontWeight = FontWeight.Medium)
-                Text("★  " + tr(language, "Customer Care", "ଗ୍ରାହକ ସେବା"), color = Color(0xFF536A80), fontSize = 9.sp, fontWeight = FontWeight.Medium)
+            Row(
+                Modifier.fillMaxWidth().padding(top = 11.dp, bottom = 5.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                listOf(
+                    "✓" to tr(language, "Quality Service", "ଗୁଣାତ୍ମକ ସେବା"),
+                    "₹" to tr(language, "Fair Pricing", "ଉଚିତ ମୂଲ୍ୟ"),
+                    "★" to tr(language, "Customer Care", "ଗ୍ରାହକ ସେବା")
+                ).forEach { (symbol, label) ->
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE7F0FA)),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column(
+                            Modifier.fillMaxWidth().padding(vertical = 7.dp, horizontal = 2.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(symbol, color = Color(0xFF0B4B86), fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
+                            Text(label, color = Color(0xFF536A80), fontSize = 8.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                        }
+                    }
+                }
             }
         }
     }
