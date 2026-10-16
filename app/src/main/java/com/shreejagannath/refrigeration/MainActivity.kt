@@ -289,42 +289,9 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
                 }
             }
         }
-        Canvas(Modifier.fillMaxWidth().height(76.dp)) {
-            val w = size.width
-            val h = size.height
-            // A curved ribbon (top and bottom contours), not a solid rectangle ending in a hard seam.
-            val blueRibbon = Path().apply {
-                moveTo(0f, h * 0.08f)
-                cubicTo(w * 0.15f, h * 0.42f, w * 0.29f, h * 0.83f, w * 0.47f, h * 0.43f)
-                cubicTo(w * 0.66f, h * 0.02f, w * 0.79f, h * 0.23f, w, h * 0.56f)
-                cubicTo(w * 0.83f, h * 0.91f, w * 0.71f, h * 0.98f, w * 0.53f, h * 0.77f)
-                cubicTo(w * 0.31f, h * 0.50f, w * 0.20f, h * 0.99f, 0f, h * 0.63f)
-                close()
-            }
-            drawPath(
-                blueRibbon,
-                Brush.horizontalGradient(listOf(Color(0xFF0B3765), Color(0xFF0876C9), Color(0xFF0B4B86)))
-            )
-            val lowerBlueHighlight = Path().apply {
-                moveTo(0f, h * 0.49f)
-                cubicTo(w * 0.19f, h * 0.80f, w * 0.31f, h * 0.93f, w * 0.50f, h * 0.76f)
-                cubicTo(w * 0.70f, h * 0.58f, w * 0.85f, h * 0.52f, w, h * 0.67f)
-                lineTo(w, h * 0.78f)
-                cubicTo(w * 0.82f, h * 0.67f, w * 0.69f, h * 0.78f, w * 0.53f, h * 0.91f)
-                cubicTo(w * 0.31f, h * 1.09f, w * 0.18f, h * 0.82f, 0f, h * 0.63f)
-                close()
-            }
-            drawPath(lowerBlueHighlight, Brush.horizontalGradient(listOf(Color(0xFF0C5EA7), Color(0xFF168BE0), Color(0xFF0B3765))))
-            val orangeAccent = Path().apply {
-                moveTo(0f, h * 0.02f)
-                cubicTo(w * 0.13f, h * 0.34f, w * 0.22f, h * 0.42f, w * 0.32f, h * 0.26f)
-                lineTo(w * 0.29f, h * 0.38f)
-                cubicTo(w * 0.18f, h * 0.57f, w * 0.08f, h * 0.38f, 0f, h * 0.25f)
-                close()
-            }
-            drawPath(orangeAccent, Brush.horizontalGradient(listOf(Color(0xFFF28C28), Color(0xFFFFA13B))))
-        }
-        Column(Modifier.fillMaxWidth().offset(y = (-10).dp).padding(horizontal = 16.dp)) {
+        // Clean transition between hero content and actions; removed mismatched ribbon.
+        Spacer(Modifier.height(8.dp))
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Button(
                 onClick = onCustomer,
                 modifier = Modifier.fillMaxWidth().height(66.dp),
