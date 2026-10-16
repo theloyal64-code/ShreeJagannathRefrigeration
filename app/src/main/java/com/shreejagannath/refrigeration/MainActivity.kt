@@ -1054,29 +1054,6 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
             Stat(tr(language, "Completed", "ସମ୍ପୂର୍ଣ୍ଣ"), bookings.count { it.status == "Completed" }.toString(), Modifier.weight(1f))
         }
         Spacer(Modifier.height(10.dp))
-        Box {
-            OutlinedButton(onClick = { mechanicFilterExpanded = true }, modifier = Modifier.fillMaxWidth()) {
-                val mechanicFilterLabel = when (selectedMechanicFilter) {
-                    "All mechanics" -> tr(language, "All mechanics", "ସମସ୍ତ ମେକାନିକ୍")
-                    "Unassigned" -> tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି")
-                    else -> selectedMechanicFilter
-                }
-                Text(tr(language, "Mechanic view: ", "ମେକାନିକ୍ ଭ୍ୟୁ: ") + mechanicFilterLabel)
-            }
-            DropdownMenu(expanded = mechanicFilterExpanded, onDismissRequest = { mechanicFilterExpanded = false }) {
-                mechanicFilters.forEach { mechanic ->
-                    DropdownMenuItem(
-                        text = { Text(when (mechanic) {
-                            "All mechanics" -> tr(language, "All mechanics", "ସମସ୍ତ ମେକାନିକ୍")
-                            "Unassigned" -> tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି")
-                            else -> mechanic
-                        }) },
-                        onClick = { selectedMechanicFilter = mechanic; mechanicFilterExpanded = false }
-                    )
-                }
-            }
-        }
-        Spacer(Modifier.height(8.dp))
         OutlinedTextField(
             value = search,
             onValueChange = { search = it },
@@ -1288,6 +1265,29 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
             Stat(tr(language, "New", "ନୂଆ"), bookings.count { it.status == "Pending" }.toString(), Modifier.weight(1f))
             Stat(tr(language, "Active", "ଚାଲୁ"), bookings.count { it.status in listOf("Accepted", "On the Way", "In Progress") }.toString(), Modifier.weight(1f))
             Stat(tr(language, "Done", "ସମ୍ପୂର୍ଣ୍ଣ"), bookings.count { it.status == "Completed" }.toString(), Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(10.dp))
+        Box {
+            OutlinedButton(onClick = { mechanicFilterExpanded = true }, modifier = Modifier.fillMaxWidth()) {
+                val mechanicFilterLabel = when (selectedMechanicFilter) {
+                    "All mechanics" -> tr(language, "All mechanics", "ସମସ୍ତ ମେକାନିକ୍")
+                    "Unassigned" -> tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି")
+                    else -> selectedMechanicFilter
+                }
+                Text(tr(language, "Mechanic view: ", "ମେକାନିକ୍ ଭ୍ୟୁ: ") + mechanicFilterLabel)
+            }
+            DropdownMenu(expanded = mechanicFilterExpanded, onDismissRequest = { mechanicFilterExpanded = false }) {
+                mechanicFilters.forEach { mechanic ->
+                    DropdownMenuItem(
+                        text = { Text(when (mechanic) {
+                            "All mechanics" -> tr(language, "All mechanics", "ସମସ୍ତ ମେକାନିକ୍")
+                            "Unassigned" -> tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି")
+                            else -> mechanic
+                        }) },
+                        onClick = { selectedMechanicFilter = mechanic; mechanicFilterExpanded = false }
+                    )
+                }
+            }
         }
         Spacer(Modifier.height(10.dp))
         OutlinedButton(
