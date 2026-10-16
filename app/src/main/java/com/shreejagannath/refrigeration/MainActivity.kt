@@ -234,7 +234,7 @@ private fun fetchCommonsPhoto(searchTerm: String): android.graphics.Bitmap? {
 @Composable
 private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, onCustomer: () -> Unit, onAdmin: () -> Unit) {
     Column(
-        Modifier.fillMaxSize().background(Color(0xFFF4F8FD)).padding(bottom = 4.dp),
+        Modifier.fillMaxSize().background(Color(0xFFF4F8FD)).verticalScroll(rememberScrollState()).padding(bottom = 4.dp),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         Row(Modifier.fillMaxWidth().background(Color(0xFF0B3765)).padding(horizontal = 16.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -279,7 +279,7 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
             }
         }
         Row(
-            Modifier.fillMaxWidth().weight(1f).padding(horizontal = 16.dp, vertical = 9.dp),
+            Modifier.fillMaxWidth().height(390.dp).padding(horizontal = 16.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1.05f), verticalArrangement = Arrangement.Center) {
