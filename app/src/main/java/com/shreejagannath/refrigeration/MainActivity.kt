@@ -79,7 +79,7 @@ private val issueOptions = mapOf(
     "Microwave Oven" to listOf("Not heating", "Not turning on", "Sparking inside", "Turntable not moving", "Making noise", "Door problem", "Display not working", "Uneven heating", "Burning smell", "Buttons not responding"),
     "Geyser" to listOf("No hot water", "Water not heating enough", "Water leakage", "Not turning on", "Trips electricity", "Making noise", "Takes too long to heat", "Hot water runs out quickly", "Rusty water", "Installation / servicing")
 )
-data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val preferredSlot: String = "", val pincode: String = "", val status: String = "Pending", val createdAt: Long = System.currentTimeMillis(), val latitude: Double? = null, val longitude: Double? = null, val statusUpdatedAt: Long = createdAt)
+data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val preferredSlot: String = "", val pincode: String = "", val status: String = "Pending", val createdAt: Long = System.currentTimeMillis(), val latitude: Double? = null, val longitude: Double? = null, val statusUpdatedAt: Long = createdAt, val assignedMechanic: String = "")
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -108,7 +108,8 @@ private fun loadBookings(context: Context): List<ServiceBooking> {
                 createdAt = item.optLong("createdAt", 0L).takeIf { it > 0L } ?: System.currentTimeMillis(),
                 latitude = if (item.isNull("latitude")) null else item.optDouble("latitude"),
                 longitude = if (item.isNull("longitude")) null else item.optDouble("longitude"),
-                statusUpdatedAt = item.optLong("statusUpdatedAt", item.optLong("createdAt", System.currentTimeMillis())).takeIf { it > 0L } ?: System.currentTimeMillis()
+                statusUpdatedAt = item.optLong("statusUpdatedAt", item.optLong("createdAt", System.currentTimeMillis())).takeIf { it > 0L } ?: System.currentTimeMillis(),
+                assignedMechanic = item.optString("assignedMechanic", "")
             )
         }
     } catch (_: Exception) {
@@ -139,6 +140,7 @@ private fun saveBookings(context: Context, bookings: List<ServiceBooking>) {
             put("status", booking.status)
             put("createdAt", booking.createdAt)
             put("statusUpdatedAt", booking.statusUpdatedAt)
+            put("assignedMechanic", booking.assignedMechanic)
             put("latitude", booking.latitude ?: JSONObject.NULL)
             put("longitude", booking.longitude ?: JSONObject.NULL)
         })
@@ -213,6 +215,8 @@ private fun MainApp() {
                         if (booking != null && canTransitionBookingStatus(booking.status, status)) {
                             bookings = bookings.map { if (it.id == id) it.copy(status = status, statusUpdatedAt = System.currentTimeMillis()) else it }
                         }
+                    }, onAssign = { id, mechanic ->
+                        bookings = bookings.map { if (it.id == id) it.copy(assignedMechanic = mechanic) else it }
                     })
                 }
             }
@@ -1210,7 +1214,7 @@ private fun AdminLogin(language: AppLanguage, onSuccess: () -> Unit) {
 }
 
 @Composable
-private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onStatus: (Int, String) -> Unit) {
+private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onStatus: (Int, String) -> Unit, onAssign: (Int, String) -> Unit = { _, _ -> }) {
     val context = LocalContext.current
     var pendingStatusChange by remember { mutableStateOf<Pair<Int, String>?>(null) }
     var search by remember { mutableStateOf("") }
@@ -1334,6 +1338,24 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                             }
                             Spacer(Modifier.height(8.dp))
                             Text(issueLabel(language, b.issue))
+                            var assignmentExpanded by remember(b.id) { mutableStateOf(false) }
+                            val mechanicOptions = listOf("Unassigned", "Mechanic 1", "Mechanic 2", "Senior Technician")
+                            Box(Modifier.fillMaxWidth()) {
+                                OutlinedButton(onClick = { assignmentExpanded = true }, modifier = Modifier.fillMaxWidth()) {
+                                    Text(tr(language, "Assigned mechanic: ", "ନିଯୁକ୍ତ ମେକାନିକ୍: ") + if (b.assignedMechanic.isBlank()) tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି") else b.assignedMechanic)
+                                }
+                                DropdownMenu(expanded = assignmentExpanded, onDismissRequest = { assignmentExpanded = false }) {
+                                    mechanicOptions.forEach { mechanic ->
+                                        DropdownMenuItem(
+                                            text = { Text(if (mechanic == "Unassigned") tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି") else mechanic) },
+                                            onClick = {
+                                                onAssign(b.id, if (mechanic == "Unassigned") "" else mechanic)
+                                                assignmentExpanded = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
                             Text("${tr(language, "Phone", "ଫୋନ୍")}: ${b.phone}", fontSize = 13.sp, color = Color.Gray)
                             Text("${tr(language, "Address", "ଠିକଣା")}: ${b.address}", fontSize = 13.sp, color = Color.Gray)
                             if (b.pincode.isNotBlank()) {
