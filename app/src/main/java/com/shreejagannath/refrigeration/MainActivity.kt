@@ -248,6 +248,34 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
                 Text(tr(language, "Home Appliances", "ଘରୋଇ ଉପକରଣ"), color = Color(0xFFE6EFF8), fontSize = 10.sp)
                 Text(tr(language, "Care Experts", "ସେବା ବିଶେଷଜ୍ଞ"), color = Color(0xFFE6EFF8), fontSize = 10.sp)
                 Box(Modifier.padding(top = 3.dp).width(45.dp).height(3.dp).background(Orange, RoundedCornerShape(50)))
+                Row(
+                    Modifier.padding(top = 5.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    listOf(
+                        AppLanguage.ENGLISH to "EN",
+                        AppLanguage.ODIA to "ଓଡ଼ିଆ"
+                    ).forEach { (option, label) ->
+                        Box(
+                            Modifier
+                                .background(
+                                    if (language == option) Orange else Color(0xFF28517A),
+                                    RoundedCornerShape(50)
+                                )
+                                .clickable { onLanguage(option) }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                label,
+                                color = Color.White,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
             }
         }
         Row(
