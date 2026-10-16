@@ -1068,6 +1068,7 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     Text("#${b.id} • ${applianceLabel(language, b.appliance)}", fontWeight = FontWeight.Bold, color = Navy)
+                                    Text("${tr(language, "Customer: ", "ଗ୍ରାହକ: ")}${b.customer}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF40576F))
                                     Text(tr(language, "Requested: ", "ଅନୁରୋଧ ତାରିଖ: ") + SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(b.createdAt)), fontSize = 11.sp, color = Color.Gray)
                                     Text(issueLabel(language, b.issue))
                                 }
@@ -1113,7 +1114,13 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
             title = { Text(tr(language, "Cancel this request?", "ଏହି ଅନୁରୋଧ ବାତିଲ୍ କରିବେ କି?")) },
             text = { Text(tr(language, "This cannot be undone from the customer screen.", "ଗ୍ରାହକ ସ୍କ୍ରିନ୍‌ରୁ ଏହାକୁ ପୁନଃ ପରିବର୍ତ୍ତନ କରିହେବ ନାହିଁ।")) },
             confirmButton = {
-                TextButton(onClick = { onCancel(bookingId); pendingCancelId = null }) {
+                TextButton(
+                    onClick = {
+                        val booking = bookings.firstOrNull { it.id == bookingId }
+                        if (booking?.status == "Pending") onCancel(bookingId)
+                        pendingCancelId = null
+                    }
+                ) {
                     Text(tr(language, "Cancel request", "ଅନୁରୋଧ ବାତିଲ୍"))
                 }
             },
