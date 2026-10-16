@@ -289,23 +289,23 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
                 }
             }
         }
-        Canvas(Modifier.fillMaxWidth().height(43.dp)) {
+        Canvas(Modifier.fillMaxWidth().height(76.dp)) {
             val w = size.width
             val h = size.height
             val blue = Path().apply {
-                moveTo(0f, h * 0.18f)
-                cubicTo(w * 0.18f, h * 0.98f, w * 0.30f, h * 0.95f, w * 0.48f, h * 0.45f)
-                cubicTo(w * 0.65f, -h * 0.02f, w * 0.78f, h * 0.15f, w, h * 0.72f)
+                moveTo(0f, h * 0.10f)
+                cubicTo(w * 0.18f, h * 0.70f, w * 0.28f, h * 0.96f, w * 0.48f, h * 0.48f)
+                cubicTo(w * 0.66f, -h * 0.02f, w * 0.79f, h * 0.18f, w, h * 0.60f)
                 lineTo(w, h)
                 lineTo(0f, h)
                 close()
             }
             drawPath(blue, Brush.horizontalGradient(listOf(Color(0xFF0B4B86), Color(0xFF0876C9), Color(0xFF0B3765))))
             val orangeAccent = Path().apply {
-                moveTo(0f, h * 0.08f)
-                cubicTo(w * 0.14f, h * 0.55f, w * 0.20f, h * 0.55f, w * 0.31f, h * 0.34f)
-                lineTo(w * 0.28f, h * 0.49f)
-                cubicTo(w * 0.18f, h * 0.75f, w * 0.10f, h * 0.56f, 0f, h * 0.36f)
+                moveTo(0f, h * 0.02f)
+                cubicTo(w * 0.13f, h * 0.43f, w * 0.22f, h * 0.50f, w * 0.32f, h * 0.30f)
+                lineTo(w * 0.29f, h * 0.40f)
+                cubicTo(w * 0.18f, h * 0.63f, w * 0.08f, h * 0.44f, 0f, h * 0.28f)
                 close()
             }
             drawPath(orangeAccent, Color(0xFFF28C28))
