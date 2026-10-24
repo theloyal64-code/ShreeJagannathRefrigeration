@@ -81,7 +81,7 @@ private val issueOptions = mapOf(
     "Microwave Oven" to listOf("Not heating", "Not turning on", "Sparking inside", "Turntable not moving", "Making noise", "Door problem", "Display not working", "Uneven heating", "Burning smell", "Buttons not responding"),
     "Geyser" to listOf("No hot water", "Water not heating enough", "Water leakage", "Not turning on", "Trips electricity", "Making noise", "Takes too long to heat", "Hot water runs out quickly", "Rusty water", "Installation / servicing")
 )
-data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val preferredSlot: String = "", val pincode: String = "", val status: String = "Pending", val createdAt: Long = System.currentTimeMillis(), val latitude: Double? = null, val longitude: Double? = null, val statusUpdatedAt: Long = createdAt, val assignedMechanic: String = "")
+data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val preferredSlot: String = "", val pincode: String = "", val status: String = "Pending", val createdAt: Long = System.currentTimeMillis(), val latitude: Double? = null, val longitude: Double? = null, val statusUpdatedAt: Long = createdAt, val assignedMechanic: String = "", val rating: Int = 0, val review: String = "", val reviewedAt: Long = 0L)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -111,7 +111,10 @@ private fun loadBookings(context: Context): List<ServiceBooking> {
                 latitude = if (item.isNull("latitude")) null else item.optDouble("latitude"),
                 longitude = if (item.isNull("longitude")) null else item.optDouble("longitude"),
                 statusUpdatedAt = item.optLong("statusUpdatedAt", item.optLong("createdAt", System.currentTimeMillis())).takeIf { it > 0L } ?: System.currentTimeMillis(),
-                assignedMechanic = item.optString("assignedMechanic", "")
+                assignedMechanic = item.optString("assignedMechanic", ""),
+                rating = item.optInt("rating", 0),
+                review = item.optString("review", ""),
+                reviewedAt = item.optLong("reviewedAt", 0L)
             )
         }
     } catch (_: Exception) {
@@ -143,6 +146,9 @@ private fun saveBookings(context: Context, bookings: List<ServiceBooking>) {
             put("createdAt", booking.createdAt)
             put("statusUpdatedAt", booking.statusUpdatedAt)
             put("assignedMechanic", booking.assignedMechanic)
+            put("rating", booking.rating)
+            put("review", booking.review)
+            put("reviewedAt", booking.reviewedAt)
             put("latitude", booking.latitude ?: JSONObject.NULL)
             put("longitude", booking.longitude ?: JSONObject.NULL)
         })
@@ -189,6 +195,7 @@ private fun MainApp() {
                     "customer" -> tr(language, "Book a Service", "ସେବା ବୁକ୍ କରନ୍ତୁ")
                     "form" -> tr(language, "Service Request", "ସେବା ଅନୁରୋଧ")
                     "history" -> tr(language, "My Bookings", "ମୋ ବୁକିଂ")
+                    "review" -> tr(language, "Rate Your Service", "ସେବାକୁ ରେଟ୍ କରନ୍ତୁ")
                     "bookingConfirmation" -> tr(language, "Booking Confirmed", "ବୁକିଂ ନିଶ୍ଚିତ")
                     "adminLogin" -> tr(language, "Team Login", "ଟିମ୍ ଲଗଇନ୍")
                     "admin" -> tr(language, "Admin Dashboard", "ଆଡମିନ୍ ଡ୍ୟାସବୋର୍ଡ")
@@ -199,6 +206,7 @@ private fun MainApp() {
                     IconButton(onClick = { screen = when (screen) {
                         "form" -> "customer"
                         "history" -> "customer"
+                        "review" -> "history"
                         "bookingConfirmation" -> "customer"
                         "admin", "mechanic" -> "welcome"
                         else -> "welcome"
@@ -226,7 +234,25 @@ private fun MainApp() {
                     "history" -> BookingHistory(bookings, language, onCancel = { id ->
                         val now = System.currentTimeMillis()
                         bookings = bookings.map { if (it.id == id && it.status == "Pending") it.copy(status = "Cancelled", statusUpdatedAt = now) else it }
-                    })
+                    }, onReview = { id -> lastCreatedBookingId = id; screen = "review" })
+                    "review" -> {
+                        val reviewBooking = bookings.firstOrNull { it.id == lastCreatedBookingId }
+                        if (reviewBooking != null) ServiceReviewScreen(
+                            booking = reviewBooking,
+                            language = language,
+                            onSubmit = { rating, review ->
+                                val now = System.currentTimeMillis()
+                                bookings = bookings.map { if (it.id == reviewBooking.id) it.copy(rating = rating, review = review.trim(), reviewedAt = now) else it }
+                                screen = "history"
+                            },
+                            onPlayStore = {
+                                val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${context.packageName}"))
+                                runCatching { context.startActivity(marketIntent) }.onFailure {
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}")))
+                                }
+                            }
+                        ) else screen = "history"
+                    }
                     "adminLogin" -> TeamLogin(language, onAdminSuccess = { screen = "admin" }, onMechanicSuccess = { mechanic ->
                         loggedInMechanic = mechanic
                         screen = "mechanic"
@@ -1120,7 +1146,7 @@ private fun BookingConfirmation(
 }
 
 @Composable
-private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage, onCancel: (Int) -> Unit) {
+private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage, onCancel: (Int) -> Unit, onReview: (Int) -> Unit) {
     val context = LocalContext.current
     var pendingCancelId by remember { mutableStateOf<Int?>(null) }
     var search by remember { mutableStateOf("") }
@@ -1189,6 +1215,16 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
                             Text("${tr(language, "Address", "ଠିକଣା")}: ${b.address}", fontSize = 13.sp)
                             Spacer(Modifier.height(12.dp))
                             BookingProgress(b.status, language)
+                            if (b.status == "Completed") {
+                                Spacer(Modifier.height(8.dp))
+                                if (b.rating > 0) {
+                                    Text("★".repeat(b.rating) + "☆".repeat(5 - b.rating) + "  ${tr(language, "Your rating", "ଆପଣଙ୍କ ରେଟିଂ")}", color = Orange, fontWeight = FontWeight.Bold)
+                                    if (b.review.isNotBlank()) Text(b.review, color = Color(0xFF40576F), fontSize = 13.sp)
+                                    OutlinedButton(onClick = { onReview(b.id) }, modifier = Modifier.fillMaxWidth()) { Text(tr(language, "Edit Review", "ରିଭ୍ୟୁ ବଦଳାନ୍ତୁ")) }
+                                } else {
+                                    Button(onClick = { onReview(b.id) }, modifier = Modifier.fillMaxWidth()) { Text(tr(language, "★ Rate & Review Service", "★ ସେବାକୁ ରେଟ୍ ଓ ରିଭ୍ୟୁ କରନ୍ତୁ")) }
+                                }
+                            }
                             Text(
                                 tr(language, "Status last updated: ", "ସ୍ଥିତି ଶେଷଥର ବଦଳିଥିଲା: ") +
                                     SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(b.statusUpdatedAt)),
@@ -1245,6 +1281,72 @@ private fun BookingHistory(bookings: List<ServiceBooking>, language: AppLanguage
                     Text(tr(language, "Keep booking", "ବୁକିଂ ରଖନ୍ତୁ"))
                 }
             }
+        )
+    }
+}
+
+
+@Composable
+private fun ServiceReviewScreen(
+    booking: ServiceBooking,
+    language: AppLanguage,
+    onSubmit: (Int, String) -> Unit,
+    onPlayStore: () -> Unit
+) {
+    var rating by remember(booking.id) { mutableIntStateOf(booking.rating.coerceIn(0, 5)) }
+    var review by remember(booking.id) { mutableStateOf(booking.review) }
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(Modifier.height(18.dp))
+        Text("★", fontSize = 54.sp, color = Orange)
+        Text(tr(language, "How was your service?", "ଆପଣଙ୍କ ସେବା ଅନୁଭୂତି କେମିତି ଥିଲା?"), fontSize = 23.sp, fontWeight = FontWeight.ExtraBold, color = Navy)
+        Spacer(Modifier.height(6.dp))
+        Text("#${booking.id} • ${applianceLabel(language, booking.appliance)}", color = Color.Gray)
+        Spacer(Modifier.height(18.dp))
+        Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+            (1..5).forEach { star ->
+                TextButton(onClick = { rating = star }, contentPadding = PaddingValues(4.dp)) {
+                    Text(if (star <= rating) "★" else "☆", fontSize = 38.sp, color = if (star <= rating) Orange else Color.LightGray)
+                }
+            }
+        }
+        Text(
+            when (rating) {
+                1 -> tr(language, "Poor", "ଖରାପ")
+                2 -> tr(language, "Could be better", "ଆହୁରି ଭଲ ହୋଇପାରିଥାନ୍ତା")
+                3 -> tr(language, "Good", "ଭଲ")
+                4 -> tr(language, "Very good", "ବହୁତ ଭଲ")
+                5 -> tr(language, "Excellent!", "ଅତ୍ୟନ୍ତ ଭଲ!")
+                else -> tr(language, "Tap a star to rate", "ରେଟିଂ ପାଇଁ ଷ୍ଟାର୍ ଚୟନ କରନ୍ତୁ")
+            },
+            color = Navy,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(Modifier.height(16.dp))
+        OutlinedTextField(
+            value = review,
+            onValueChange = { if (it.length <= 500) review = it },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
+            label = { Text(tr(language, "Write your feedback (optional)", "ଆପଣଙ୍କ ମତାମତ ଲେଖନ୍ତୁ (ଇଚ୍ଛାଧୀନ)")) },
+            placeholder = { Text(tr(language, "Tell us what went well or what we can improve…", "କେଉଁଟି ଭଲ ହେଲା କିମ୍ବା କଣ ସୁଧାରିବା ଉଚିତ ଲେଖନ୍ତୁ…")) }
+        )
+        Text("${review.length}/500", modifier = Modifier.align(Alignment.End), fontSize = 11.sp, color = Color.Gray)
+        Spacer(Modifier.height(16.dp))
+        Button(
+            onClick = { if (rating in 1..5) onSubmit(rating, review) },
+            enabled = rating in 1..5,
+            modifier = Modifier.fillMaxWidth().height(52.dp)
+        ) { Text(tr(language, "Submit Feedback", "ମତାମତ ଦାଖଲ କରନ୍ତୁ")) }
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(onClick = onPlayStore, modifier = Modifier.fillMaxWidth().height(50.dp)) {
+            Text(tr(language, "Rate us on Google Play", "Google Play ରେ ରେଟ୍ କରନ୍ତୁ"))
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            tr(language, "Your in-app feedback is saved on this device. Google Play rating opens the app's Play Store listing when it is published.", "ଆପ୍‌ରେ ଦିଆଯାଇଥିବା ମତାମତ ଏହି ଡିଭାଇସ୍‌ରେ ସେଭ୍ ହୁଏ। ଆପ୍ ପ୍ରକାଶିତ ହେଲେ Google Play ରେଟିଂ ତାହାର ଲିଷ୍ଟିଂ ଖୋଲିବ।"),
+            fontSize = 12.sp, color = Color.Gray
         )
     }
 }
