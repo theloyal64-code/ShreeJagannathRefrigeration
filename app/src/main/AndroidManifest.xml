@@ -5,6 +5,7 @@
     <application
         android:allowBackup="false"
         android:label="Shree Jagannath Refrigeration"
+        android:icon="@drawable/ic_refrigeration_logo"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity android:name=".MainActivity" android:exported="true">
