@@ -282,41 +282,13 @@ private fun fetchCommonsPhoto(searchTerm: String): android.graphics.Bitmap? {
 }
 
 @Composable
-private fun RefrigerationLogo(modifier: Modifier = Modifier) {
-    Box(modifier, contentAlignment = Alignment.Center) {
-        Box(
-            Modifier.fillMaxSize().offset(x = 2.dp, y = 3.dp)
-                .background(Color(0xFF061B31), RoundedCornerShape(11.dp))
-        )
-        Box(
-            Modifier.fillMaxSize().padding(end = 2.dp, bottom = 3.dp)
-                .background(
-                    Brush.linearGradient(listOf(Color(0xFF4E9FE8), Color(0xFF123B67), Color(0xFF082747))),
-                    RoundedCornerShape(10.dp)
-                )
-        ) {
-            Box(Modifier.fillMaxWidth().height(5.dp).background(Orange, RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp)))
-            Icon(
-                Icons.Default.HomeRepairService,
-                contentDescription = "Shree Jagannath Refrigeration logo",
-                tint = Color.White,
-                modifier = Modifier.align(Alignment.Center).size(26.dp)
-                    .graphicsLayer { shadowElevation = 5.dp.toPx(); translationZ = 4.dp }
-            )
-            Box(Modifier.align(Alignment.BottomEnd).padding(end = 4.dp, bottom = 4.dp)
-                .size(6.dp).background(Color(0xFFFFB35C), RoundedCornerShape(50)))
-        }
-    }
-}
-
-@Composable
 private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, onCustomer: () -> Unit, onAdmin: () -> Unit) {
     Column(
         Modifier.fillMaxSize().background(Color(0xFFF4F8FD)).verticalScroll(rememberScrollState()).padding(bottom = 4.dp),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         Row(Modifier.fillMaxWidth().background(Color(0xFF0B3765)).padding(horizontal = 16.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
-            RefrigerationLogo(Modifier.size(43.dp))
+            Icon(Icons.Default.HomeRepairService, contentDescription = null, tint = Color.White, modifier = Modifier.size(37.dp))
             Spacer(Modifier.width(9.dp))
             Column(Modifier.weight(1f)) {
                 Text("SHREE JAGANNATH", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 17.sp, maxLines = 1)
