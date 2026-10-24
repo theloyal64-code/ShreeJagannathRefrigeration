@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "232900772497",
+    "project_id": "shree-jagannath-refriger-fd14d",
+    "storage_bucket": "shree-jagannath-refriger-fd14d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:232900772497:android:9bb66c505668a9b94d7530",
+        "android_client_info": {
+          "package_name": "com.shreejagannath.refrigeration"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA9hxXfUGzXFPknyVL8Ag3Vl8AgyNysym8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
