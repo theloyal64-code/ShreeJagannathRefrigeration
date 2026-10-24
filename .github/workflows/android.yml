@@ -46,6 +46,9 @@ jobs:
           ls "$ANDROID_HOME/platforms"
           ls "$ANDROID_HOME/build-tools"
 
+      - name: Print debug signing fingerprints
+        run: gradle --no-daemon :app:signingReport
+
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
 
