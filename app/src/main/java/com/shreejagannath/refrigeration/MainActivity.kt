@@ -977,13 +977,22 @@ private fun Appliance3DPreview(appliance: String, rotationDegrees: Float, modifi
             V(-halfW, -halfH, halfD), V(halfW, -halfH, halfD), V(halfW, halfH, halfD), V(-halfW, halfH, halfD)
         )
         data class Face(val ids: List<Int>, val color: Color)
+        // Appliance-specific factory colours: white AC, stainless/silver fridge and washer,
+        // dark glass microwave, and white enamel geyser with hot/cold indicators.
+        val appliancePalette = when (appliance) {
+            "AC Service" -> listOf(Color(0xFFE3E8ED), Color(0xFFFAFCFD), Color(0xFFD0D8DF), Color(0xFFB6C1CB), Color(0xFFDCE3E9), Color(0xFFF4F7F9))
+            "Refrigerator" -> listOf(Color(0xFF9EAAB5), Color(0xFFE5E9ED), Color(0xFF7E8B97), Color(0xFF687681), Color(0xFFB9C3CB), Color(0xFFF4F6F8))
+            "Washing Machine" -> listOf(Color(0xFFB9C5CF), Color(0xFFF1F4F6), Color(0xFF9AA8B3), Color(0xFF6F7D88), Color(0xFFC9D2D9), Color(0xFFE8EDF1))
+            "Microwave Oven" -> listOf(Color(0xFF5C6873), Color(0xFFADB7C0), Color(0xFF454F58), Color(0xFF303941), Color(0xFF727F89), Color(0xFFD3D9DE))
+            else -> listOf(Color(0xFFB9C7D2), Color(0xFFF4F7F9), Color(0xFF9CAEBB), Color(0xFF748997), Color(0xFFC8D4DC), Color(0xFFE8EEF2))
+        }
         val faces = listOf(
-            Face(listOf(0, 1, 2, 3), Color(0xFFB7C8D9)),
-            Face(listOf(4, 7, 6, 5), Color(0xFFE6EEF6)),
-            Face(listOf(0, 4, 5, 1), Color(0xFF9AAFC3)),
-            Face(listOf(1, 5, 6, 2), Color(0xFF71879D)),
-            Face(listOf(2, 6, 7, 3), Color(0xFF8FA4B8)),
-            Face(listOf(3, 7, 4, 0), Color(0xFFD5E1EC))
+            Face(listOf(0, 1, 2, 3), appliancePalette[0]),
+            Face(listOf(4, 7, 6, 5), appliancePalette[1]),
+            Face(listOf(0, 4, 5, 1), appliancePalette[2]),
+            Face(listOf(1, 5, 6, 2), appliancePalette[3]),
+            Face(listOf(2, 6, 7, 3), appliancePalette[4]),
+            Face(listOf(3, 7, 4, 0), appliancePalette[5])
         ).map { face -> face to face.ids.map { project(vertices[it]).depth }.average().toFloat() }
             .sortedBy { it.second }
 
@@ -1033,36 +1042,50 @@ private fun Appliance3DPreview(appliance: String, rotationDegrees: Float, modifi
             }
             when (appliance) {
                 "AC Service" -> {
-                    panelRect(0.07f, 0.55f, 0.86f, 0.29f, Color(0xFFDCE7F0))
-                    for (i in 0..5) panelLine(0.13f, 0.60f + i * 0.038f, 0.87f, 0.60f + i * 0.038f, Color(0xFF627A90), 1.15f)
-                    drawCircle(Color(0xFF526B82), w * 0.012f, facePoint(0.84f, 0.28f))
+                    // White split AC body, dark outlet, directional louvers and status LED.
+                    panelRect(0.035f, 0.12f, 0.93f, 0.30f, Color(0xFFF9FBFC))
+                    panelLine(0.08f, 0.18f, 0.92f, 0.18f, Color(0xFFD1D9DF), 1.0f)
+                    panelRect(0.07f, 0.55f, 0.86f, 0.29f, Color(0xFFBBC6CE))
+                    for (i in 0..5) panelLine(0.13f, 0.60f + i * 0.038f, 0.87f, 0.60f + i * 0.038f, Color(0xFF53616B), 1.15f)
+                    drawCircle(Color(0xFF20A36A), w * 0.012f, facePoint(0.84f, 0.28f))
                 }
                 "Refrigerator" -> {
-                    panelLine(0.03f, 0.43f, 0.97f, 0.43f, Color(0xFF71879D), 1.7f)
-                    panelRect(0.79f, 0.15f, 0.035f, 0.19f, Color(0xFF6D8298))
-                    panelRect(0.79f, 0.53f, 0.035f, 0.23f, Color(0xFF6D8298))
-                    panelLine(0.06f, 0.04f, 0.94f, 0.04f, Color(0xFFF8FBFF), 1.1f)
+                    // Stainless steel finish, separate freezer/fridge doors and metal handles.
+                    panelLine(0.03f, 0.43f, 0.97f, 0.43f, Color(0xFF687783), 1.7f)
+                    panelRect(0.79f, 0.15f, 0.035f, 0.19f, Color(0xFF53616C))
+                    panelRect(0.79f, 0.53f, 0.035f, 0.23f, Color(0xFF53616C))
+                    panelLine(0.06f, 0.04f, 0.94f, 0.04f, Color(0xFFFFFFFF), 1.1f)
+                    panelLine(0.10f, 0.09f, 0.10f, 0.36f, Color(0xFFF8FAFC), 1.0f)
                 }
                 "Washing Machine" -> {
-                    panelRect(0.08f, 0.08f, 0.84f, 0.16f, Color(0xFFB5C7D8))
+                    // White/silver cabinet, dark control strip, realistic glass drum.
+                    panelRect(0.08f, 0.08f, 0.84f, 0.16f, Color(0xFF53616C))
+                    panelRect(0.12f, 0.11f, 0.30f, 0.08f, Color(0xFFDEE5EA))
+                    drawCircle(Color(0xFF20A36A), w * 0.008f, facePoint(0.83f, 0.16f))
                     val center = facePoint(0.5f, 0.62f)
                     val radius = w * 0.072f
-                    drawCircle(Color(0xFF4C647B), radius * 1.16f, center)
-                    drawCircle(Brush.radialGradient(listOf(Color(0xFFEAF5FF), Color(0xFF6D91AE), Color(0xFF304D68)), radius = radius, center = center), radius, center)
-                    drawCircle(Color(0xFFDCE8F2), radius * 0.72f, center, style = Stroke(width = 1.7f))
+                    drawCircle(Color(0xFF303A42), radius * 1.16f, center)
+                    drawCircle(Brush.radialGradient(listOf(Color(0xFFEAF5F8), Color(0xFF7D9EAC), Color(0xFF263E4A)), radius = radius, center = center), radius, center)
+                    drawCircle(Color(0xFFDCE5E9), radius * 0.72f, center, style = Stroke(width = 1.7f))
+                    drawArc(Color(0xFFB9D4DF), 210f, 115f, false, Offset(center.x - radius * 0.62f, center.y - radius * 0.62f), Size(radius * 1.24f, radius * 1.24f), style = Stroke(width = 1.3f))
                 }
                 "Microwave Oven" -> {
-                    panelRect(0.08f, 0.18f, 0.62f, 0.62f, Color(0xFF30485E))
-                    panelRect(0.12f, 0.22f, 0.54f, 0.54f, Color(0xFF7699B4))
-                    panelLine(0.16f, 0.28f, 0.60f, 0.28f, Color(0xFFBFD9EA), 1.1f)
-                    for (i in 0..2) drawCircle(Color(0xFF435A70), w * 0.009f, facePoint(0.83f, 0.32f + i * 0.18f))
+                    // Dark tinted glass door, metallic border and tactile control buttons.
+                    panelRect(0.07f, 0.17f, 0.64f, 0.64f, Color(0xFF242C33))
+                    panelRect(0.105f, 0.205f, 0.57f, 0.57f, Color(0xFF42535F))
+                    panelLine(0.14f, 0.24f, 0.59f, 0.24f, Color(0xFF9FB5C2), 1.1f)
+                    panelRect(0.76f, 0.24f, 0.12f, 0.035f, Color(0xFFD8DEE3))
+                    for (i in 0..2) drawCircle(Color(0xFF252E35), w * 0.009f, facePoint(0.83f, 0.38f + i * 0.16f))
                 }
                 else -> {
-                    panelRect(0.15f, 0.25f, 0.70f, 0.045f, Color(0xFF52677D))
+                    // White enamel geyser, thermostat dial and red/blue hot-cold indicators.
+                    panelRect(0.15f, 0.25f, 0.70f, 0.045f, Color(0xFF73818A))
                     val control = facePoint(0.5f, 0.18f)
-                    drawCircle(Brush.radialGradient(listOf(Color(0xFFF7FBFF), Color(0xFF8DA7BC), Color(0xFF425A70)), radius = w * 0.027f, center = control), w * 0.027f, control)
-                    panelRect(0.18f, 0.36f, 0.64f, 0.47f, Color(0xFF71869A))
-                    panelLine(0.23f, 0.42f, 0.77f, 0.42f, Color(0xFFDAE4ED), 1.3f)
+                    drawCircle(Brush.radialGradient(listOf(Color(0xFFFFFFFF), Color(0xFF9CAEB8), Color(0xFF42535E)), radius = w * 0.027f, center = control), w * 0.027f, control)
+                    panelRect(0.18f, 0.36f, 0.64f, 0.47f, Color(0xFFE3EBF0))
+                    panelLine(0.23f, 0.42f, 0.77f, 0.42f, Color(0xFFBAC8D0), 1.3f)
+                    drawCircle(Color(0xFFE34B4B), w * 0.009f, facePoint(0.34f, 0.49f))
+                    drawCircle(Color(0xFF3186D8), w * 0.009f, facePoint(0.66f, 0.49f))
                 }
             }
         }
