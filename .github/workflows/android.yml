@@ -46,18 +46,13 @@ jobs:
           ls "$ANDROID_HOME/platforms"
           ls "$ANDROID_HOME/build-tools"
 
-      - name: Generate debug keystore
+      - name: Restore stable debug keystore
         shell: bash
         run: |
           KEYSTORE="$HOME/.config/.android/debug.keystore"
           mkdir -p "$(dirname "$KEYSTORE")"
-          keytool -genkeypair -v \
-            -keystore "$KEYSTORE" \
-            -storepass android \
-            -alias AndroidDebugKey \
-            -keypass android \
-            -dname "CN=Android Debug,O=Android,C=US" \
-            -keyalg RSA -keysize 2048 -validity 10000
+          base64 --decode ci/debug.keystore.b64 > "$KEYSTORE"
+          chmod 600 "$KEYSTORE"
 
       - name: Print debug signing fingerprints
         run: gradle --no-daemon :app:signingReport
