@@ -11,6 +11,15 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Looper
 import android.widget.Toast
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.CustomCredential
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -412,6 +421,8 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
                 Text("❯", fontSize = 23.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(8.dp))
+            GoogleSignInButton(language = language, onSignedIn = onCustomer)
+            Spacer(Modifier.height(8.dp))
             OutlinedButton(
                 onClick = onAdmin,
                 modifier = Modifier.fillMaxWidth().height(62.dp),
@@ -484,6 +495,64 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
                 }
             }
         }
+    }
+}
+
+
+@Composable
+private fun GoogleSignInButton(language: AppLanguage, onSignedIn: () -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var signingIn by remember { mutableStateOf(false) }
+    OutlinedButton(
+        onClick = {
+            if (!signingIn) {
+                signingIn = true
+                scope.launch {
+                    try {
+                        val credentialManager = CredentialManager.create(context)
+                        val googleIdOption = GetGoogleIdOption.Builder()
+                            .setFilterByAuthorizedAccounts(false)
+                            .setServerClientId(context.getString(R.string.default_web_client_id))
+                            .setAutoSelectEnabled(false)
+                            .build()
+                        val request = GetCredentialRequest.Builder()
+                            .addCredentialOption(googleIdOption)
+                            .build()
+                        val result = credentialManager.getCredential(context, request)
+                        val credential = result.credential
+                        if (credential is CustomCredential &&
+                            credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+                        ) {
+                            val googleCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                            val firebaseCredential = GoogleAuthProvider.getCredential(googleCredential.idToken, null)
+                            FirebaseAuth.getInstance().signInWithCredential(firebaseCredential).await()
+                            Toast.makeText(
+                                context,
+                                tr(language, "Signed in with Google", "Google ଦ୍ୱାରା ଲଗଇନ୍ ସଫଳ"),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            onSignedIn()
+                        } else {
+                            Toast.makeText(context, tr(language, "Google sign-in was not completed.", "Google ଲଗଇନ୍ ସମ୍ପୂର୍ଣ୍ଣ ହୋଇନାହିଁ।"), Toast.LENGTH_LONG).show()
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            tr(language, "Google sign-in failed. Please try again.", "Google ଲଗଇନ୍ ବିଫଳ। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।"),
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } finally {
+                        signingIn = false
+                    }
+                }
+            }
+        },
+        enabled = !signingIn,
+        modifier = Modifier.fillMaxWidth().height(54.dp),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Text(if (signingIn) tr(language, "Signing in...", "ଲଗଇନ୍ ହେଉଛି...") else tr(language, "Continue with Google", "Google ସହିତ ଆଗକୁ ବଢ଼ନ୍ତୁ"), fontWeight = FontWeight.Bold)
     }
 }
 
