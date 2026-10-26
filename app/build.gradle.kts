@@ -11,8 +11,8 @@ android {
         applicationId = "com.shreejagannath.refrigeration"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+        versionName = "0.1.${System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1}"
     }
     buildFeatures { compose = true }
     compileOptions {
