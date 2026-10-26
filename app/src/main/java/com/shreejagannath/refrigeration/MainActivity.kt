@@ -319,7 +319,7 @@ private fun fetchCommonsPhoto(searchTerm: String): android.graphics.Bitmap? {
 @Composable
 private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, onCustomer: () -> Unit, onAdmin: () -> Unit) {
     Column(
-        Modifier.fillMaxSize().background(Color(0xFFF4F8FD)).verticalScroll(rememberScrollState()).padding(bottom = 4.dp),
+        Modifier.fillMaxSize().background(Color(0xFFF4F8FD)).verticalScroll(rememberScrollState()).padding(bottom = 2.dp),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         Row(Modifier.fillMaxWidth().background(Color(0xFF0B3765)).padding(horizontal = 16.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -364,7 +364,7 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
             }
         }
         Row(
-            Modifier.fillMaxWidth().height(270.dp).padding(horizontal = 16.dp, vertical = 6.dp),
+            Modifier.fillMaxWidth().height(220.dp).padding(horizontal = 16.dp, vertical = 3.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1.05f), verticalArrangement = Arrangement.Center) {
@@ -407,7 +407,7 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Button(
                 onClick = onCustomer,
-                modifier = Modifier.fillMaxWidth().height(66.dp),
+                modifier = Modifier.fillMaxWidth().height(58.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0B4B86)),
                 contentPadding = PaddingValues(horizontal = 16.dp)
@@ -421,11 +421,11 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
                 Text("❯", fontSize = 23.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(8.dp))
-            GoogleSignInButton(language = language, onSignedIn = onCustomer)
-            Spacer(Modifier.height(8.dp))
+            GoogleSignInButton(language = language, onSignedIn = onCustomer, compact = true)
+            Spacer(Modifier.height(5.dp))
             OutlinedButton(
                 onClick = onAdmin,
-                modifier = Modifier.fillMaxWidth().height(62.dp),
+                modifier = Modifier.fillMaxWidth().height(54.dp),
                 shape = RoundedCornerShape(18.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Navy)
@@ -438,7 +438,7 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
                 }
                 Text("❯", fontSize = 22.sp, fontWeight = FontWeight.Bold)
             }
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(7.dp))
             Text(tr(language, "We Service All Major Appliances", "ସମସ୍ତ ପ୍ରମୁଖ ଉପକରଣର ସେବା"), fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Navy, maxLines = 1)
             Box(Modifier.padding(top = 4.dp, bottom = 6.dp).width(34.dp).height(3.dp).background(Orange, RoundedCornerShape(50)))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
@@ -470,7 +470,7 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
                 }
             }
             Row(
-                Modifier.fillMaxWidth().padding(top = 11.dp, bottom = 5.dp),
+                Modifier.fillMaxWidth().padding(top = 7.dp, bottom = 2.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 listOf(
