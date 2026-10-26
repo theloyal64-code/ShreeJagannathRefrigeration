@@ -500,7 +500,7 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
 
 
 @Composable
-private fun GoogleSignInButton(language: AppLanguage, onSignedIn: () -> Unit) {
+private fun GoogleSignInButton(language: AppLanguage, onSignedIn: () -> Unit, compact: Boolean = false) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var signingIn by remember { mutableStateOf(false) }
@@ -549,7 +549,7 @@ private fun GoogleSignInButton(language: AppLanguage, onSignedIn: () -> Unit) {
             }
         },
         enabled = !signingIn,
-        modifier = Modifier.fillMaxWidth().height(54.dp),
+        modifier = Modifier.fillMaxWidth().height(if (compact) 48.dp else 54.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
         Text(if (signingIn) tr(language, "Signing in...", "ଲଗଇନ୍ ହେଉଛି...") else tr(language, "Continue with Google", "Google ସହିତ ଆଗକୁ ବଢ଼ନ୍ତୁ"), fontWeight = FontWeight.Bold)
