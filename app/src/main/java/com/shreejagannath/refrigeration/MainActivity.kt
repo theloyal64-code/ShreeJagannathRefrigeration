@@ -1557,7 +1557,7 @@ private fun BookingConfirmation(
                         Text(SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(booking.createdAt)), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Navy)
                     }
                     Spacer(Modifier.height(10.dp))
-                    Text(tr(language, "Your request is saved on this device. Our team will update the status when it is processed.", "ଆପଣଙ୍କ ଅନୁରୋଧ ଏହି ଡିଭାଇସରେ ସେଭ୍ ହୋଇଛି। ଟିମ୍ ପ୍ରକ୍ରିୟା କଲେ ସ୍ଥିତି ଅପଡେଟ୍ ହେବ।"), fontSize = 12.sp, color = Color.Gray)
+                    Text(tr(language, "Your booking is saved to your account and can be viewed on your other signed-in devices. Our team will update the status as it is processed.", "ଆପଣଙ୍କ ବୁକିଂ ଆପଣଙ୍କ ଆକାଉଣ୍ଟରେ ସେଭ୍ ହୋଇଛି ଏବଂ ଅନ୍ୟ ଲଗ୍‌ଇନ୍ ଡିଭାଇସ୍‌ରେ ମଧ୍ୟ ଦେଖିହେବ। ଟିମ୍ ପ୍ରକ୍ରିୟା କଲେ ସ୍ଥିତି ଅପଡେଟ୍ ହେବ।"), fontSize = 12.sp, color = Color.Gray)
                 }
             }
         } else {
