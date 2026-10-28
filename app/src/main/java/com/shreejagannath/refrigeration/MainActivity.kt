@@ -878,7 +878,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                             .addOnSuccessListener { cached ->
                                 if (cached != null) finishWithLocation(cached)
                                 else if (!completed) {
-                                    mainHandler.removeCallbacks(timeout)
+                                    timeout?.let { mainHandler.removeCallbacks(it) }
                                     completed = true
                                     locating = false
                                     Toast.makeText(context, tr(language, "No location fix yet. Turn on Precise location and try outdoors, or type the address manually.", "ଲୋକେସନ୍ ମିଳିଲା ନାହିଁ। Precise location ଚାଲୁ କରି ଖୋଲା ସ୍ଥାନରେ ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
@@ -886,7 +886,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                             }
                             .addOnFailureListener {
                                 if (!completed) {
-                                    mainHandler.removeCallbacks(timeout)
+                                    timeout?.let { mainHandler.removeCallbacks(it) }
                                     completed = true
                                     locating = false
                                     Toast.makeText(context, tr(language, "Location unavailable. Retry or enter the address manually.", "ଲୋକେସନ୍ ମିଳୁନାହିଁ। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
@@ -900,7 +900,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                             .addOnSuccessListener { cached ->
                                 if (cached != null) finishWithLocation(cached)
                                 else if (!completed) {
-                                    mainHandler.removeCallbacks(timeout)
+                                    timeout?.let { mainHandler.removeCallbacks(it) }
                                     completed = true
                                     locating = false
                                     Toast.makeText(context, tr(language, "GPS failed. Retry or enter the address manually.", "GPS ବିଫଳ ହେଲା। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
@@ -909,11 +909,11 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                     }
                 }
         } catch (_: SecurityException) {
-            mainHandler.removeCallbacks(timeout)
+            timeout?.let { mainHandler.removeCallbacks(it) }
             locating = false
             Toast.makeText(context, tr(language, "Allow location permission in app settings, then retry.", "ଆପ୍ ସେଟିଂରେ Location ଅନୁମତି ଦେଇ ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
         } catch (_: Exception) {
-            mainHandler.removeCallbacks(timeout)
+            timeout?.let { mainHandler.removeCallbacks(it) }
             locating = false
             Toast.makeText(context, tr(language, "Could not start GPS. Turn on phone Location and retry.", "GPS ଆରମ୍ଭ ହୋଇପାରିଲା ନାହିଁ। ଫୋନ୍ Location ଚାଲୁ କରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
         }
