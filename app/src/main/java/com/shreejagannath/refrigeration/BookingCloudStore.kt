@@ -92,62 +92,65 @@ internal class BookingCloudStore(
             put("createdAt", FieldValue.serverTimestamp())
             put("statusUpdatedAt", FieldValue.serverTimestamp())
         }
-        ref.set(data).await()
-        ref.collection("statusHistory").add(mapOf(
-                "changedBy" to uid,
-                "oldStatus" to "",
-                "newStatus" to "Pending",
-                "createdAt" to FieldValue.serverTimestamp()
-            )).await()
+        val historyRef = ref.collection("statusHistory").document()
+        val batch = db.batch()
+        batch.set(ref, data)
+        batch.set(historyRef, mapOf(
+            "changedBy" to uid,
+            "oldStatus" to "",
+            "newStatus" to "Pending",
+            "createdAt" to FieldValue.serverTimestamp()
+        ))
+        batch.commit().await()
         return ref.id
     }
 
     suspend fun cancelPendingBooking(cloudId: String, uid: String) {
         val ref = db.collection("bookings").document(cloudId)
-        val oldStatus = db.runTransaction { transaction ->
+        val historyRef = ref.collection("statusHistory").document()
+        db.runTransaction { transaction ->
             val snapshot = transaction.get(ref)
             require(snapshot.exists()) { "Booking not found." }
             require(snapshot.getString("customerUid") == uid) { "You cannot cancel another customer's booking." }
-            val status = snapshot.getString("status") ?: "Pending"
-            require(status == "Pending") { "Only pending bookings can be cancelled." }
+            val oldStatus = snapshot.getString("status") ?: "Pending"
+            require(oldStatus == "Pending") { "Only pending bookings can be cancelled." }
             transaction.update(ref, mapOf(
                 "status" to "Cancelled",
                 "statusUpdatedAt" to FieldValue.serverTimestamp()
             ))
-            status
+            transaction.set(historyRef, mapOf(
+                "changedBy" to uid,
+                "oldStatus" to oldStatus,
+                "newStatus" to "Cancelled",
+                "createdAt" to FieldValue.serverTimestamp()
+            ))
         }.await()
-        ref.collection("statusHistory").add(mapOf(
-            "changedBy" to uid,
-            "oldStatus" to oldStatus,
-            "newStatus" to "Cancelled",
-            "createdAt" to FieldValue.serverTimestamp()
-        )).await()
     }
 
     suspend fun updateStatus(cloudId: String, uid: String, role: String, nextStatus: String) {
         val ref = db.collection("bookings").document(cloudId)
-        val oldStatus = db.runTransaction { transaction ->
+        val historyRef = ref.collection("statusHistory").document()
+        db.runTransaction { transaction ->
             val snapshot = transaction.get(ref)
             require(snapshot.exists()) { "Booking not found." }
-            val status = snapshot.getString("status") ?: "Pending"
+            val oldStatus = snapshot.getString("status") ?: "Pending"
             require(role == "admin" || (role == "mechanic" && snapshot.getString("assignedMechanicUid") == uid)) {
                 "This booking is not assigned to your account."
             }
-            require(canTransitionBookingStatus(status, nextStatus)) {
+            require(canTransitionBookingStatus(oldStatus, nextStatus)) {
                 "This status change is not allowed."
             }
             transaction.update(ref, mapOf(
                 "status" to nextStatus,
                 "statusUpdatedAt" to FieldValue.serverTimestamp()
             ))
-            status
+            transaction.set(historyRef, mapOf(
+                "changedBy" to uid,
+                "oldStatus" to oldStatus,
+                "newStatus" to nextStatus,
+                "createdAt" to FieldValue.serverTimestamp()
+            ))
         }.await()
-        ref.collection("statusHistory").add(mapOf(
-            "changedBy" to uid,
-            "oldStatus" to oldStatus,
-            "newStatus" to nextStatus,
-            "createdAt" to FieldValue.serverTimestamp()
-        )).await()
     }
 
     suspend fun submitReview(cloudId: String, uid: String, rating: Int, review: String) {
