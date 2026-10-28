@@ -60,10 +60,20 @@ service cloud.firestore {
       allow create: if isSelf(userId)
         && request.resource.data.uid == userId
         && request.resource.data.role == 'customer'
+        && request.resource.data.keys().hasAll([
+          'uid', 'role', 'displayName', 'email', 'photoURL', 'phone',
+          'createdAt', 'updatedAt'
+        ])
         && request.resource.data.keys().hasOnly([
           'uid', 'role', 'displayName', 'email', 'photoURL', 'phone',
           'createdAt', 'updatedAt'
-        ]);
+        ])
+        && request.resource.data.displayName is string
+        && request.resource.data.email is string
+        && request.resource.data.photoURL is string
+        && request.resource.data.phone is string
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
       allow update: if (
           isAdmin()
           && request.resource.data.role == resource.data.role
