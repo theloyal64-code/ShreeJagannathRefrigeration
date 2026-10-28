@@ -864,11 +864,13 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
         val cancellation = CancellationTokenSource()
         var completed = false
         var timeout: Runnable? = null
+        var fallbackTimeout: Runnable? = null
 
         fun finishWithLocation(location: Location) {
             if (completed) return
             completed = true
             timeout?.let { mainHandler.removeCallbacks(it) }
+            fallbackTimeout?.let { mainHandler.removeCallbacks(it) }
             latitude = location.latitude
             longitude = location.longitude
             locationAccuracy = if (location.hasAccuracy()) location.accuracy else null
@@ -910,23 +912,43 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
 
         timeout = Runnable {
             if (!completed) {
+                // Never leave the form's location button spinning indefinitely.
                 cancellation.cancel()
-                fusedClient.lastLocation
-                    .addOnSuccessListener { cached ->
-                        if (cached != null) finishWithLocation(cached)
-                        else if (!completed) {
-                            completed = true
-                            locating = false
-                            Toast.makeText(context, tr(language, "GPS could not get a fix. Turn on Precise location, move near a window or outdoors, or type the address manually.", "GPS ମିଳିଲା ନାହିଁ। Precise location ଚାଲୁ କରନ୍ତୁ, ଖୋଲା ସ୍ଥାନରେ ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
-                        }
+                fallbackTimeout = Runnable {
+                    if (!completed) {
+                        completed = true
+                        locating = false
+                        Toast.makeText(context, tr(language, "GPS timed out. Retry or enter the address manually.", "GPS ସମୟ ଶେଷ ହେଲା। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
                     }
-                    .addOnFailureListener {
-                        if (!completed) {
-                            completed = true
-                            locating = false
-                            Toast.makeText(context, tr(language, "GPS timed out. Retry or enter the address manually.", "GPS ସମୟ ଶେଷ ହେଲା। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                }
+                mainHandler.postDelayed(fallbackTimeout!!, 3000L)
+
+                try {
+                    fusedClient.lastLocation
+                        .addOnSuccessListener { cached ->
+                            if (cached != null && !completed) {
+                                finishWithLocation(cached)
+                            } else if (!completed) {
+                                fallbackTimeout?.let { mainHandler.removeCallbacks(it) }
+                                completed = true
+                                locating = false
+                                Toast.makeText(context, tr(language, "GPS could not get a fix. Turn on Precise location, move near a window or outdoors, or type the address manually.", "GPS ମିଳିଲା ନାହିଁ। Precise location ଚାଲୁ କରନ୍ତୁ, ଖୋଲା ସ୍ଥାନରେ ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                            }
                         }
-                    }
+                        .addOnFailureListener {
+                            if (!completed) {
+                                fallbackTimeout?.let { mainHandler.removeCallbacks(it) }
+                                completed = true
+                                locating = false
+                                Toast.makeText(context, tr(language, "GPS timed out. Retry or enter the address manually.", "GPS ସମୟ ଶେଷ ହେଲା। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                            }
+                        }
+                } catch (_: Exception) {
+                    fallbackTimeout?.let { mainHandler.removeCallbacks(it) }
+                    completed = true
+                    locating = false
+                    Toast.makeText(context, tr(language, "GPS timed out. Retry or enter the address manually.", "GPS ସମୟ ଶେଷ ହେଲା। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                }
             }
         }
 
