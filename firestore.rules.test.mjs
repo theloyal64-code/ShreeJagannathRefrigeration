@@ -562,6 +562,16 @@ test("customer cannot create a booking with a non-Indian or malformed phone numb
     createdAt: serverTimestamp(),
     statusUpdatedAt: serverTimestamp()
   }));
+  await assertFails(setDoc(doc(collection(db, "bookings")), {
+    ...booking("customer-1", { phone: "9876543210x" }),
+    createdAt: serverTimestamp(),
+    statusUpdatedAt: serverTimestamp()
+  }));
+  await assertFails(setDoc(doc(collection(db, "bookings")), {
+    ...booking("customer-1", { phone: "98765432101" }),
+    createdAt: serverTimestamp(),
+    statusUpdatedAt: serverTimestamp()
+  }));
 });
 
 test("status history events cannot be edited or deleted", async () => {
