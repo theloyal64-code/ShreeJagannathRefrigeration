@@ -199,9 +199,7 @@ private fun MainApp() {
     LaunchedEffect(currentUid, accountRole, profileLoadAttempt) {
         mechanicProfiles = if (accountRole == "admin") {
             try {
-                cloudStore.listMechanics(currentUid).also {
-                    if (FirebaseAuth.getInstance().currentUser?.uid == currentUid) cloudError = ""
-                }
+                cloudStore.listMechanics(currentUid)
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
