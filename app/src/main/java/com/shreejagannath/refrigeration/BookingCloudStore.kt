@@ -151,6 +151,14 @@ internal class BookingCloudStore(
         }
     }
 
+    private suspend fun requireRole(uid: String, expectedRole: String) {
+        requireActiveUser(uid)
+        val profile = db.collection("users").document(uid).get().await()
+        require(profile.exists() && profile.getString("role") == expectedRole) {
+            "Your account is not authorized to perform this action."
+        }
+    }
+
     suspend fun cancelPendingBooking(cloudId: String, uid: String) {
         requireActiveUser(uid)
         val ref = db.collection("bookings").document(cloudId)
@@ -221,7 +229,8 @@ internal class BookingCloudStore(
         }.await()
     }
 
-    suspend fun listMechanics(): List<Map<String, String>> {
+    suspend fun listMechanics(uid: String): List<Map<String, String>> {
+        requireRole(uid, "admin")
         return db.collection("users").whereEqualTo("role", "mechanic").get().await().documents.map { doc ->
             mapOf(
                 "uid" to doc.id,
@@ -229,7 +238,8 @@ internal class BookingCloudStore(
             )
         }
     }
-    suspend fun assignMechanic(cloudId: String, mechanicUid: String) {
+    suspend fun assignMechanic(cloudId: String, actorUid: String, mechanicUid: String) {
+        requireRole(actorUid, "admin")
         val bookingRef = db.collection("bookings").document(cloudId)
         db.runTransaction { transaction ->
             val booking = transaction.get(bookingRef)
