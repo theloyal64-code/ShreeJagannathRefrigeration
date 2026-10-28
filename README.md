@@ -1,30 +1,31 @@
 # Shree Jagannath Refrigeration
 
-Android app for a home-appliance repair and service business.
+Android app for home-appliance repair and service.
 
-## Current milestone
-- Single Android app with Customer and Admin/Mechanic entry points
-- AC, Refrigerator, Washing Machine, Microwave Oven, and Geyser service categories
-- English/Odia language switch with saved preference and ongoing Odia localization
-- Appliance-specific issue dropdowns, so customers can choose a problem instead of writing a long description
-- Customer booking search, progress timeline, shareable booking summary, and pending-request cancellation
-- Mechanic dashboard search/status filters, customer dial action, and address navigation
-- Basic form validation for mobile number and optional PIN code
-- Customer request form and booking history
-- Demo admin login and request status controls
-- **Bookings and status changes persist locally on the same device**, including after closing and reopening the app
-- GitHub Actions workflow to build and upload a debug APK
+## Implemented in the Android prototype
+- Customer service booking flow for AC, refrigerator, washing machine, microwave oven and geyser.
+- English/Odia language selection.
+- Appliance-specific issue selection, booking history, progress timeline, cancellation of pending bookings, service reviews, and shareable booking summary.
+- Customer Google sign-in UI using Firebase Authentication.
+- Admin/mechanic dashboards and a protected-looking team login screen; demo credentials have been removed.
+- Professional navy/blue visual styling on customer, admin and mechanic screens.
+- GitHub Actions creates a debug APK and publishes the latest successful build.
 
-## Important limitations
-- Local persistence is not cloud sync: bookings created on a customer's phone will not automatically appear on a mechanic's phone yet.
-- Admin login still uses demo credentials (`admin` / `demo1234`) and is not secure for real customer data.
-- Cloud database/API, secure role-based authentication, cross-device synchronization, notifications, actual appliance photographs/interactive 3D product models, and payment processing are not implemented yet. Appliance previews and issue guides currently use custom-drawn illustrative diagrams with issue markers, not photographs or engineering-accurate fault locations.
-- Do not use this prototype to store real customer data until secure authentication and server-side access controls are implemented.
+## Important: not yet production-connected
+- Customer bookings and status changes in the Android UI are still stored locally on that device. They do **not** sync to other phones yet.
+- The Node.js/PostgreSQL API in `backend/` is a deployment-ready starting point, but it is not deployed or connected to the Android app yet.
+- Team login is intentionally disabled until secure server authentication is deployed and wired into the app. Do not use this build to manage real customer data.
+- Google sign-in authenticates a customer with Firebase, but the current API does not yet verify Firebase ID tokens. This must be implemented before connecting Google accounts to server-side bookings.
+- No push notifications, online payments, or Play Store release configuration has been completed.
+- Appliance illustrations are custom-drawn previews, not real product photography or engineering-accurate fault diagrams.
 
-## Next milestone
-Next: replace illustrative appliance diagrams with actual appliance imagery and more precise issue-marking overlays; then add a hosted backend and database so customer requests are securely stored centrally and visible to authorized admin/mechanic accounts across devices. Backend deployment will require selecting/configuring a hosting/database project and its credentials.
+## Backend deployment preparation
+- `backend/Dockerfile` builds the API container.
+- `render.yaml` is a Render deployment blueprint. Before deployment, provision a PostgreSQL database and provide its connection string as `DATABASE_URL`; the API also requires `JWT_SECRET` and `ADMIN_SETUP_TOKEN`.
+- After deployment, call `/health` to verify API and database connectivity. Create the first admin using `POST /api/admin/initial-admin` with the `x-admin-setup-token` header. Use a long unique password and keep the setup token secret.
+- The backend must then be integrated into Android (customer Google token verification, booking create/list/cancel/review, team login, assignment and status updates) before cross-device sync works.
 
-## Automated build
-Pushes and pull requests to `main` trigger the Android APK Build workflow. Download the `ShreeJagannathRefrigeration-debug-apk` artifact from a successful workflow run.
+## Automated Android build
+Pushes to `main` trigger the Android APK Build workflow. Download the `ShreeJagannathRefrigeration-debug-apk` artifact from a successful workflow run, or use the latest release channel.
 
 Package: `com.shreejagannath.refrigeration`
