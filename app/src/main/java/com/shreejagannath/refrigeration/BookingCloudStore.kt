@@ -110,23 +110,28 @@ internal class BookingCloudStore(
             "The GPS longitude is invalid. Refresh the location or enter the address manually."
         }
         val ref = db.collection("bookings").document()
-        val data = values.toMutableMap().apply {
-            put("customerName", customerName)
-            put("phone", phone)
-            put("issue", issue)
-            put("address", address)
-            put("preferredSlot", preferredSlot)
-            put("pincode", pincode)
-            put("displayId", (ref.id.hashCode() and 0x7fffffff))
-            put("customerUid", uid)
-            put("status", "Pending")
-            put("assignedMechanic", "")
-            put("assignedMechanicUid", "")
-            put("rating", 0)
-            put("review", "")
-            put("createdAt", FieldValue.serverTimestamp())
-            put("statusUpdatedAt", FieldValue.serverTimestamp())
-        }
+        // Construct the payload from an explicit allowlist. Do not forward arbitrary
+        // form-map keys into a privileged booking document.
+        val data = mapOf(
+            "customerUid" to uid,
+            "displayId" to (ref.id.hashCode() and 0x7fffffff),
+            "customerName" to customerName,
+            "phone" to phone,
+            "appliance" to values["appliance"] as String,
+            "issue" to issue,
+            "address" to address,
+            "preferredSlot" to preferredSlot,
+            "pincode" to pincode,
+            "latitude" to latitude,
+            "longitude" to longitude,
+            "status" to "Pending",
+            "assignedMechanic" to "",
+            "assignedMechanicUid" to "",
+            "rating" to 0,
+            "review" to "",
+            "createdAt" to FieldValue.serverTimestamp(),
+            "statusUpdatedAt" to FieldValue.serverTimestamp()
+        )
         val historyRef = ref.collection("statusHistory").document()
         val batch = db.batch()
         batch.set(ref, data)
