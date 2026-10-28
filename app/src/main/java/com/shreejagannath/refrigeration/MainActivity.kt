@@ -206,6 +206,7 @@ private fun MainApp() {
     var currentUid by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser?.uid.orEmpty()) }
     var accountRole by remember { mutableStateOf("") }
     var cloudError by remember { mutableStateOf("") }
+    var mechanicProfiles by remember { mutableStateOf<List<Map<String, String>>>(emptyList()) }
     var bookingListener by remember { mutableStateOf<ListenerRegistration?>(null) }
     val scope = rememberCoroutineScope()
 
@@ -229,6 +230,12 @@ private fun MainApp() {
         } catch (error: Exception) {
             cloudError = error.message ?: "Unable to connect to the booking database."
         }
+    }
+
+    LaunchedEffect(currentUid, accountRole) {
+        mechanicProfiles = if (accountRole == "admin") {
+            try { cloudStore.listMechanics() } catch (_: Exception) { emptyList() }
+        } else emptyList()
     }
 
     DisposableEffect(Unit) { onDispose { bookingListener?.remove() } }
