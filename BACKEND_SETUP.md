@@ -82,6 +82,8 @@ The app checks the Firestore role after Firebase email/password sign-in. A user 
 - Google sign-in creates a customer profile under the correct UID.
 - Customer A cannot read or edit Customer B's bookings.
 - Customer booking is visible to the admin on another device.
+- A blank PIN or exactly six ASCII digits is accepted; short or non-numeric PINs are rejected.
+- GPS coordinates are either both absent or a valid latitude/longitude pair.
 - Admin can assign a booking to an existing mechanic profile.
 - Only the assigned mechanic can view/update that mechanic's job.
 - Status transitions outside the permitted workflow are rejected.
@@ -106,4 +108,4 @@ npm install
 firebase emulators:exec --only firestore --project demo-shree-jagannath-refrigeration "npm run test:rules"
 ```
 
-The tests cover customer profile role escalation, booking ownership, atomic booking/history writes, valid mechanic assignment, status transition history, mechanic access, and customer cancellation. This command runs the Firestore emulator tests only; it does not build the Android APK or deploy production rules.
+The tests cover customer profile role escalation, booking ownership, atomic booking/history writes, valid mechanic assignment, status transition history, mechanic access, customer cancellation, malformed PIN rejection, invalid GPS pairs, and unknown-field rejection. This command runs the Firestore emulator tests only; it does not build the Android APK or deploy production rules.
