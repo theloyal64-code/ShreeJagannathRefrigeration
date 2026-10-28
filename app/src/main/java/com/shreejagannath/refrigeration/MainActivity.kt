@@ -719,13 +719,29 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             Toast.makeText(context, tr(language, "Location permission denied. You can still enter your address.", "ଲୋକେସନ୍ ଅନୁମତି ମିଳିଲା ନାହିଁ। ଠିକଣା ଲେଖିପାରିବେ।"), Toast.LENGTH_LONG).show()
         }
     }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-        Text("${appliance.emoji} ${applianceLabel(language, appliance.name)}", fontSize = 23.sp, fontWeight = FontWeight.Bold, color = Navy)
-        Text(tr(language, "Choose the problem below—no long description needed.", "ତଳୁ ସମସ୍ୟା ବାଛନ୍ତୁ—ଲମ୍ବା ବର୍ଣ୍ଣନା ଦରକାର ନାହିଁ।"), color = Color.Gray)
-        Spacer(Modifier.height(16.dp))
-        OutlinedTextField(name, { name = it }, label = { Text(tr(language, "Customer name *", "ଗ୍ରାହକଙ୍କ ନାମ *")) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+    Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFFEAF2FB), Color(0xFFF7F9FC)))).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 14.dp)) {
+        Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = Navy), elevation = CardDefaults.cardElevation(3.dp)) {
+            Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                Surface(shape = RoundedCornerShape(16.dp), color = Color.White.copy(alpha = 0.14f)) {
+                    Text(appliance.emoji, modifier = Modifier.padding(13.dp), fontSize = 30.sp)
+                }
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(tr(language, "BOOK A SERVICE VISIT", "ସେବା ବୁକ୍ କରନ୍ତୁ"), color = Color(0xFFDCEAF8), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(applianceLabel(language, appliance.name), fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                    Text(tr(language, "Repair • Installation • Servicing", "ମରାମତି • ଇନଷ୍ଟଲେସନ୍ • ସର୍ଭିସିଂ"), color = Color(0xFFE0EBF7), fontSize = 12.sp)
+                }
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(2.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFDCE6F0))) {
+            Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                Text(tr(language, "Customer details", "ଗ୍ରାହକ ବିବରଣୀ"), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Navy)
+                Text(tr(language, "Tell us how to contact you.", "ଆପଣଙ୍କ ସହ ଯୋଗାଯୋଗ ପାଇଁ ବିବରଣୀ ଦିଅନ୍ତୁ।"), fontSize = 12.sp, color = Color(0xFF687789))
+                Spacer(Modifier.height(12.dp))
+        OutlinedTextField(name, { name = it }, label = { Text(tr(language, "Customer name *", "ଗ୍ରାହକଙ୍କ ନାମ *")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(14.dp), leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Navy) })
         Spacer(Modifier.height(10.dp))
-        OutlinedTextField(phone, { phone = it.filter(Char::isDigit).take(10) }, label = { Text(tr(language, "Mobile number *", "ମୋବାଇଲ୍ ନମ୍ବର *")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
+        OutlinedTextField(phone, { phone = it.filter(Char::isDigit).take(10) }, label = { Text(tr(language, "Mobile number *", "ମୋବାଇଲ୍ ନମ୍ବର *")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(14.dp), leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Navy) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
         Spacer(Modifier.height(10.dp))
         Text(tr(language, "Select the problem *", "ସମସ୍ୟା ବାଛନ୍ତୁ *"), fontWeight = FontWeight.SemiBold, color = Navy)
         Box {
@@ -735,7 +751,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             }
         }
         Spacer(Modifier.height(10.dp))
-        OutlinedTextField(address, { address = it }, label = { Text(tr(language, "Full address / area *", "ପୂରା ଠିକଣା / ଅଞ୍ଚଳ *")) }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+        OutlinedTextField(address, { address = it }, label = { Text(tr(language, "Full address / area *", "ପୂରା ଠିକଣା / ଅଞ୍ଚଳ *")) }, modifier = Modifier.fillMaxWidth(), minLines = 2, shape = RoundedCornerShape(14.dp))
         Spacer(Modifier.height(8.dp))
         OutlinedButton(onClick = {
             val fine = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
@@ -800,7 +816,9 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             )
         }
         Spacer(Modifier.height(10.dp))
-        OutlinedTextField(pincode, { pincode = it.filter(Char::isDigit).take(6) }, label = { Text(tr(language, "Area PIN code (optional)", "ପିନ୍ କୋଡ୍ (ଇଚ୍ଛାଧୀନ)")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+        OutlinedTextField(pincode, { pincode = it.filter(Char::isDigit).take(6) }, label = { Text(tr(language, "Area PIN code (optional)", "ପିନ୍ କୋଡ୍ (ଇଚ୍ଛାଧୀନ)")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(14.dp), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+            }
+        }
         if (error.isNotBlank()) { Spacer(Modifier.height(8.dp)); Text(error, color = MaterialTheme.colorScheme.error) }
         Spacer(Modifier.height(16.dp))
         Button(onClick = {
