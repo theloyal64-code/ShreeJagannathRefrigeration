@@ -110,7 +110,144 @@ service cloud.firestore {
         && request.resource.data.customerName.size() <= 100
         && request.resource.data.phone is string
         && request.resource.data.phone.size() == 10
-        && request.resource.data.phone.matches('^[6-9][0-9]{9}')
+        && request.resource.data.phone.matches('^[6-9][0-9]{9}
+        && request.resource.data.preferredSlot is string
+        && request.resource.data.preferredSlot.size() <= 100
+        && request.resource.data.pincode is string
+        && (request.resource.data.pincode == '' || request.resource.data.pincode.matches('^[0-9]{6}$'))
+        // GPS coordinates are either both absent or a complete valid pair.
+        && (
+          (request.resource.data.latitude == null
+            && request.resource.data.longitude == null)
+          || (request.resource.data.latitude is number
+            && request.resource.data.latitude >= -90
+            && request.resource.data.latitude <= 90
+            && request.resource.data.longitude is number
+            && request.resource.data.longitude >= -180
+            && request.resource.data.longitude <= 180)
+        )
+        && request.resource.data.displayId is int
+        && request.resource.data.assignedMechanic == ''
+        && request.resource.data.assignedMechanicUid == ''
+        && request.resource.data.rating == 0
+        && request.resource.data.review == ''
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.statusUpdatedAt == request.time
+        && request.resource.data.keys().hasAll([
+          'customerUid', 'displayId', 'customerName', 'phone', 'appliance', 'issue',
+          'address', 'preferredSlot', 'pincode', 'latitude', 'longitude',
+          'status', 'assignedMechanic', 'assignedMechanicUid', 'rating',
+          'review', 'createdAt', 'statusUpdatedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'customerUid', 'displayId', 'customerName', 'phone', 'appliance', 'issue',
+          'address', 'preferredSlot', 'pincode', 'latitude', 'longitude',
+          'status', 'assignedMechanic', 'assignedMechanicUid', 'rating',
+          'review', 'createdAt', 'statusUpdatedAt'
+        ]);
+
+      allow read: if signedIn()
+        && (resource.data.customerUid == request.auth.uid
+          || isAdmin()
+          || (isMechanic() && resource.data.assignedMechanicUid == request.auth.uid));
+
+      // Customers can only cancel their own pending booking or review a completed one.
+      allow update: if signedIn() && (
+        (isAdmin()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'statusUpdatedAt', 'assignedMechanic', 'assignedMechanicUid'
+          ])
+          && (
+            (request.resource.data.status == resource.data.status
+              && resource.data.status in ['Pending', 'Accepted']
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                'assignedMechanic', 'assignedMechanicUid'
+              ])
+              && validMechanicAssignment())
+            || (request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                'status', 'statusUpdatedAt'
+              ])
+              && request.resource.data.statusUpdatedAt == request.time
+              && validStatus(request.resource.data.status)
+              && canTransition(resource.data.status, request.resource.data.status))
+          ))
+        || (isMechanic()
+          && resource.data.assignedMechanicUid == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'statusUpdatedAt'
+          ])
+          && request.resource.data.statusUpdatedAt == request.time
+          && validStatus(request.resource.data.status)
+          && canTransition(resource.data.status, request.resource.data.status))
+        || (resource.data.customerUid == request.auth.uid
+          && role() == 'customer'
+          && (
+            (resource.data.status == 'Pending'
+              && request.resource.data.status == 'Cancelled'
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                'status', 'statusUpdatedAt'
+              ])
+              && request.resource.data.statusUpdatedAt == request.time)
+            || (resource.data.status == 'Completed'
+              && request.resource.data.rating is int
+              && request.resource.data.rating >= 1
+              && request.resource.data.rating <= 5
+              && request.resource.data.review is string
+              && request.resource.data.review.size() <= 500
+              && request.resource.data.reviewedAt == request.time
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                'rating', 'review', 'reviewedAt'
+              ]))
+          ))
+      );
+
+      // Keep service and audit records intact; cancel bookings instead of deleting them.
+      allow delete: if false;
+
+      match /statusHistory/{eventId} {
+        function parentBooking() {
+          return get(/databases/$(database)/documents/bookings/$(bookingId)).data;
+        }
+        function parentBookingAfter() {
+          return getAfter(/databases/$(database)/documents/bookings/$(bookingId)).data;
+        }
+        allow read: if signedIn()
+          && (parentBooking().customerUid == request.auth.uid
+            || isAdmin()
+            || (isMechanic() && parentBooking().assignedMechanicUid == request.auth.uid));
+        allow create: if signedIn()
+          && request.resource.data.keys().hasOnly([
+            'changedBy', 'oldStatus', 'newStatus', 'createdAt'
+          ])
+          && request.resource.data.changedBy == request.auth.uid
+          && request.resource.data.oldStatus is string
+          && request.resource.data.newStatus is string
+          && validStatus(request.resource.data.newStatus)
+          && request.resource.data.createdAt == request.time
+          && parentBookingAfter().status == request.resource.data.newStatus
+          && (
+            (isAdmin()
+              && parentBooking().status == request.resource.data.oldStatus
+              && canTransition(request.resource.data.oldStatus, request.resource.data.newStatus))
+            || (isMechanic()
+              && parentBooking().assignedMechanicUid == request.auth.uid
+              && parentBooking().status == request.resource.data.oldStatus
+              && canTransition(request.resource.data.oldStatus, request.resource.data.newStatus))
+            || (parentBookingAfter().customerUid == request.auth.uid
+              && ((request.resource.data.oldStatus == ''
+                    && request.resource.data.newStatus == 'Pending'
+                    && !exists(/databases/$(database)/documents/bookings/$(bookingId)))
+                || (request.resource.data.oldStatus == 'Pending'
+                    && request.resource.data.newStatus == 'Cancelled'
+                    && parentBooking().status == 'Pending')))
+          );
+        // Status history is an audit trail: clients cannot edit or delete events.
+        allow update, delete: if false;
+      }
+    }
+  }
+}
+)
         && request.resource.data.preferredSlot is string
         && request.resource.data.preferredSlot.size() <= 100
         && request.resource.data.pincode is string
