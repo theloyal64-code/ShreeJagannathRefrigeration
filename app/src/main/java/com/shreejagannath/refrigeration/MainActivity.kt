@@ -23,6 +23,8 @@ import androidx.credentials.CustomCredential
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -200,6 +202,36 @@ private fun MainApp() {
     var lastCreatedBookingId by remember { mutableIntStateOf(0) }
     var bookings by remember { mutableStateOf(loadBookings(context)) }
     var nextId by remember { mutableIntStateOf((bookings.maxOfOrNull { it.id } ?: 1000) + 1) }
+    val cloudStore = remember { BookingCloudStore() }
+    var currentUid by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser?.uid.orEmpty()) }
+    var accountRole by remember { mutableStateOf("") }
+    var cloudError by remember { mutableStateOf("") }
+    var bookingListener by remember { mutableStateOf<ListenerRegistration?>(null) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(currentUid) {
+        bookingListener?.remove()
+        bookingListener = null
+        if (currentUid.isBlank()) {
+            accountRole = ""
+            bookings = emptyList()
+            return@LaunchedEffect
+        }
+        try {
+            val user = FirebaseAuth.getInstance().currentUser ?: throw IllegalStateException("Please sign in with Google again.")
+            cloudStore.ensureCustomerProfile(user)
+            val profile = FirebaseFirestore.getInstance().collection("users").document(currentUid).get().await()
+            accountRole = profile.getString("role") ?: "customer"
+            bookingListener = cloudStore.observeBookings(currentUid, accountRole,
+                onBookings = { rows -> bookings = rows.map { firestoreBookingToModel(it) }; cloudError = "" },
+                onError = { error -> cloudError = error.message ?: "Unable to load cloud bookings." }
+            )
+        } catch (error: Exception) {
+            cloudError = error.message ?: "Unable to connect to the booking database."
+        }
+    }
+
+    DisposableEffect(Unit) { onDispose { bookingListener?.remove() } }
 
     LaunchedEffect(bookings) {
         saveBookings(context, bookings)
