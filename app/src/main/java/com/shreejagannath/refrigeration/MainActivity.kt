@@ -215,6 +215,8 @@ private fun MainApp() {
         bookingListener = null
         if (currentUid.isBlank()) {
             accountRole = ""
+            cloudError = ""
+            mechanicProfiles = emptyList()
             bookings = emptyList()
             return@LaunchedEffect
         }
@@ -222,7 +224,11 @@ private fun MainApp() {
             val user = FirebaseAuth.getInstance().currentUser ?: throw IllegalStateException("Please sign in with Google again.")
             cloudStore.ensureCustomerProfile(user)
             val profile = FirebaseFirestore.getInstance().collection("users").document(currentUid).get().await()
-            accountRole = profile.getString("role") ?: "customer"
+            accountRole = profile.getString("role")
+                ?: throw IllegalStateException("Your Firebase user profile has no role. Contact the app administrator.")
+            require(accountRole in listOf("customer", "admin", "mechanic")) {
+                "Your Firebase user profile has an invalid role. Contact the app administrator."
+            }
             bookingListener = cloudStore.observeBookings(currentUid, accountRole,
                 onBookings = { rows -> bookings = rows.map { firestoreBookingToModel(it) }; cloudError = "" },
                 onError = { error -> cloudError = error.message ?: "Unable to load cloud bookings." }
@@ -285,6 +291,20 @@ private fun MainApp() {
             )
         }) { insets ->
             Box(Modifier.fillMaxSize().background(Page).padding(insets)) {
+                if (cloudError.isNotBlank() && screen != "welcome") {
+                    Card(
+                        modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFE8E8)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = cloudError,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            color = Color(0xFF9A1C1C),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
                 when (screen) {
                     "welcome" -> Welcome(language, onLanguage = { language = it }, onCustomer = {
                         val user = FirebaseAuth.getInstance().currentUser
@@ -391,8 +411,8 @@ private fun MainApp() {
                         val target = mechanicProfiles.firstOrNull { it["displayName"] == mechanic }
                         if (booking != null && booking.cloudId.isNotBlank()) scope.launch {
                             try {
-                                if (mechanic.isBlank()) cloudStore.assignMechanic(booking.cloudId, "", "")
-                                else if (target != null) cloudStore.assignMechanic(booking.cloudId, target["uid"].orEmpty(), mechanic)
+                                if (mechanic.isBlank()) cloudStore.assignMechanic(booking.cloudId, "")
+                                else if (target != null) cloudStore.assignMechanic(booking.cloudId, target["uid"].orEmpty())
                                 else throw IllegalStateException("Create a mechanic account and profile before assigning this job.")
                             } catch (error: Exception) { Toast.makeText(context, error.message ?: "Could not assign mechanic.", Toast.LENGTH_LONG).show() }
                         }
