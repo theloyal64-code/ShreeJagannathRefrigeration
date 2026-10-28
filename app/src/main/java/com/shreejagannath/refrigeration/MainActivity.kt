@@ -270,7 +270,15 @@ private fun MainApp() {
         }) { insets ->
             Box(Modifier.fillMaxSize().background(Page).padding(insets)) {
                 when (screen) {
-                    "welcome" -> Welcome(language, onLanguage = { language = it }, onCustomer = { screen = "customer" }, onAdmin = { screen = "adminLogin" })
+                    "welcome" -> Welcome(language, onLanguage = { language = it }, onCustomer = {
+                        val user = FirebaseAuth.getInstance().currentUser
+                        if (user == null) {
+                            Toast.makeText(context, tr(language, "Please tap the Google sign-in button first.", "ପ୍ରଥମେ Google ଲଗଇନ୍ ବଟନ୍ ଦବାନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                        } else {
+                            currentUid = user.uid
+                            screen = "customer"
+                        }
+                    }, onAdmin = { screen = "adminLogin" })
                     "customer" -> CustomerHome(appliances, bookings, language,
                         onChoose = { chosen = it; screen = "form" }, onHistory = { screen = "history" })
                     "form" -> RequestForm(chosen, language, onSubmit = { name, phone, issue, address, preferredSlot, pincode, latitude, longitude ->
