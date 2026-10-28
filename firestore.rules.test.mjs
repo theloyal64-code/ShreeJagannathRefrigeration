@@ -232,3 +232,22 @@ test("customer cancellation updates booking and audit event atomically", async (
   });
   await assertSucceeds(batch.commit());
 });
+
+test("customer may review a completed booking only once", async () => {
+  await seed([
+    ["users/customer-1", profile("customer-1")],
+    ["bookings/booking-1", booking("customer-1", { status: "Completed" })]
+  ]);
+  const db = testEnv.authenticatedContext("customer-1").firestore();
+  const ref = doc(db, "bookings/booking-1");
+  await assertSucceeds(updateDoc(ref, {
+    rating: 5,
+    review: "Excellent service",
+    reviewedAt: serverTimestamp()
+  }));
+  await assertFails(updateDoc(ref, {
+    rating: 4,
+    review: "Changing the review",
+    reviewedAt: serverTimestamp()
+  }));
+});
