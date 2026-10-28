@@ -101,7 +101,9 @@ service cloud.firestore {
         && request.resource.data.phone.size() >= 7
         && request.resource.data.phone.size() <= 20
         && request.resource.data.preferredSlot is string
+        && request.resource.data.preferredSlot.size() <= 100
         && request.resource.data.pincode is string
+        && (request.resource.data.pincode == '' || request.resource.data.pincode.size() == 6)
         // GPS coordinates are either both absent or a complete valid pair.
         && (
           (request.resource.data.latitude == null
