@@ -794,12 +794,12 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             }
         }
         Spacer(Modifier.height(14.dp))
-        Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFEFC)), elevation = CardDefaults.cardElevation(4.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBFD8F3))) {
+        Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFF4F8FF)), elevation = CardDefaults.cardElevation(4.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF8BB9E8))) {
             Column(Modifier.fillMaxWidth().padding(16.dp)) {
                 Text(tr(language, "Customer details", "ଗ୍ରାହକ ବିବରଣୀ"), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Navy)
                 Text(tr(language, "Tell us how to contact you.", "ଆପଣଙ୍କ ସହ ଯୋଗାଯୋଗ ପାଇଁ ବିବରଣୀ ଦିଅନ୍ତୁ।"), fontSize = 12.sp, color = Color(0xFF687789))
                 Spacer(Modifier.height(12.dp))
-        OutlinedTextField(name, { name = it }, label = { Text(tr(language, "Customer name *", "ଗ୍ରାହକଙ୍କ ନାମ *")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(14.dp), leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Navy) })
+        OutlinedTextField(name, { name = it }, label = { Text(tr(language, "Customer name *", "ଗ୍ରାହକଙ୍କ ନାମ *")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.White, unfocusedContainerColor = Color(0xFFF9FBFF), focusedBorderColor = Color(0xFF2B75B9), unfocusedBorderColor = Color(0xFFB7CDE4)), leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Navy) })
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(phone, { phone = it.filter(Char::isDigit).take(10) }, label = { Text(tr(language, "Mobile number *", "ମୋବାଇଲ୍ ନମ୍ବର *")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(14.dp), leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Navy) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
         Spacer(Modifier.height(10.dp))
@@ -811,7 +811,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             }
         }
         Spacer(Modifier.height(10.dp))
-        OutlinedTextField(address, { address = it }, label = { Text(tr(language, "Full address / area *", "ପୂରା ଠିକଣା / ଅଞ୍ଚଳ *")) }, modifier = Modifier.fillMaxWidth(), minLines = 2, shape = RoundedCornerShape(14.dp))
+        OutlinedTextField(address, { address = it }, label = { Text(tr(language, "Full address / area *", "ପୂରା ଠିକଣା / ଅଞ୍ଚଳ *")) }, modifier = Modifier.fillMaxWidth(), minLines = 2, shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.White, unfocusedContainerColor = Color(0xFFF9FBFF), focusedBorderColor = Color(0xFF2B75B9), unfocusedBorderColor = Color(0xFFB7CDE4)))
         Spacer(Modifier.height(8.dp))
         OutlinedButton(onClick = {
             val fine = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
