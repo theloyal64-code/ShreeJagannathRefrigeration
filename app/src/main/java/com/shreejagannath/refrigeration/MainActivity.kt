@@ -337,6 +337,8 @@ private fun MainApp() {
                                     lastCreatedBookingId = newBooking.id
                                     bookings = bookings.filterNot { it.cloudId == cloudId } + newBooking
                                     screen = "bookingConfirmation"
+                                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                                    throw cancelled
                                 } catch (error: Exception) {
                                     Toast.makeText(context, error.message ?: "Booking could not be saved. Please retry.", Toast.LENGTH_LONG).show()
                                 } finally {
@@ -356,6 +358,8 @@ private fun MainApp() {
                         if (booking != null && booking.cloudId.isNotBlank()) scope.launch {
                             try {
                                 cloudStore.cancelPendingBooking(booking.cloudId, currentUid)
+                            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                                throw cancelled
                             } catch (error: Exception) {
                                 Toast.makeText(context, error.message ?: "Could not cancel booking.", Toast.LENGTH_LONG).show()
                             }
@@ -371,6 +375,8 @@ private fun MainApp() {
                                     try {
                                         cloudStore.submitReview(reviewBooking.cloudId, currentUid, rating, review.trim())
                                         screen = "history"
+                                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                                        throw cancelled
                                     } catch (error: Exception) {
                                         Toast.makeText(context, error.message ?: "Could not submit review.", Toast.LENGTH_LONG).show()
                                     }
