@@ -996,10 +996,14 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                     }
                 }
         } catch (_: SecurityException) {
+            completed = true
+            cancellation.cancel()
             timeout?.let { mainHandler.removeCallbacks(it) }
             locating = false
             Toast.makeText(context, tr(language, "Allow location permission in app settings, then retry.", "ଆପ୍ ସେଟିଂରେ Location ଅନୁମତି ଦେଇ ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
         } catch (_: Exception) {
+            completed = true
+            cancellation.cancel()
             timeout?.let { mainHandler.removeCallbacks(it) }
             locating = false
             Toast.makeText(context, tr(language, "Could not start GPS. Turn on phone Location and retry.", "GPS ଆରମ୍ଭ ହୋଇପାରିଲା ନାହିଁ। ଫୋନ୍ Location ଚାଲୁ କରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
