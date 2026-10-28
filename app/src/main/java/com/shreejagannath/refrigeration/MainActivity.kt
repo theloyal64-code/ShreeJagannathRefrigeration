@@ -1851,7 +1851,7 @@ private fun MechanicHome(
 }
 
 @Composable
-private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onStatus: (Int, String) -> Unit, onAssign: (Int, String) -> Unit = { _, _ -> }) {
+private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, mechanicProfiles: List<Map<String, String>>, onStatus: (Int, String) -> Unit, onAssign: (Int, String) -> Unit = { _, _ -> }) {
     val context = LocalContext.current
     var pendingStatusChange by remember { mutableStateOf<Pair<Int, String>?>(null) }
     var search by remember { mutableStateOf("") }
@@ -1875,7 +1875,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
         }
     }
     val filters = listOf("All", "Pending", "Accepted", "On the Way", "In Progress", "Completed", "Rejected", "Cancelled")
-    val mechanicFilters = listOf("All mechanics", "Unassigned", "Mechanic 1", "Mechanic 2", "Senior Technician")
+    val mechanicFilters = listOf("All mechanics", "Unassigned") + mechanicProfiles.mapNotNull { it["displayName"] }
     val visibleBookings = bookings
         .filter { selectedMechanicFilter == "All mechanics" || (if (selectedMechanicFilter == "Unassigned") it.assignedMechanic.isBlank() else it.assignedMechanic == selectedMechanicFilter) }
         .filter { selectedFilter == "All" || it.status == selectedFilter }
@@ -2011,7 +2011,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                             Spacer(Modifier.height(8.dp))
                             Text(issueLabel(language, b.issue))
                             var assignmentExpanded by remember(b.id) { mutableStateOf(false) }
-                            val mechanicOptions = listOf("Unassigned", "Mechanic 1", "Mechanic 2", "Senior Technician")
+                            val mechanicOptions = listOf("Unassigned") + mechanicProfiles.mapNotNull { it["displayName"] }
                             Box(Modifier.fillMaxWidth()) {
                                 OutlinedButton(onClick = { assignmentExpanded = true }, modifier = Modifier.fillMaxWidth()) {
                                     Text(tr(language, "Assigned mechanic: ", "ନିଯୁକ୍ତ ମେକାନିକ୍: ") + if (b.assignedMechanic.isBlank()) tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି") else b.assignedMechanic)
