@@ -527,3 +527,22 @@ test("customer profile creation requires all expected typed fields and server ti
     updatedAt: serverTimestamp()
   }));
 });
+
+
+test("customer profile metadata updates require typed values and a server timestamp", async () => {
+  await seed([["users/customer-1", profile("customer-1")]]);
+  const db = testEnv.authenticatedContext("customer-1").firestore();
+  const ref = doc(db, "users/customer-1");
+  await assertFails(updateDoc(ref, {
+    displayName: { unexpected: "object" },
+    updatedAt: serverTimestamp()
+  }));
+  await assertFails(updateDoc(ref, {
+    displayName: "Changed Name",
+    updatedAt: Timestamp.fromDate(new Date(Date.now() - 60_000))
+  }));
+  await assertSucceeds(updateDoc(ref, {
+    displayName: "Changed Name",
+    updatedAt: serverTimestamp()
+  }));
+});
