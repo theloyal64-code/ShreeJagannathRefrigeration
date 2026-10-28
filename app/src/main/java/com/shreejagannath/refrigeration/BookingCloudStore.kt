@@ -100,7 +100,7 @@ internal class BookingCloudStore(
         require(preferredSlot != null && preferredSlot.length <= 100 && pincode != null) {
             "Booking details are incomplete. Please review the form."
         }
-        require(pincode.isEmpty() || (pincode.length == 6 && pincode.all(Char::isDigit))) {
+        require(pincode.isEmpty() || (pincode.length == 6 && pincode.all { it in '0'..'9' })) {
             "Enter a valid six-digit PIN code or leave it blank."
         }
         require(latitude == null || (latitude is Number && latitude.toDouble().isFinite() && latitude.toDouble() in -90.0..90.0)) {
