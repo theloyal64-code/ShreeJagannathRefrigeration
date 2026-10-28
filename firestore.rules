@@ -42,6 +42,17 @@ service cloud.firestore {
         || (oldStatus == 'In Progress' && newStatus in ['Completed', 'Cancelled']);
     }
 
+    function validMechanicAssignment() {
+      return (request.resource.data.assignedMechanicUid == ''
+          && request.resource.data.assignedMechanic == '')
+        || (request.resource.data.assignedMechanicUid is string
+          && request.resource.data.assignedMechanicUid.size() > 0
+          && exists(/databases/$(database)/documents/users/$(request.resource.data.assignedMechanicUid))
+          && get(/databases/$(database)/documents/users/$(request.resource.data.assignedMechanicUid)).data.role == 'mechanic'
+          && request.resource.data.assignedMechanic is string
+          && request.resource.data.assignedMechanic.size() > 0);
+    }
+
     match /users/{userId} {
       allow read: if isSelf(userId) || isAdmin();
       // Users may create only a customer profile for their own authenticated UID.
@@ -80,7 +91,17 @@ service cloud.firestore {
         && request.resource.data.issue.size() > 0
         && request.resource.data.address is string
         && request.resource.data.address.size() > 0
+        && request.resource.data.customerName is string
+        && request.resource.data.customerName.size() > 0
         && request.resource.data.phone is string
+        && request.resource.data.phone.size() > 0
+        && request.resource.data.displayId is int
+        && request.resource.data.assignedMechanic == ''
+        && request.resource.data.assignedMechanicUid == ''
+        && request.resource.data.rating == 0
+        && request.resource.data.review == ''
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.statusUpdatedAt == request.time
         && request.resource.data.keys().hasOnly([
           'customerUid', 'displayId', 'customerName', 'phone', 'appliance', 'issue',
           'address', 'preferredSlot', 'pincode', 'latitude', 'longitude',
@@ -104,8 +125,13 @@ service cloud.firestore {
               && resource.data.status in ['Pending', 'Accepted']
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                 'assignedMechanic', 'assignedMechanicUid'
-              ]))
-            || (validStatus(request.resource.data.status)
+              ])
+              && validMechanicAssignment())
+            || (request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                'status', 'statusUpdatedAt'
+              ])
+              && request.resource.data.statusUpdatedAt == request.time
+              && validStatus(request.resource.data.status)
               && canTransition(resource.data.status, request.resource.data.status))
           ))
         || (isMechanic()
@@ -113,6 +139,7 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'status', 'statusUpdatedAt'
           ])
+          && request.resource.data.statusUpdatedAt == request.time
           && validStatus(request.resource.data.status)
           && canTransition(resource.data.status, request.resource.data.status))
         || (resource.data.customerUid == request.auth.uid
@@ -130,6 +157,7 @@ service cloud.firestore {
               && request.resource.data.rating <= 5
               && request.resource.data.review is string
               && request.resource.data.review.size() <= 500
+              && request.resource.data.reviewedAt == request.time
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                 'rating', 'review', 'reviewedAt'
               ]))
