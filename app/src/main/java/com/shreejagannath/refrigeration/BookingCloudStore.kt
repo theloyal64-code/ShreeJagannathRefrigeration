@@ -172,7 +172,6 @@ internal class BookingCloudStore(
         }
     }
     suspend fun assignMechanic(cloudId: String, mechanicUid: String, mechanicName: String) {
-        require(mechanicUid.isNotBlank()) { "Select a valid mechanic account." }
         db.collection("bookings").document(cloudId).update(mapOf(
             "assignedMechanicUid" to mechanicUid,
             "assignedMechanic" to mechanicName
