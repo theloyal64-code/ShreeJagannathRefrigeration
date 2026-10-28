@@ -256,6 +256,13 @@ private fun MainApp() {
 
     DisposableEffect(Unit) { onDispose { bookingListener?.remove() } }
 
+    LaunchedEffect(Unit) {
+        // Remove booking records cached by older app versions; bookings now load
+        // only from the authenticated Firestore query.
+        context.getSharedPreferences(BOOKING_PREFS, Context.MODE_PRIVATE)
+            .edit().remove(BOOKINGS_KEY).apply()
+    }
+
     LaunchedEffect(language) {
         context.getSharedPreferences(BOOKING_PREFS, Context.MODE_PRIVATE).edit()
             .putString(LANGUAGE_KEY, language.name).apply()
