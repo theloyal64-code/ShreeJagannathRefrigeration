@@ -9,6 +9,7 @@ import {
 import {
   collection,
   doc,
+  deleteDoc,
   getDoc,
   serverTimestamp,
   setDoc,
@@ -250,4 +251,13 @@ test("customer may review a completed booking only once", async () => {
     review: "Changing the review",
     reviewedAt: serverTimestamp()
   }));
+});
+
+test("admin cannot delete a booking and erase its service record", async () => {
+  await seed([
+    ["users/admin-1", profile("admin-1", "admin")],
+    ["bookings/booking-1", booking("customer-1")]
+  ]);
+  const db = testEnv.authenticatedContext("admin-1").firestore();
+  await assertFails(deleteDoc(doc(db, "bookings/booking-1")));
 });
