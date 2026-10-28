@@ -187,14 +187,24 @@ private fun MainApp() {
                     }
                 }
             )
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
         } catch (error: Exception) {
-            cloudError = error.message ?: "Unable to connect to the booking database."
+            if (FirebaseAuth.getInstance().currentUser?.uid == currentUid) {
+                cloudError = error.message ?: "Unable to connect to the booking database."
+            }
         }
     }
 
     LaunchedEffect(currentUid, accountRole) {
         mechanicProfiles = if (accountRole == "admin") {
-            try { cloudStore.listMechanics() } catch (_: Exception) { emptyList() }
+            try {
+                cloudStore.listMechanics()
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                emptyList()
+            }
         } else emptyList()
     }
 
