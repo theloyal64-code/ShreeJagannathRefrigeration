@@ -5,6 +5,8 @@ const rateLimit = require("express-rate-limit");
 const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const app = express();
 app.disable("x-powered-by");
@@ -36,31 +38,11 @@ function auth(...roles) {
 const safeUser = u => ({ id: u.id, name: u.name, phone: u.phone, role: u.role, mechanicProfile: u.mechanic_profile });
 
 async function initialize() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, phone TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL, role TEXT NOT NULL CHECK(role IN ('customer','admin','mechanic')),
-      mechanic_profile TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    );
-    CREATE TABLE IF NOT EXISTS bookings (
-      id BIGSERIAL PRIMARY KEY, customer_id BIGINT NOT NULL REFERENCES users(id),
-      customer_name TEXT NOT NULL, phone TEXT NOT NULL, appliance TEXT NOT NULL, issue TEXT NOT NULL,
-      address TEXT NOT NULL, preferred_slot TEXT NOT NULL DEFAULT '', pincode TEXT NOT NULL DEFAULT '',
-      latitude DOUBLE PRECISION, longitude DOUBLE PRECISION,
-      status TEXT NOT NULL DEFAULT 'Pending' CHECK(status IN ('Pending','Accepted','On the Way','In Progress','Completed','Rejected','Cancelled')),
-      assigned_mechanic_id BIGINT REFERENCES users(id), created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      status_updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), rating SMALLINT CHECK(rating BETWEEN 1 AND 5),
-      review TEXT NOT NULL DEFAULT '', reviewed_at TIMESTAMPTZ
-    );
-    CREATE INDEX IF NOT EXISTS bookings_customer_idx ON bookings(customer_id, created_at DESC);
-    CREATE INDEX IF NOT EXISTS bookings_status_idx ON bookings(status, created_at DESC);
-    CREATE TABLE IF NOT EXISTS booking_status_events (
-      id BIGSERIAL PRIMARY KEY, booking_id BIGINT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
-      changed_by BIGINT REFERENCES users(id), old_status TEXT, new_status TEXT NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    );
-  `);
+  // Keep the database schema versioned in source control and safe to reapply.
+  const schema = fs.readFileSync(path.join(__dirname, "schema.sql"), "utf8");
+  await pool.query(schema);
 }
+
 app.get("/health", asyncRoute(async (_req, res) => {
   await pool.query("SELECT 1");
   res.json({ ok: true, service: "shree-jagannath-refrigeration-api" });
