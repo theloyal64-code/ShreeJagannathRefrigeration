@@ -301,8 +301,8 @@ private fun MainApp() {
                             }
                         }
                     }) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
-                }
-                ,actions = {
+                },
+                actions = {
                     if (screen in listOf("customer", "form", "history", "review", "bookingConfirmation")) {
                         TextButton(onClick = {
                             FirebaseAuth.getInstance().signOut()
