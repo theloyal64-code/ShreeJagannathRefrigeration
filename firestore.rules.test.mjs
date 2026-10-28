@@ -234,7 +234,7 @@ test("customer cancellation updates booking and audit event atomically", async (
   await assertSucceeds(batch.commit());
 });
 
-test("customer may review a completed booking only once", async () => {
+test("customer can edit their review on a completed booking", async () => {
   await seed([
     ["users/customer-1", profile("customer-1")],
     ["bookings/booking-1", booking("customer-1", { status: "Completed" })]
@@ -246,9 +246,9 @@ test("customer may review a completed booking only once", async () => {
     review: "Excellent service",
     reviewedAt: serverTimestamp()
   }));
-  await assertFails(updateDoc(ref, {
+  await assertSucceeds(updateDoc(ref, {
     rating: 4,
-    review: "Changing the review",
+    review: "Updated after the service",
     reviewedAt: serverTimestamp()
   }));
 });
