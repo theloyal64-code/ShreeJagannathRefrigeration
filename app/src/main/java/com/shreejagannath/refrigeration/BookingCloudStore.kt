@@ -163,12 +163,19 @@ internal class BookingCloudStore(
         }.await()
     }
 
+    suspend fun listMechanics(): List<Map<String, String>> {
+        return db.collection("users").whereEqualTo("role", "mechanic").get().await().documents.map { doc ->
+            mapOf(
+                "uid" to doc.id,
+                "displayName" to (doc.getString("displayName") ?: doc.getString("email")?.substringBefore("@") ?: doc.id)
+            )
+        }
+    }
     suspend fun assignMechanic(cloudId: String, mechanicUid: String, mechanicName: String) {
         require(mechanicUid.isNotBlank()) { "Select a valid mechanic account." }
         db.collection("bookings").document(cloudId).update(mapOf(
             "assignedMechanicUid" to mechanicUid,
-            "assignedMechanic" to mechanicName,
-            "statusUpdatedAt" to FieldValue.serverTimestamp()
+            "assignedMechanic" to mechanicName
         )).await()
     }
 }
