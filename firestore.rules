@@ -58,6 +58,7 @@ service cloud.firestore {
       // Users may create only a customer profile for their own authenticated UID.
       // Admin/mechanic roles must be provisioned by a trusted project owner.
       allow create: if isSelf(userId)
+        && request.resource.data.uid == userId
         && request.resource.data.role == 'customer'
         && request.resource.data.keys().hasOnly([
           'uid', 'role', 'displayName', 'email', 'photoURL', 'phone',
@@ -178,6 +179,9 @@ service cloud.firestore {
             || isAdmin()
             || (isMechanic() && parentBooking().assignedMechanicUid == request.auth.uid));
         allow create: if signedIn()
+          && request.resource.data.keys().hasOnly([
+            'changedBy', 'oldStatus', 'newStatus', 'createdAt'
+          ])
           && request.resource.data.changedBy == request.auth.uid
           && request.resource.data.oldStatus is string
           && request.resource.data.newStatus is string
