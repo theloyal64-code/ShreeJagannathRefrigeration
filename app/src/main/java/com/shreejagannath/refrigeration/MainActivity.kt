@@ -924,6 +924,14 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                                     Toast.makeText(context, tr(language, "GPS failed. Retry or enter the address manually.", "GPS ବିଫଳ ହେଲା। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
                                 }
                             }
+                            .addOnFailureListener {
+                                if (!completed) {
+                                    timeout?.let { mainHandler.removeCallbacks(it) }
+                                    completed = true
+                                    locating = false
+                                    Toast.makeText(context, tr(language, "GPS failed and no cached location is available. Retry or enter the address manually.", "GPS ବିଫଳ ହେଲା ଏବଂ ପୂର୍ବ ଲୋକେସନ୍ ମିଳିଲା ନାହିଁ। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                                }
+                            }
                     }
                 }
         } catch (_: SecurityException) {
