@@ -1692,8 +1692,14 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
 
     Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFFEAF2FB), Color(0xFFF7F9FC)))).padding(horizontal = 16.dp)) {
         Spacer(Modifier.height(14.dp))
-        Text(tr(language, "Namaskar, Mechanic 👋", "ନମସ୍କାର, ମେକାନିକ୍ 👋"), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Navy)
-        Text(tr(language, "Review requests, find customers and update service status.", "ଅନୁରୋଧ ଦେଖନ୍ତୁ, ଗ୍ରାହକ ଖୋଜନ୍ତୁ ଏବଂ ସେବା ସ୍ଥିତି ବଦଳାନ୍ତୁ।"), color = Color.Gray)
+        Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = Navy), elevation = CardDefaults.cardElevation(3.dp)) {
+            Column(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(Color(0xFF123B67), Color(0xFF245783)))).padding(18.dp)) {
+                Text(tr(language, "OWNER DASHBOARD", "ମାଲିକ ଡ୍ୟାସବୋର୍ଡ"), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFB86B))
+                Spacer(Modifier.height(4.dp))
+                Text(tr(language, "Namaskar, Owner 👋", "ନମସ୍କାର, ମାଲିକ 👋"), fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                Text(tr(language, "Manage service requests, assign technicians and track every job.", "ସେବା ଅନୁରୋଧ ପରିଚାଳନା, ଟେକ୍ନିସିଆନ୍ ନିଯୁକ୍ତି ଏବଂ କାମର ସ୍ଥିତି ଦେଖନ୍ତୁ।"), color = Color(0xFFE0EBF7), fontSize = 12.sp, lineHeight = 18.sp)
+            }
+        }
         Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Stat(tr(language, "New", "ନୂଆ"), bookings.count { it.status == "Pending" }.toString(), Modifier.weight(1f))
