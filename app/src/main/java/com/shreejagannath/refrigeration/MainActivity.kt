@@ -325,8 +325,26 @@ private fun MainApp() {
                         if (user == null) {
                             Toast.makeText(context, tr(language, "Please tap the Google sign-in button first.", "ପ୍ରଥମେ Google ଲଗଇନ୍ ବଟନ୍ ଦବାନ୍ତୁ।"), Toast.LENGTH_LONG).show()
                         } else {
-                            currentUid = user.uid
-                            screen = "customer"
+                            scope.launch {
+                                try {
+                                    cloudStore.ensureCustomerProfile(user)
+                                    val profile = FirebaseFirestore.getInstance()
+                                        .collection("users").document(user.uid).get().await()
+                                    if (profile.getString("role") == "customer") {
+                                        currentUid = user.uid
+                                        screen = "customer"
+                                    } else {
+                                        FirebaseAuth.getInstance().signOut()
+                                        currentUid = ""
+                                        accountRole = ""
+                                        mechanicProfiles = emptyList()
+                                        bookings = emptyList()
+                                        Toast.makeText(context, tr(language, "This is a staff account. Please use Staff Login.", "ଏହା ଏକ ଷ୍ଟାଫ୍ ଆକାଉଣ୍ଟ। ଦୟାକରି Staff Login ବ୍ୟବହାର କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                                    }
+                                } catch (error: Exception) {
+                                    Toast.makeText(context, error.message ?: tr(language, "Could not verify your account. Please retry.", "ଆକାଉଣ୍ଟ ଯାଞ୍ଚ ହୋଇପାରିଲା ନାହିଁ। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                                }
+                            }
                         }
                     }, onAdmin = { screen = "adminLogin" })
                     "customer" -> CustomerHome(appliances, bookings, language,
