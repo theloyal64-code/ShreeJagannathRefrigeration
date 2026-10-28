@@ -142,6 +142,9 @@ service cloud.firestore {
         function parentBooking() {
           return get(/databases/$(database)/documents/bookings/$(bookingId)).data;
         }
+        function parentBookingAfter() {
+          return getAfter(/databases/$(database)/documents/bookings/$(bookingId)).data;
+        }
         allow read: if signedIn()
           && (parentBooking().customerUid == request.auth.uid
             || isAdmin()
@@ -152,14 +155,14 @@ service cloud.firestore {
           && request.resource.data.newStatus is string
           && validStatus(request.resource.data.newStatus)
           && request.resource.data.createdAt == request.time
-          && parentBooking().status == request.resource.data.newStatus
+          && parentBookingAfter().status == request.resource.data.newStatus
           && (
             (isAdmin()
               && canTransition(request.resource.data.oldStatus, request.resource.data.newStatus))
             || (isMechanic()
               && parentBooking().assignedMechanicUid == request.auth.uid
               && canTransition(request.resource.data.oldStatus, request.resource.data.newStatus))
-            || (parentBooking().customerUid == request.auth.uid
+            || (parentBookingAfter().customerUid == request.auth.uid
               && ((request.resource.data.oldStatus == ''
                     && request.resource.data.newStatus == 'Pending')
                 || (request.resource.data.oldStatus == 'Pending'
