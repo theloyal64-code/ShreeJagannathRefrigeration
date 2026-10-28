@@ -171,9 +171,21 @@ private fun MainApp() {
             require(accountRole in listOf("customer", "admin", "mechanic")) {
                 "Your Firebase user profile has an invalid role. Contact the app administrator."
             }
-            bookingListener = cloudStore.observeBookings(currentUid, accountRole,
-                onBookings = { rows -> bookings = rows.map { firestoreBookingToModel(it) }; cloudError = "" },
-                onError = { error -> cloudError = error.message ?: "Unable to load cloud bookings." }
+            val listenerUid = currentUid
+            bookingListener = cloudStore.observeBookings(listenerUid, accountRole,
+                onBookings = { rows ->
+                    // Ignore a callback already queued by the previous account's listener.
+                    if (FirebaseAuth.getInstance().currentUser?.uid == listenerUid) {
+                        bookings = rows.map { firestoreBookingToModel(it) }
+                        cloudError = ""
+                    }
+                },
+                onError = { error ->
+                    if (FirebaseAuth.getInstance().currentUser?.uid == listenerUid) {
+                        bookings = emptyList()
+                        cloudError = error.message ?: "Unable to load cloud bookings."
+                    }
+                }
             )
         } catch (error: Exception) {
             cloudError = error.message ?: "Unable to connect to the booking database."
