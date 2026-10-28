@@ -756,12 +756,12 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                 Toast.makeText(context, tr(language, "Turn on Location in phone settings, then retry.", "ଫୋନ୍ ସେଟିଂରେ Location ଚାଲୁ କରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
                 return
             }
-            mainHandler.postDelayed(timeout, 25000L)
+            mainHandler.postDelayed(timeout, 45000L)
             Toast.makeText(context, tr(language, "Finding your location… Keep Location on. You can still enter the address manually.", "ଲୋକେସନ୍ ଖୋଜାଯାଉଛି… Location ଚାଲୁ ରଖନ୍ତୁ। ଆପଣ ଠିକଣା ନିଜେ ମଧ୍ୟ ଲେଖିପାରିବେ।"), Toast.LENGTH_LONG).show()
             val request = CurrentLocationRequest.Builder()
                 .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
-                .setMaxUpdateAgeMillis(10000L)
-                .setDurationMillis(20000L)
+                .setMaxUpdateAgeMillis(30000L)
+                .setDurationMillis(40000L)
                 .build()
             fusedClient.getCurrentLocation(request, cancellation.token)
                 .addOnSuccessListener { location ->
