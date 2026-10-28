@@ -282,10 +282,30 @@ private fun MainApp() {
                     "customer" -> CustomerHome(appliances, bookings, language,
                         onChoose = { chosen = it; screen = "form" }, onHistory = { screen = "history" })
                     "form" -> RequestForm(chosen, language, onSubmit = { name, phone, issue, address, preferredSlot, pincode, latitude, longitude ->
-                        val newBooking = ServiceBooking(nextId++, name, phone, chosen.name, issue, address, preferredSlot, pincode, latitude = latitude, longitude = longitude)
-                        lastCreatedBookingId = newBooking.id
-                        bookings = bookings + newBooking
-                        screen = "bookingConfirmation"
+                        if (currentUid.isBlank() || accountRole != "customer") {
+                            Toast.makeText(context, tr(language, "Please sign in with a customer Google account before booking.", "ବୁକିଂ ପୂର୍ବରୁ ଗ୍ରାହକ Google ଆକାଉଣ୍ଟରେ ଲଗଇନ୍ କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                        } else {
+                            scope.launch {
+                                try {
+                                    val cloudId = cloudStore.createBooking(currentUid, mapOf(
+                                        "customerName" to name, "phone" to phone, "appliance" to chosen.name,
+                                        "issue" to issue, "address" to address, "preferredSlot" to preferredSlot,
+                                        "pincode" to pincode, "latitude" to latitude, "longitude" to longitude
+                                    ))
+                                    val newBooking = ServiceBooking(
+                                        id = cloudId.hashCode() and 0x7fffffff, customer = name, phone = phone,
+                                        appliance = chosen.name, issue = issue, address = address,
+                                        preferredSlot = preferredSlot, pincode = pincode, latitude = latitude,
+                                        longitude = longitude, cloudId = cloudId, customerUid = currentUid
+                                    )
+                                    lastCreatedBookingId = newBooking.id
+                                    bookings = bookings.filterNot { it.cloudId == cloudId } + newBooking
+                                    screen = "bookingConfirmation"
+                                } catch (error: Exception) {
+                                    Toast.makeText(context, error.message ?: "Booking could not be saved. Please retry.", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        }
                     })
                     "bookingConfirmation" -> BookingConfirmation(
                         booking = bookings.firstOrNull { it.id == lastCreatedBookingId },
