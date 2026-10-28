@@ -693,8 +693,9 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
         val fusedClient = LocationServices.getFusedLocationProviderClient(context)
         val cancellation = CancellationTokenSource()
         var completed = false
+        lateinit var timeout: Runnable
 
-        fun applyLocation(location: Location) {
+        fun finishWithLocation(location: Location) {
             if (completed) return
             completed = true
             mainHandler.removeCallbacks(timeout)
@@ -702,100 +703,114 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             longitude = location.longitude
             locationAccuracy = if (location.hasAccuracy()) location.accuracy else null
             locating = false
+
             Thread {
                 var formattedAddress = ""
                 var postalCode = ""
                 try {
                     val geocoder = Geocoder(context, Locale.getDefault())
                     @Suppress("DEPRECATION")
-                    val results = geocoder.getFromLocation(location.latitude, location.longitude, 1)
-                    val result = results?.firstOrNull()
+                    val result = geocoder.getFromLocation(location.latitude, location.longitude, 1)?.firstOrNull()
                     formattedAddress = result?.getAddressLine(0).orEmpty()
                     postalCode = result?.postalCode.orEmpty()
                 } catch (_: Exception) { }
+
                 mainHandler.post {
                     if (formattedAddress.isNotBlank()) {
                         address = formattedAddress
-                    } else if (address.isBlank()) {
-                        address = "GPS coordinates: %.6f, %.6f".format(Locale.US, location.latitude, location.longitude)
+                    } else {
+                        val coordinates = "GPS pin: %.6f, %.6f".format(Locale.US, location.latitude, location.longitude)
+                        if (address.isBlank() || address.startsWith("GPS pin:")) address = coordinates
                     }
                     if (pincode.isBlank() && postalCode.length == 6) pincode = postalCode
-                    val accuracyText = locationAccuracy?.let { " ±\${it.toInt()} m" }.orEmpty()
-                    if (formattedAddress.isNotBlank()) {
-                        Toast.makeText(context, tr(language, "GPS captured$accuracyText. Address filled—please verify it.", "GPS ମିଳିଲା$accuracyText। ଠିକଣା ଭରାଗଲା—ଦୟାକରି ଯାଞ୍ଚ କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                    val accuracyText = locationAccuracy?.let { " ±${it.toInt()} m" }.orEmpty()
+                    val message = if (formattedAddress.isNotBlank()) {
+                        tr(language, "Location captured$accuracyText. Address filled—please verify it.", "ଲୋକେସନ୍ ମିଳିଲା$accuracyText। ଠିକଣା ଭରାଗଲା—ଦୟାକରି ଯାଞ୍ଚ କରନ୍ତୁ।")
                     } else {
-                        Toast.makeText(context, tr(language, "GPS pin captured$accuracyText. Street address unavailable here; coordinates were added. Please add a landmark if needed.", "GPS ପିନ୍ ମିଳିଲା$accuracyText। ଠିକଣା ମିଳିଲା ନାହିଁ; କୋଅର୍ଡିନେଟ୍ ଯୋଡାଗଲା। ଆବଶ୍ୟକ ହେଲେ ଲ୍ୟାଣ୍ଡମାର୍କ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                        tr(language, "GPS pin captured$accuracyText, but no readable street address was returned. Coordinates were added; please add a landmark.", "GPS ପିନ୍ ମିଳିଲା$accuracyText, କିନ୍ତୁ ପଢ଼ିହେବା ଠିକଣା ମିଳିଲା ନାହିଁ। କୋଅର୍ଡିନେଟ୍ ଯୋଡାଗଲା; ଲ୍ୟାଣ୍ଡମାର୍କ ଲେଖନ୍ତୁ।")
                     }
+                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                 }
             }.start()
         }
 
-        val timeout = Runnable {
-            if (!completed && locating) {
+        timeout = Runnable {
+            if (!completed) {
                 cancellation.cancel()
-                fusedClient.lastLocation.addOnSuccessListener { cached ->
-                    if (cached != null) {
-                        applyLocation(cached)
-                    } else if (!completed) {
-                        locating = false
-                        Toast.makeText(context, tr(language, "Could not get a reliable GPS fix. Turn on Precise location, try near a window or outdoors, or enter the address manually.", "ଭରସାଯୋଗ୍ୟ GPS ମିଳିଲା ନାହିଁ। Precise location ଚାଲୁ କରନ୍ତୁ, ଖୋଲା ସ୍ଥାନରେ ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                fusedClient.lastLocation
+                    .addOnSuccessListener { cached ->
+                        if (cached != null) finishWithLocation(cached)
+                        else if (!completed) {
+                            completed = true
+                            locating = false
+                            Toast.makeText(context, tr(language, "GPS could not get a fix. Turn on Precise location, move near a window or outdoors, or type the address manually.", "GPS ମିଳିଲା ନାହିଁ। Precise location ଚାଲୁ କରନ୍ତୁ, ଖୋଲା ସ୍ଥାନରେ ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                        }
                     }
-                }.addOnFailureListener {
-                    if (!completed) {
-                        locating = false
-                        Toast.makeText(context, tr(language, "GPS timed out. Please retry or enter the address manually.", "GPS ସମୟ ଶେଷ ହେଲା। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                    .addOnFailureListener {
+                        if (!completed) {
+                            completed = true
+                            locating = false
+                            Toast.makeText(context, tr(language, "GPS timed out. Retry or enter the address manually.", "GPS ସମୟ ଶେଷ ହେଲା। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                        }
                     }
-                }
             }
         }
 
         try {
             val manager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER) && !manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+            if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER) &&
+                !manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
                 locating = false
                 Toast.makeText(context, tr(language, "Turn on Location in phone settings, then retry.", "ଫୋନ୍ ସେଟିଂରେ Location ଚାଲୁ କରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
                 return
             }
-            mainHandler.postDelayed(timeout, 45000L)
-            Toast.makeText(context, tr(language, "Finding your location… Keep Location on. You can still enter the address manually.", "ଲୋକେସନ୍ ଖୋଜାଯାଉଛି… Location ଚାଲୁ ରଖନ୍ତୁ। ଆପଣ ଠିକଣା ନିଜେ ମଧ୍ୟ ଲେଖିପାରିବେ।"), Toast.LENGTH_LONG).show()
+
+            mainHandler.postDelayed(timeout, 25000L)
+            Toast.makeText(context, tr(language, "Finding your location… Keep Location on. Manual address entry is still available.", "ଲୋକେସନ୍ ଖୋଜାଯାଉଛି… Location ଚାଲୁ ରଖନ୍ତୁ। ଠିକଣା ନିଜେ ମଧ୍ୟ ଲେଖିପାରିବେ।"), Toast.LENGTH_LONG).show()
+
             val request = CurrentLocationRequest.Builder()
                 .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
-                .setMaxUpdateAgeMillis(30000L)
-                .setDurationMillis(40000L)
+                .setMaxUpdateAgeMillis(15000L)
+                .setDurationMillis(20000L)
                 .build()
+
             fusedClient.getCurrentLocation(request, cancellation.token)
                 .addOnSuccessListener { location ->
                     if (location != null) {
-                        applyLocation(location)
+                        finishWithLocation(location)
                     } else {
-                        fusedClient.lastLocation.addOnSuccessListener { cached ->
-                            if (cached != null) {
-                                applyLocation(cached)
-                            } else if (!completed) {
-                                mainHandler.removeCallbacks(timeout)
-                                locating = false
-                                Toast.makeText(context, tr(language, "Location not found yet. Turn on Precise location and try outdoors, or type your address manually.", "ଲୋକେସନ୍ ମିଳିଲା ନାହିଁ। Precise location ଚାଲୁ କରି ଖୋଲା ସ୍ଥାନରେ ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                        fusedClient.lastLocation
+                            .addOnSuccessListener { cached ->
+                                if (cached != null) finishWithLocation(cached)
+                                else if (!completed) {
+                                    mainHandler.removeCallbacks(timeout)
+                                    completed = true
+                                    locating = false
+                                    Toast.makeText(context, tr(language, "No location fix yet. Turn on Precise location and try outdoors, or type the address manually.", "ଲୋକେସନ୍ ମିଳିଲା ନାହିଁ। Precise location ଚାଲୁ କରି ଖୋଲା ସ୍ଥାନରେ ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                                }
                             }
-                        }.addOnFailureListener {
-                            if (!completed) {
-                                mainHandler.removeCallbacks(timeout)
-                                locating = false
-                                Toast.makeText(context, tr(language, "Location not found. Retry or enter the address manually.", "ଲୋକେସନ୍ ମିଳିଲା ନାହିଁ। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                            .addOnFailureListener {
+                                if (!completed) {
+                                    mainHandler.removeCallbacks(timeout)
+                                    completed = true
+                                    locating = false
+                                    Toast.makeText(context, tr(language, "Location unavailable. Retry or enter the address manually.", "ଲୋକେସନ୍ ମିଳୁନାହିଁ। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                                }
                             }
-                        }
                     }
                 }
                 .addOnFailureListener {
                     if (!completed) {
-                        fusedClient.lastLocation.addOnSuccessListener { cached ->
-                            if (cached != null) {
-                                applyLocation(cached)
-                            } else {
-                                mainHandler.removeCallbacks(timeout)
-                                locating = false
-                                Toast.makeText(context, tr(language, "GPS lookup failed. Retry or enter the address manually.", "GPS ମିଳିଲା ନାହିଁ। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                        fusedClient.lastLocation
+                            .addOnSuccessListener { cached ->
+                                if (cached != null) finishWithLocation(cached)
+                                else if (!completed) {
+                                    mainHandler.removeCallbacks(timeout)
+                                    completed = true
+                                    locating = false
+                                    Toast.makeText(context, tr(language, "GPS failed. Retry or enter the address manually.", "GPS ବିଫଳ ହେଲା। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                                }
                             }
-                        }
                     }
                 }
         } catch (_: SecurityException) {
@@ -864,7 +879,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             Text(when {
                 locating -> tr(language, "Finding location…", "ଲୋକେସନ୍ ଖୋଜାଯାଉଛି…")
                 latitude != null && longitude != null -> tr(language, "GPS location saved ✓ (tap to refresh)", "GPS ଲୋକେସନ୍ ସେଭ୍ ହେଲା ✓")
-                else -> tr(language, "📍 Use GPS to fill address (optional)", "📍 GPS ଦ୍ୱାରା ଠିକଣା ଭରନ୍ତୁ (ଇଚ୍ଛାଧୀନ)")
+                else -> tr(language, "📍 Get address from current location (optional)", "📍 GPS ଦ୍ୱାରା ଠିକଣା ଭରନ୍ତୁ (ଇଚ୍ଛାଧୀନ)")
             })
         }
         if (latitude != null && longitude != null) {
