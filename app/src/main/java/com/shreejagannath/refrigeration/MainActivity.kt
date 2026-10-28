@@ -788,12 +788,12 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
         val fusedClient = LocationServices.getFusedLocationProviderClient(context)
         val cancellation = CancellationTokenSource()
         var completed = false
-        lateinit var timeout: Runnable
+        var timeout: Runnable? = null
 
         fun finishWithLocation(location: Location) {
             if (completed) return
             completed = true
-            mainHandler.removeCallbacks(timeout)
+            timeout?.let { mainHandler.removeCallbacks(it) }
             latitude = location.latitude
             longitude = location.longitude
             locationAccuracy = if (location.hasAccuracy()) location.accuracy else null
@@ -860,7 +860,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                 return
             }
 
-            mainHandler.postDelayed(timeout, 25000L)
+            timeout?.let { mainHandler.postDelayed(it, 25000L) }
             Toast.makeText(context, tr(language, "Finding your location… Keep Location on. Manual address entry is still available.", "ଲୋକେସନ୍ ଖୋଜାଯାଉଛି… Location ଚାଲୁ ରଖନ୍ତୁ। ଠିକଣା ନିଜେ ମଧ୍ୟ ଲେଖିପାରିବେ।"), Toast.LENGTH_LONG).show()
 
             val request = CurrentLocationRequest.Builder()
