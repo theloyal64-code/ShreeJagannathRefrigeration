@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: shree-jagannath-refrigeration-api
+    runtime: docker
+    rootDir: backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_SETUP_TOKEN
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: "*"
