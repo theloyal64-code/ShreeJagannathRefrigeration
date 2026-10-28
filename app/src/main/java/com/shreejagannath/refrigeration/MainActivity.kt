@@ -264,14 +264,23 @@ private fun MainApp() {
                     else -> "Shree Jagannath"
                 }, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = { screen = when (screen) {
-                        "form" -> "customer"
-                        "history" -> "customer"
-                        "review" -> "history"
-                        "bookingConfirmation" -> "customer"
-                        "admin", "mechanic" -> "welcome"
-                        else -> "welcome"
-                    } }) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
+                    IconButton(onClick = {
+                        if (screen == "admin" || screen == "mechanic") {
+                            FirebaseAuth.getInstance().signOut()
+                            currentUid = ""
+                            accountRole = ""
+                            loggedInMechanic = ""
+                            screen = "welcome"
+                        } else {
+                            screen = when (screen) {
+                                "form" -> "customer"
+                                "history" -> "customer"
+                                "review" -> "history"
+                                "bookingConfirmation" -> "customer"
+                                else -> "welcome"
+                            }
+                        }
+                    }) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
                 }
             )
         }) { insets ->
