@@ -92,3 +92,18 @@ The app checks the Firestore role after Firebase email/password sign-in. A user 
 ## 6. Operational note
 
 The GitHub repository contains the Firebase deployment configuration, but creating the Cloud Firestore database and enabling Authentication providers are project-console operations. They must be completed by someone with access to the Firebase project before the app can use the cloud database.
+
+## 7. Run Firestore security tests without building the Android app
+
+The repository includes emulator-based rules tests in `firestore.rules.test.mjs`. These tests use a demo project ID and do not connect to or modify the production Firebase project.
+
+Requirements: Node.js 20+, Java 21+, and Firebase CLI.
+
+From the repository root:
+
+```bash
+npm install
+firebase emulators:exec --only firestore --project demo-shree-jagannath-refrigeration "npm run test:rules"
+```
+
+The tests cover customer profile role escalation, booking ownership, atomic booking/history writes, valid mechanic assignment, status transition history, mechanic access, and customer cancellation. This command runs the Firestore emulator tests only; it does not build the Android APK or deploy production rules.
