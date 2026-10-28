@@ -2,7 +2,7 @@ name: Android APK Build
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "feature/database-hardening"]
   pull_request:
     branches: ["main"]
   workflow_dispatch:
@@ -69,6 +69,7 @@ jobs:
           retention-days: 14
 
       - name: Publish latest installable APK
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: mobile-latest
