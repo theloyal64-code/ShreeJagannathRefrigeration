@@ -186,7 +186,8 @@ private fun MainApp() {
         } else emptyList()
     }
 
-    // Key disposal to the active registration so the latest Firestore listener is removed\n    // when this composable leaves composition, not a stale initial null value.\n    DisposableEffect(bookingListener) { onDispose { bookingListener?.remove() } }
+    // Dispose the active Firestore listener when its registration changes or leaves composition.
+    DisposableEffect(bookingListener) { onDispose { bookingListener?.remove() } }
 
     LaunchedEffect(Unit) {
         // Remove booking records cached by older app versions; bookings now load
