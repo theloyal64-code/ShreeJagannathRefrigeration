@@ -263,7 +263,7 @@ private fun MainApp() {
                             }
                         ) else screen = "history"
                     }
-                    "adminLogin" -> TeamLogin(language, onAdminSuccess = { screen = "admin" }, onMechanicSuccess = { mechanic ->
+                    "adminLogin" -> TeamLogin(language, onAdminSuccess = { screen = "admin" }, onAdminPreview = { screen = "admin" }, onMechanicSuccess = { mechanic ->
                         loggedInMechanic = mechanic
                         screen = "mechanic"
                     })
@@ -1487,7 +1487,7 @@ private fun BookingProgress(status: String, language: AppLanguage) {
 }
 
 @Composable
-private fun TeamLogin(language: AppLanguage, onAdminSuccess: () -> Unit, onMechanicSuccess: (String) -> Unit) {
+private fun TeamLogin(language: AppLanguage, onAdminSuccess: () -> Unit, onAdminPreview: () -> Unit, onMechanicSuccess: (String) -> Unit) {
     var role by remember { mutableStateOf("Admin") }
     var mechanic by remember { mutableStateOf("Mechanic 1") }
     var mechanicMenu by remember { mutableStateOf(false) }
@@ -1532,7 +1532,14 @@ private fun TeamLogin(language: AppLanguage, onAdminSuccess: () -> Unit, onMecha
                 "Secure team login is not configured yet. Demo credentials have been removed.",
                 "ସୁରକ୍ଷିତ ଟିମ୍ ଲଗଇନ୍ ଏପର୍ଯ୍ୟନ୍ତ ସେଟ୍ ହୋଇନାହିଁ। ଡେମୋ କ୍ରେଡେନ୍ସିଆଲ୍ ହଟାଯାଇଛି।"
             )
-        }, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text(tr(language, "Login", "ଲଗଇନ୍")) }
+        }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) { Text(tr(language, "Sign in securely", "ସୁରକ୍ଷିତ ଲଗଇନ୍")) }
+        if (BuildConfig.DEBUG) {
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(onClick = onAdminPreview, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(14.dp)) {
+                Text(tr(language, "Preview Admin Dashboard (UI only)", "ଆଡମିନ୍ ଡ୍ୟାସବୋର୍ଡ ଦେଖନ୍ତୁ (କେବଳ UI)"))
+            }
+            Text(tr(language, "Developer preview only; hidden in release builds. This does not authenticate an owner.", "କେବଳ ଡେଭଲପର୍ ପ୍ରିଭ୍ୟୁ; ରିଲିଜ୍ ବିଲ୍ଡରେ ଲୁଚାଯିବ। ଏହା ମାଲିକ ଲଗଇନ୍ ନୁହେଁ।"), fontSize = 11.sp, color = Color.Gray)
+        }
     }
 }
 
