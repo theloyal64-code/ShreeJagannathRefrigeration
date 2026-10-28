@@ -75,7 +75,7 @@ internal class BookingCloudStore(
     }
 
     suspend fun createBooking(uid: String, values: Map<String, Any?>): String {
-        require((values["appliance"] as? String) in listOf(
+        require(values["appliance"] is String && (values["appliance"] as String) in listOf(
             "AC Service", "Refrigerator", "Washing Machine", "Microwave Oven", "Geyser"
         )) { "Select a valid appliance." }
         require((values["issue"] as? String)?.isNotBlank() == true) { "Select an issue." }
