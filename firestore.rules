@@ -74,19 +74,20 @@ service cloud.firestore {
         && request.resource.data.phone is string
         && request.resource.data.createdAt == request.time
         && request.resource.data.updatedAt == request.time;
-      allow update: if (
-          isAdmin()
-          && request.resource.data.role == resource.data.role
+      function validProfileMetadataUpdate() {
+        return request.resource.data.role == resource.data.role
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'displayName', 'email', 'photoURL', 'phone', 'updatedAt'
           ])
-        ) || (
-          isSelf(userId)
-          && request.resource.data.role == resource.data.role
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'displayName', 'email', 'photoURL', 'phone', 'updatedAt'
-          ])
-        );
+          && request.resource.data.displayName is string
+          && request.resource.data.email is string
+          && request.resource.data.photoURL is string
+          && request.resource.data.phone is string
+          && request.resource.data.updatedAt == request.time;
+      }
+
+      allow update: if (isAdmin() || isSelf(userId))
+        && validProfileMetadataUpdate();
       allow delete: if false;
     }
 
