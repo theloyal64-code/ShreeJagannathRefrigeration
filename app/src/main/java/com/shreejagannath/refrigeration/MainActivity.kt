@@ -314,8 +314,14 @@ private fun MainApp() {
                         onHome = { screen = "customer" }
                     )
                     "history" -> BookingHistory(bookings, language, onCancel = { id ->
-                        val now = System.currentTimeMillis()
-                        bookings = bookings.map { if (it.id == id && it.status == "Pending") it.copy(status = "Cancelled", statusUpdatedAt = now) else it }
+                        val booking = bookings.firstOrNull { it.id == id }
+                        if (booking != null && booking.cloudId.isNotBlank()) scope.launch {
+                            try {
+                                cloudStore.cancelPendingBooking(booking.cloudId, currentUid)
+                            } catch (error: Exception) {
+                                Toast.makeText(context, error.message ?: "Could not cancel booking.", Toast.LENGTH_LONG).show()
+                            }
+                        }
                     }, onReview = { id -> lastCreatedBookingId = id; screen = "review" })
                     "review" -> {
                         val reviewBooking = bookings.firstOrNull { it.id == lastCreatedBookingId }
@@ -323,9 +329,14 @@ private fun MainApp() {
                             booking = reviewBooking,
                             language = language,
                             onSubmit = { rating, review ->
-                                val now = System.currentTimeMillis()
-                                bookings = bookings.map { if (it.id == reviewBooking.id) it.copy(rating = rating, review = review.trim(), reviewedAt = now) else it }
-                                screen = "history"
+                                scope.launch {
+                                    try {
+                                        cloudStore.submitReview(reviewBooking.cloudId, currentUid, rating, review.trim())
+                                        screen = "history"
+                                    } catch (error: Exception) {
+                                        Toast.makeText(context, error.message ?: "Could not submit review.", Toast.LENGTH_LONG).show()
+                                    }
+                                }
                             },
                             onPlayStore = {
                                 val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${context.packageName}"))
