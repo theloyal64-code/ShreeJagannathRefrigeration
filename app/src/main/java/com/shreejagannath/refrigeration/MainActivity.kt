@@ -23,6 +23,8 @@ import androidx.credentials.CustomCredential
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -96,7 +98,7 @@ private val issueOptions = mapOf(
     "Microwave Oven" to listOf("Not heating", "Not turning on", "Sparking inside", "Turntable not moving", "Making noise", "Door problem", "Display not working", "Uneven heating", "Burning smell", "Buttons not responding"),
     "Geyser" to listOf("No hot water", "Water not heating enough", "Water leakage", "Not turning on", "Trips electricity", "Making noise", "Takes too long to heat", "Hot water runs out quickly", "Rusty water", "Installation / servicing")
 )
-data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val preferredSlot: String = "", val pincode: String = "", val status: String = "Pending", val createdAt: Long = System.currentTimeMillis(), val latitude: Double? = null, val longitude: Double? = null, val statusUpdatedAt: Long = createdAt, val assignedMechanic: String = "", val rating: Int = 0, val review: String = "", val reviewedAt: Long = 0L)
+data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val preferredSlot: String = "", val pincode: String = "", val status: String = "Pending", val createdAt: Long = System.currentTimeMillis(), val latitude: Double? = null, val longitude: Double? = null, val statusUpdatedAt: Long = createdAt, val assignedMechanic: String = "", val rating: Int = 0, val review: String = "", val reviewedAt: Long = 0L, val cloudId: String = "", val customerUid: String = "", val assignedMechanicUid: String = "")
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -129,7 +131,10 @@ private fun loadBookings(context: Context): List<ServiceBooking> {
                 assignedMechanic = item.optString("assignedMechanic", ""),
                 rating = item.optInt("rating", 0),
                 review = item.optString("review", ""),
-                reviewedAt = item.optLong("reviewedAt", 0L)
+                reviewedAt = item.optLong("reviewedAt", 0L),
+                cloudId = item.optString("cloudId", ""),
+                customerUid = item.optString("customerUid", ""),
+                assignedMechanicUid = item.optString("assignedMechanicUid", "")
             )
         }
     } catch (_: Exception) {
@@ -137,7 +142,7 @@ private fun loadBookings(context: Context): List<ServiceBooking> {
     }
 }
 
-private fun canTransitionBookingStatus(current: String, next: String): Boolean = when (current) {
+internal fun canTransitionBookingStatus(current: String, next: String): Boolean = when (current) {
     "Pending" -> next in listOf("Accepted", "Rejected", "Cancelled")
     "Accepted" -> next in listOf("On the Way", "Cancelled")
     "On the Way" -> next in listOf("In Progress", "Cancelled")
@@ -166,6 +171,9 @@ private fun saveBookings(context: Context, bookings: List<ServiceBooking>) {
             put("reviewedAt", booking.reviewedAt)
             put("latitude", booking.latitude ?: JSONObject.NULL)
             put("longitude", booking.longitude ?: JSONObject.NULL)
+            put("cloudId", booking.cloudId)
+            put("customerUid", booking.customerUid)
+            put("assignedMechanicUid", booking.assignedMechanicUid)
         })
     }
     context.getSharedPreferences(BOOKING_PREFS, Context.MODE_PRIVATE)
@@ -194,6 +202,43 @@ private fun MainApp() {
     var lastCreatedBookingId by remember { mutableIntStateOf(0) }
     var bookings by remember { mutableStateOf(loadBookings(context)) }
     var nextId by remember { mutableIntStateOf((bookings.maxOfOrNull { it.id } ?: 1000) + 1) }
+    val cloudStore = remember { BookingCloudStore() }
+    var currentUid by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser?.uid.orEmpty()) }
+    var accountRole by remember { mutableStateOf("") }
+    var cloudError by remember { mutableStateOf("") }
+    var mechanicProfiles by remember { mutableStateOf<List<Map<String, String>>>(emptyList()) }
+    var bookingListener by remember { mutableStateOf<ListenerRegistration?>(null) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(currentUid) {
+        bookingListener?.remove()
+        bookingListener = null
+        if (currentUid.isBlank()) {
+            accountRole = ""
+            bookings = emptyList()
+            return@LaunchedEffect
+        }
+        try {
+            val user = FirebaseAuth.getInstance().currentUser ?: throw IllegalStateException("Please sign in with Google again.")
+            cloudStore.ensureCustomerProfile(user)
+            val profile = FirebaseFirestore.getInstance().collection("users").document(currentUid).get().await()
+            accountRole = profile.getString("role") ?: "customer"
+            bookingListener = cloudStore.observeBookings(currentUid, accountRole,
+                onBookings = { rows -> bookings = rows.map { firestoreBookingToModel(it) }; cloudError = "" },
+                onError = { error -> cloudError = error.message ?: "Unable to load cloud bookings." }
+            )
+        } catch (error: Exception) {
+            cloudError = error.message ?: "Unable to connect to the booking database."
+        }
+    }
+
+    LaunchedEffect(currentUid, accountRole) {
+        mechanicProfiles = if (accountRole == "admin") {
+            try { cloudStore.listMechanics() } catch (_: Exception) { emptyList() }
+        } else emptyList()
+    }
+
+    DisposableEffect(Unit) { onDispose { bookingListener?.remove() } }
 
     LaunchedEffect(bookings) {
         saveBookings(context, bookings)
@@ -219,27 +264,64 @@ private fun MainApp() {
                     else -> "Shree Jagannath"
                 }, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = { screen = when (screen) {
-                        "form" -> "customer"
-                        "history" -> "customer"
-                        "review" -> "history"
-                        "bookingConfirmation" -> "customer"
-                        "admin", "mechanic" -> "welcome"
-                        else -> "welcome"
-                    } }) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
+                    IconButton(onClick = {
+                        if (screen == "admin" || screen == "mechanic") {
+                            FirebaseAuth.getInstance().signOut()
+                            currentUid = ""
+                            accountRole = ""
+                            loggedInMechanic = ""
+                            screen = "welcome"
+                        } else {
+                            screen = when (screen) {
+                                "form" -> "customer"
+                                "history" -> "customer"
+                                "review" -> "history"
+                                "bookingConfirmation" -> "customer"
+                                else -> "welcome"
+                            }
+                        }
+                    }) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
                 }
             )
         }) { insets ->
             Box(Modifier.fillMaxSize().background(Page).padding(insets)) {
                 when (screen) {
-                    "welcome" -> Welcome(language, onLanguage = { language = it }, onCustomer = { screen = "customer" }, onAdmin = { screen = "adminLogin" })
+                    "welcome" -> Welcome(language, onLanguage = { language = it }, onCustomer = {
+                        val user = FirebaseAuth.getInstance().currentUser
+                        if (user == null) {
+                            Toast.makeText(context, tr(language, "Please tap the Google sign-in button first.", "ପ୍ରଥମେ Google ଲଗଇନ୍ ବଟନ୍ ଦବାନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                        } else {
+                            currentUid = user.uid
+                            screen = "customer"
+                        }
+                    }, onAdmin = { screen = "adminLogin" })
                     "customer" -> CustomerHome(appliances, bookings, language,
                         onChoose = { chosen = it; screen = "form" }, onHistory = { screen = "history" })
                     "form" -> RequestForm(chosen, language, onSubmit = { name, phone, issue, address, preferredSlot, pincode, latitude, longitude ->
-                        val newBooking = ServiceBooking(nextId++, name, phone, chosen.name, issue, address, preferredSlot, pincode, latitude = latitude, longitude = longitude)
-                        lastCreatedBookingId = newBooking.id
-                        bookings = bookings + newBooking
-                        screen = "bookingConfirmation"
+                        if (currentUid.isBlank() || accountRole != "customer") {
+                            Toast.makeText(context, tr(language, "Please sign in with a customer Google account before booking.", "ବୁକିଂ ପୂର୍ବରୁ ଗ୍ରାହକ Google ଆକାଉଣ୍ଟରେ ଲଗଇନ୍ କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                        } else {
+                            scope.launch {
+                                try {
+                                    val cloudId = cloudStore.createBooking(currentUid, mapOf(
+                                        "customerName" to name, "phone" to phone, "appliance" to chosen.name,
+                                        "issue" to issue, "address" to address, "preferredSlot" to preferredSlot,
+                                        "pincode" to pincode, "latitude" to latitude, "longitude" to longitude
+                                    ))
+                                    val newBooking = ServiceBooking(
+                                        id = cloudId.hashCode() and 0x7fffffff, customer = name, phone = phone,
+                                        appliance = chosen.name, issue = issue, address = address,
+                                        preferredSlot = preferredSlot, pincode = pincode, latitude = latitude,
+                                        longitude = longitude, cloudId = cloudId, customerUid = currentUid
+                                    )
+                                    lastCreatedBookingId = newBooking.id
+                                    bookings = bookings.filterNot { it.cloudId == cloudId } + newBooking
+                                    screen = "bookingConfirmation"
+                                } catch (error: Exception) {
+                                    Toast.makeText(context, error.message ?: "Booking could not be saved. Please retry.", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        }
                     })
                     "bookingConfirmation" -> BookingConfirmation(
                         booking = bookings.firstOrNull { it.id == lastCreatedBookingId },
@@ -248,8 +330,14 @@ private fun MainApp() {
                         onHome = { screen = "customer" }
                     )
                     "history" -> BookingHistory(bookings, language, onCancel = { id ->
-                        val now = System.currentTimeMillis()
-                        bookings = bookings.map { if (it.id == id && it.status == "Pending") it.copy(status = "Cancelled", statusUpdatedAt = now) else it }
+                        val booking = bookings.firstOrNull { it.id == id }
+                        if (booking != null && booking.cloudId.isNotBlank()) scope.launch {
+                            try {
+                                cloudStore.cancelPendingBooking(booking.cloudId, currentUid)
+                            } catch (error: Exception) {
+                                Toast.makeText(context, error.message ?: "Could not cancel booking.", Toast.LENGTH_LONG).show()
+                            }
+                        }
                     }, onReview = { id -> lastCreatedBookingId = id; screen = "review" })
                     "review" -> {
                         val reviewBooking = bookings.firstOrNull { it.id == lastCreatedBookingId }
@@ -257,9 +345,14 @@ private fun MainApp() {
                             booking = reviewBooking,
                             language = language,
                             onSubmit = { rating, review ->
-                                val now = System.currentTimeMillis()
-                                bookings = bookings.map { if (it.id == reviewBooking.id) it.copy(rating = rating, review = review.trim(), reviewedAt = now) else it }
-                                screen = "history"
+                                scope.launch {
+                                    try {
+                                        cloudStore.submitReview(reviewBooking.cloudId, currentUid, rating, review.trim())
+                                        screen = "history"
+                                    } catch (error: Exception) {
+                                        Toast.makeText(context, error.message ?: "Could not submit review.", Toast.LENGTH_LONG).show()
+                                    }
+                                }
                             },
                             onPlayStore = {
                                 val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${context.packageName}"))
@@ -269,29 +362,40 @@ private fun MainApp() {
                             }
                         ) else screen = "history"
                     }
-                    "adminLogin" -> TeamLogin(language, onAdminSuccess = { screen = "admin" }, onAdminPreview = { screen = "admin" }, onMechanicSuccess = { mechanic ->
+                    "adminLogin" -> TeamLogin(language, onAdminSuccess = { currentUid = FirebaseAuth.getInstance().currentUser?.uid.orEmpty(); screen = "admin" }, onMechanicSuccess = { mechanic ->
+                        currentUid = FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
                         loggedInMechanic = mechanic
                         screen = "mechanic"
                     })
                     "mechanic" -> MechanicHome(
-                        bookings = bookings.filter { it.assignedMechanic == loggedInMechanic },
+                        bookings = bookings.filter { it.assignedMechanicUid == currentUid },
                         mechanicName = loggedInMechanic,
                         language = language,
-                        onLogout = { loggedInMechanic = ""; screen = "welcome" },
+                        onLogout = { FirebaseAuth.getInstance().signOut(); currentUid = ""; accountRole = ""; loggedInMechanic = ""; screen = "welcome" },
                         onStatus = { id, status ->
-                            val booking = bookings.firstOrNull { it.id == id && it.assignedMechanic == loggedInMechanic }
-                            if (booking != null && canTransitionBookingStatus(booking.status, status)) {
-                                bookings = bookings.map { if (it.id == id) it.copy(status = status, statusUpdatedAt = System.currentTimeMillis()) else it }
+                            val booking = bookings.firstOrNull { it.id == id && it.assignedMechanicUid == currentUid }
+                            if (booking != null && booking.cloudId.isNotBlank()) scope.launch {
+                                try { cloudStore.updateStatus(booking.cloudId, currentUid, "mechanic", status) }
+                                catch (error: Exception) { Toast.makeText(context, error.message ?: "Could not update booking status.", Toast.LENGTH_LONG).show() }
                             }
                         }
                     )
-                    "admin" -> AdminHome(bookings, language, onStatus = { id, status ->
+                    "admin" -> AdminHome(bookings, language, mechanicProfiles, onStatus = { id, status ->
                         val booking = bookings.firstOrNull { it.id == id }
-                        if (booking != null && canTransitionBookingStatus(booking.status, status)) {
-                            bookings = bookings.map { if (it.id == id) it.copy(status = status, statusUpdatedAt = System.currentTimeMillis()) else it }
+                        if (booking != null && booking.cloudId.isNotBlank()) scope.launch {
+                            try { cloudStore.updateStatus(booking.cloudId, currentUid, "admin", status) }
+                            catch (error: Exception) { Toast.makeText(context, error.message ?: "Could not update booking status.", Toast.LENGTH_LONG).show() }
                         }
                     }, onAssign = { id, mechanic ->
-                        bookings = bookings.map { if (it.id == id) it.copy(assignedMechanic = mechanic) else it }
+                        val booking = bookings.firstOrNull { it.id == id }
+                        val target = mechanicProfiles.firstOrNull { it["displayName"] == mechanic }
+                        if (booking != null && booking.cloudId.isNotBlank()) scope.launch {
+                            try {
+                                if (mechanic.isBlank()) cloudStore.assignMechanic(booking.cloudId, "", "")
+                                else if (target != null) cloudStore.assignMechanic(booking.cloudId, target["uid"].orEmpty(), mechanic)
+                                else throw IllegalStateException("Create a mechanic account and profile before assigning this job.")
+                            } catch (error: Exception) { Toast.makeText(context, error.message ?: "Could not assign mechanic.", Toast.LENGTH_LONG).show() }
+                        }
                     })
                 }
             }
@@ -693,12 +797,12 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
         val fusedClient = LocationServices.getFusedLocationProviderClient(context)
         val cancellation = CancellationTokenSource()
         var completed = false
-        lateinit var timeout: Runnable
+        var timeout: Runnable? = null
 
         fun finishWithLocation(location: Location) {
             if (completed) return
             completed = true
-            mainHandler.removeCallbacks(timeout)
+            timeout?.let { mainHandler.removeCallbacks(it) }
             latitude = location.latitude
             longitude = location.longitude
             locationAccuracy = if (location.hasAccuracy()) location.accuracy else null
@@ -765,7 +869,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                 return
             }
 
-            mainHandler.postDelayed(timeout, 25000L)
+            timeout?.let { mainHandler.postDelayed(it, 25000L) }
             Toast.makeText(context, tr(language, "Finding your location… Keep Location on. Manual address entry is still available.", "ଲୋକେସନ୍ ଖୋଜାଯାଉଛି… Location ଚାଲୁ ରଖନ୍ତୁ। ଠିକଣା ନିଜେ ମଧ୍ୟ ଲେଖିପାରିବେ।"), Toast.LENGTH_LONG).show()
 
             val request = CurrentLocationRequest.Builder()
@@ -783,7 +887,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                             .addOnSuccessListener { cached ->
                                 if (cached != null) finishWithLocation(cached)
                                 else if (!completed) {
-                                    mainHandler.removeCallbacks(timeout)
+                                    timeout?.let { mainHandler.removeCallbacks(it) }
                                     completed = true
                                     locating = false
                                     Toast.makeText(context, tr(language, "No location fix yet. Turn on Precise location and try outdoors, or type the address manually.", "ଲୋକେସନ୍ ମିଳିଲା ନାହିଁ। Precise location ଚାଲୁ କରି ଖୋଲା ସ୍ଥାନରେ ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
@@ -791,7 +895,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                             }
                             .addOnFailureListener {
                                 if (!completed) {
-                                    mainHandler.removeCallbacks(timeout)
+                                    timeout?.let { mainHandler.removeCallbacks(it) }
                                     completed = true
                                     locating = false
                                     Toast.makeText(context, tr(language, "Location unavailable. Retry or enter the address manually.", "ଲୋକେସନ୍ ମିଳୁନାହିଁ। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
@@ -805,7 +909,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                             .addOnSuccessListener { cached ->
                                 if (cached != null) finishWithLocation(cached)
                                 else if (!completed) {
-                                    mainHandler.removeCallbacks(timeout)
+                                    timeout?.let { mainHandler.removeCallbacks(it) }
                                     completed = true
                                     locating = false
                                     Toast.makeText(context, tr(language, "GPS failed. Retry or enter the address manually.", "GPS ବିଫଳ ହେଲା। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
@@ -814,11 +918,11 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                     }
                 }
         } catch (_: SecurityException) {
-            mainHandler.removeCallbacks(timeout)
+            timeout?.let { mainHandler.removeCallbacks(it) }
             locating = false
             Toast.makeText(context, tr(language, "Allow location permission in app settings, then retry.", "ଆପ୍ ସେଟିଂରେ Location ଅନୁମତି ଦେଇ ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
         } catch (_: Exception) {
-            mainHandler.removeCallbacks(timeout)
+            timeout?.let { mainHandler.removeCallbacks(it) }
             locating = false
             Toast.makeText(context, tr(language, "Could not start GPS. Turn on phone Location and retry.", "GPS ଆରମ୍ଭ ହୋଇପାରିଲା ନାହିଁ। ଫୋନ୍ Location ଚାଲୁ କରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
         }
@@ -1620,62 +1724,55 @@ private fun BookingProgress(status: String, language: AppLanguage) {
 }
 
 @Composable
-private fun TeamLogin(language: AppLanguage, onAdminSuccess: () -> Unit, onAdminPreview: () -> Unit, onMechanicSuccess: (String) -> Unit) {
+private fun TeamLogin(language: AppLanguage, onAdminSuccess: () -> Unit, onMechanicSuccess: (String) -> Unit) {
     var role by remember { mutableStateOf("Admin") }
-    var mechanic by remember { mutableStateOf("Mechanic 1") }
-    var mechanicMenu by remember { mutableStateOf(false) }
     var roleMenu by remember { mutableStateOf(false) }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
-    val mechanics = listOf("Mechanic 1", "Mechanic 2", "Senior Technician")
+    var signingIn by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.Center) {
-        Text(tr(language, "Team Access", "ଟିମ୍ ପ୍ରବେଶ"), fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Navy)
-        Text(tr(language, "Team login will be enabled after secure server authentication is configured.", "ସୁରକ୍ଷିତ ସର୍ଭର ଲଗଇନ୍ ସେଟ୍ ହେବା ପରେ ଟିମ୍ ଲଗଇନ୍ ଚାଲୁ ହେବ।"), color = Color.Gray)
+        Text(tr(language, "Secure Team Access", "ସୁରକ୍ଷିତ ଟିମ୍ ପ୍ରବେଶ"), fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Navy)
+        Text(tr(language, "Use the team email and password provisioned by the app administrator.", "ଆପ୍ ଆଡମିନ୍ ଦେଇଥିବା ଟିମ୍ ଇମେଲ୍ ଓ ପାସୱାର୍ଡ ବ୍ୟବହାର କରନ୍ତୁ।"), color = Color.Gray)
         Spacer(Modifier.height(18.dp))
         Box {
             OutlinedButton(onClick = { roleMenu = true }, modifier = Modifier.fillMaxWidth()) { Text(tr(language, "Login role: ", "ଲଗଇନ୍ ଭୂମିକା: ") + role) }
             DropdownMenu(expanded = roleMenu, onDismissRequest = { roleMenu = false }) {
-                listOf("Admin", "Mechanic").forEach { item ->
-                    DropdownMenuItem(text = { Text(item) }, onClick = { role = item; error = ""; roleMenu = false })
-                }
+                listOf("Admin", "Mechanic").forEach { item -> DropdownMenuItem(text = { Text(item) }, onClick = { role = item; error = ""; roleMenu = false }) }
             }
         }
         Spacer(Modifier.height(10.dp))
-        if (role == "Admin") {
-            OutlinedTextField(username, { username = it }, label = { Text(tr(language, "Admin username", "ଆଡମିନ୍ ୟୁଜରନେମ୍")) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-            Spacer(Modifier.height(10.dp))
-            OutlinedTextField(password, { password = it }, label = { Text(tr(language, "Password", "ପାସୱାର୍ଡ")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
-        } else {
-            Box {
-                OutlinedButton(onClick = { mechanicMenu = true }, modifier = Modifier.fillMaxWidth()) { Text(tr(language, "Mechanic profile: ", "ମେକାନିକ୍ ପ୍ରୋଫାଇଲ୍: ") + mechanic) }
-                DropdownMenu(expanded = mechanicMenu, onDismissRequest = { mechanicMenu = false }) {
-                    mechanics.forEach { item -> DropdownMenuItem(text = { Text(item) }, onClick = { mechanic = item; mechanicMenu = false }) }
-                }
-            }
-            Spacer(Modifier.height(10.dp))
-            OutlinedTextField(pin, { pin = it; error = "" }, label = { Text(tr(language, "Team PIN", "ଟିମ୍ ପିନ୍")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
-        }
+        OutlinedTextField(username, { username = it; error = "" }, label = { Text(tr(language, "Team email", "ଟିମ୍ ଇମେଲ୍")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email))
+        Spacer(Modifier.height(10.dp))
+        OutlinedTextField(password, { password = it; error = "" }, label = { Text(tr(language, "Password", "ପାସୱାର୍ଡ")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
         if (error.isNotBlank()) { Spacer(Modifier.height(8.dp)); Text(error, color = MaterialTheme.colorScheme.error) }
         Spacer(Modifier.height(16.dp))
-        Button(onClick = {
-            error = tr(
-                language,
-                "Secure team login is not configured yet. Demo credentials have been removed.",
-                "ସୁରକ୍ଷିତ ଟିମ୍ ଲଗଇନ୍ ଏପର୍ଯ୍ୟନ୍ତ ସେଟ୍ ହୋଇନାହିଁ। ଡେମୋ କ୍ରେଡେନ୍ସିଆଲ୍ ହଟାଯାଇଛି।"
-            )
-        }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) { Text(tr(language, "Sign in securely", "ସୁରକ୍ଷିତ ଲଗଇନ୍")) }
-        if (BuildConfig.DEBUG) {
-            Spacer(Modifier.height(12.dp))
-            OutlinedButton(onClick = onAdminPreview, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(14.dp)) {
-                Text(tr(language, "Preview Admin Dashboard (UI only)", "ଆଡମିନ୍ ଡ୍ୟାସବୋର୍ଡ ଦେଖନ୍ତୁ (କେବଳ UI)"))
+        Button(enabled = !signingIn && username.isNotBlank() && password.isNotBlank(), onClick = {
+            signingIn = true
+            error = ""
+            scope.launch {
+                try {
+                    val result = FirebaseAuth.getInstance().signInWithEmailAndPassword(username.trim(), password).await()
+                    val user = result.user ?: throw IllegalStateException("Team account was not returned.")
+                    val profile = FirebaseFirestore.getInstance().collection("users").document(user.uid).get().await()
+                    val expectedRole = if (role == "Admin") "admin" else "mechanic"
+                    if (!profile.exists() || profile.getString("role") != expectedRole) {
+                        FirebaseAuth.getInstance().signOut()
+                        throw IllegalStateException(tr(language, "This account is not provisioned for the selected team role.", "ଏହି ଆକାଉଣ୍ଟ ଚୟନିତ ଟିମ୍ ଭୂମିକା ପାଇଁ ସେଟ୍ ହୋଇନାହିଁ।"))
+                    }
+                    if (expectedRole == "admin") onAdminSuccess()
+                    else onMechanicSuccess(profile.getString("displayName")?.takeIf { it.isNotBlank() } ?: user.email?.substringBefore("@") ?: user.uid)
+                } catch (e: Exception) {
+                    error = e.message ?: tr(language, "Sign-in failed. Check your details and try again.", "ଲଗଇନ୍ ବିଫଳ। ବିବରଣୀ ଯାଞ୍ଚ କରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।")
+                } finally { signingIn = false }
             }
-            Text(tr(language, "Developer preview only; hidden in release builds. This does not authenticate an owner.", "କେବଳ ଡେଭଲପର୍ ପ୍ରିଭ୍ୟୁ; ରିଲିଜ୍ ବିଲ୍ଡରେ ଲୁଚାଯିବ। ଏହା ମାଲିକ ଲଗଇନ୍ ନୁହେଁ।"), fontSize = 11.sp, color = Color.Gray)
+        }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
+            Text(if (signingIn) tr(language, "Signing in...", "ଲଗଇନ୍ ହେଉଛି...") else tr(language, "Sign in securely", "ସୁରକ୍ଷିତ ଲଗଇନ୍"))
         }
     }
 }
-
 @Composable
 private fun MechanicHome(
     bookings: List<ServiceBooking>,
@@ -1763,7 +1860,7 @@ private fun MechanicHome(
 }
 
 @Composable
-private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onStatus: (Int, String) -> Unit, onAssign: (Int, String) -> Unit = { _, _ -> }) {
+private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, mechanicProfiles: List<Map<String, String>>, onStatus: (Int, String) -> Unit, onAssign: (Int, String) -> Unit = { _, _ -> }) {
     val context = LocalContext.current
     var pendingStatusChange by remember { mutableStateOf<Pair<Int, String>?>(null) }
     var search by remember { mutableStateOf("") }
@@ -1787,7 +1884,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
         }
     }
     val filters = listOf("All", "Pending", "Accepted", "On the Way", "In Progress", "Completed", "Rejected", "Cancelled")
-    val mechanicFilters = listOf("All mechanics", "Unassigned", "Mechanic 1", "Mechanic 2", "Senior Technician")
+    val mechanicFilters = listOf("All mechanics", "Unassigned") + mechanicProfiles.mapNotNull { it["displayName"] }
     val visibleBookings = bookings
         .filter { selectedMechanicFilter == "All mechanics" || (if (selectedMechanicFilter == "Unassigned") it.assignedMechanic.isBlank() else it.assignedMechanic == selectedMechanicFilter) }
         .filter { selectedFilter == "All" || it.status == selectedFilter }
@@ -1923,7 +2020,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
                             Spacer(Modifier.height(8.dp))
                             Text(issueLabel(language, b.issue))
                             var assignmentExpanded by remember(b.id) { mutableStateOf(false) }
-                            val mechanicOptions = listOf("Unassigned", "Mechanic 1", "Mechanic 2", "Senior Technician")
+                            val mechanicOptions = listOf("Unassigned") + mechanicProfiles.mapNotNull { it["displayName"] }
                             Box(Modifier.fillMaxWidth()) {
                                 OutlinedButton(onClick = { assignmentExpanded = true }, modifier = Modifier.fillMaxWidth()) {
                                     Text(tr(language, "Assigned mechanic: ", "ନିଯୁକ୍ତ ମେକାନିକ୍: ") + if (b.assignedMechanic.isBlank()) tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି") else b.assignedMechanic)

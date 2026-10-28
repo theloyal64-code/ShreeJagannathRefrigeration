@@ -1,31 +1,46 @@
 # Shree Jagannath Refrigeration
 
-Android app for home-appliance repair and service.
+Android service-booking app for AC, refrigerator, washing machine, microwave oven and geyser repair. Customer-facing language options are English and Odia.
 
-## Implemented in the Android prototype
-- Customer service booking flow for AC, refrigerator, washing machine, microwave oven and geyser.
-- English/Odia language selection.
-- Appliance-specific issue selection, booking history, progress timeline, cancellation of pending bookings, service reviews, and shareable booking summary.
-- Customer Google sign-in UI using Firebase Authentication.
-- Admin/mechanic dashboards and a protected-looking team login screen; demo credentials have been removed.
-- Professional navy/blue visual styling on customer, admin and mechanic screens.
-- GitHub Actions creates a debug APK and publishes the latest successful build.
+## Current application architecture
 
-## Important: not yet production-connected
-- Customer bookings and status changes in the Android UI are still stored locally on that device. They do **not** sync to other phones yet.
-- The Node.js/PostgreSQL API in `backend/` is a deployment-ready starting point, but it is not deployed or connected to the Android app yet.
-- Team login is intentionally disabled until secure server authentication is deployed and wired into the app. Do not use this build to manage real customer data.
-- Google sign-in authenticates a customer with Firebase, but the current API does not yet verify Firebase ID tokens. This must be implemented before connecting Google accounts to server-side bookings.
-- No push notifications, online payments, or Play Store release configuration has been completed.
-- Appliance illustrations are custom-drawn previews, not real product photography or engineering-accurate fault diagrams.
+- Android UI: Kotlin + Jetpack Compose.
+- Customer authentication: Firebase Authentication with Google sign-in.
+- Shared booking database: Cloud Firestore (the Android app does not use the legacy PostgreSQL API).
+- Firestore collections: `users`, `bookings`, and each booking's `statusHistory` subcollection.
+- Security: `firestore.rules` enforces customer ownership, role-based staff access, allowed status transitions, and review limits.
+- Query indexes: `firestore.indexes.json`.
+- GPS: precise location capture with readable-address geocoding where available and coordinate fallback.
+- Build: GitHub Actions builds a debug APK on pushes and pull requests.
 
-## Backend deployment preparation
-- `backend/Dockerfile` builds the API container.
-- `render.yaml` is a Render deployment blueprint. Before deployment, provision a PostgreSQL database and provide its connection string as `DATABASE_URL`; the API also requires `JWT_SECRET` and `ADMIN_SETUP_TOKEN`.
-- After deployment, call `/health` to verify API and database connectivity. Create the first admin using `POST /api/admin/initial-admin` with the `x-admin-setup-token` header. Use a long unique password and keep the setup token secret.
-- The backend must then be integrated into Android (customer Google token verification, booking create/list/cancel/review, team login, assignment and status updates) before cross-device sync works.
+## Booking database behaviour
 
-## Automated Android build
-Pushes to `main` trigger the Android APK Build workflow. Download the `ShreeJagannathRefrigeration-debug-apk` artifact from a successful workflow run, or use the latest release channel.
+- New bookings are written to Firestore, not only to device storage.
+- Customer history is queried by the signed-in customer's Firebase UID.
+- Admin accounts can see all bookings; mechanics can see only bookings assigned to their Firebase UID.
+- Status updates and assignments are written to Firestore so other authorized devices can see the changes.
+- Customers can cancel only pending bookings and review only completed bookings.
+- The app keeps a local cache for a smoother UI, but Firestore is the source of truth for authenticated bookings.
+
+## Required one-time Firebase setup
+
+The Firebase project ID configured for this Android app is `shree-jagannath-refrigeration`. Before real use:
+
+1. In Firebase Console, create/enable the **Cloud Firestore database** in the appropriate region.
+2. In Authentication > Sign-in method, enable **Google** and **Email/Password**. Google is for customers; Email/Password is for team accounts.
+3. Deploy `firestore.rules` and `firestore.indexes.json` from the repository using Firebase CLI. See [BACKEND_SETUP.md](BACKEND_SETUP.md).
+4. Provision the owner/admin and each mechanic as Firebase Authentication email/password users. In Firestore, create `users/{AUTH_UID}` documents with `uid`, `role` (`admin` or `mechanic`), `displayName`, `email`, and `phone`. Never let the client choose its own staff role.
+5. For assignment to appear in the Admin Dashboard, set each mechanic's `displayName` to the desired display label.
+6. Test with two separate devices/accounts: customer creates booking, admin sees it, admin assigns a mechanic, mechanic sees it and changes status, and customer sees the status update.
+
+**Important:** Firestore security rules and the Firebase Console database cannot be activated from a GitHub code change alone. The one-time Firebase Console setup and rules deployment are required. Do not use real customer data until these steps and cross-account tests pass.
+
+## Legacy PostgreSQL folder
+
+The `backend/` Node.js/PostgreSQL API and `render.yaml` are legacy scaffolding and are **not used by the current Android booking flow**. Do not deploy them for this Firestore-first setup.
+
+## Build
+
+Push to `main` or open a pull request to run the Android debug build workflow. Download the `ShreeJagannathRefrigeration-debug-apk` artifact from a successful GitHub Actions run.
 
 Package: `com.shreejagannath.refrigeration`
