@@ -148,17 +148,24 @@ service cloud.firestore {
             || (isMechanic() && parentBooking().assignedMechanicUid == request.auth.uid));
         allow create: if signedIn()
           && request.resource.data.changedBy == request.auth.uid
+          && request.resource.data.oldStatus is string
           && request.resource.data.newStatus is string
           && validStatus(request.resource.data.newStatus)
           && request.resource.data.createdAt == request.time
+          && parentBooking().status == request.resource.data.newStatus
+          && (
+            (request.resource.data.oldStatus == ''
+              && request.resource.data.newStatus == 'Pending'
+              && parentBooking().customerUid == request.auth.uid)
+            || canTransition(request.resource.data.oldStatus, request.resource.data.newStatus)
+          )
           && (
             isAdmin()
             || (isMechanic() && parentBooking().assignedMechanicUid == request.auth.uid)
-            || (parentBooking().customerUid == request.auth.uid
-              && ((parentBooking().status == 'Pending' && request.resource.data.newStatus == 'Pending')
-                || (parentBooking().status == 'Cancelled' && request.resource.data.newStatus == 'Cancelled')))
+            || parentBooking().customerUid == request.auth.uid
           );
-        allow update, delete: if isAdmin();
+        // Status history is an audit trail: clients cannot edit or delete events.
+        allow update, delete: if false;
       }
     }
   }
