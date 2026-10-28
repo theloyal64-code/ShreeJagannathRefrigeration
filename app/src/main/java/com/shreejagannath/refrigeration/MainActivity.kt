@@ -74,7 +74,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -107,79 +106,12 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private fun loadBookings(context: Context): List<ServiceBooking> {
-    val raw = context.getSharedPreferences(BOOKING_PREFS, Context.MODE_PRIVATE)
-        .getString(BOOKINGS_KEY, null) ?: return emptyList()
-    return try {
-        val json = JSONArray(raw)
-        (0 until json.length()).mapNotNull { index ->
-            val item = json.optJSONObject(index) ?: return@mapNotNull null
-            ServiceBooking(
-                id = item.optInt("id"),
-                customer = item.optString("customer"),
-                phone = item.optString("phone"),
-                appliance = item.optString("appliance"),
-                issue = item.optString("issue"),
-                address = item.optString("address"),
-                preferredSlot = item.optString("preferredSlot"),
-                pincode = item.optString("pincode"),
-                status = item.optString("status", "Pending"),
-                createdAt = item.optLong("createdAt", 0L).takeIf { it > 0L } ?: System.currentTimeMillis(),
-                latitude = if (item.isNull("latitude")) null else item.optDouble("latitude"),
-                longitude = if (item.isNull("longitude")) null else item.optDouble("longitude"),
-                statusUpdatedAt = item.optLong("statusUpdatedAt", item.optLong("createdAt", System.currentTimeMillis())).takeIf { it > 0L } ?: System.currentTimeMillis(),
-                assignedMechanic = item.optString("assignedMechanic", ""),
-                rating = item.optInt("rating", 0),
-                review = item.optString("review", ""),
-                reviewedAt = item.optLong("reviewedAt", 0L),
-                cloudId = item.optString("cloudId", ""),
-                customerUid = item.optString("customerUid", ""),
-                assignedMechanicUid = item.optString("assignedMechanicUid", "")
-            )
-        }
-    } catch (_: Exception) {
-        emptyList()
-    }
-}
-
 internal fun canTransitionBookingStatus(current: String, next: String): Boolean = when (current) {
     "Pending" -> next in listOf("Accepted", "Rejected", "Cancelled")
     "Accepted" -> next in listOf("On the Way", "Cancelled")
     "On the Way" -> next in listOf("In Progress", "Cancelled")
     "In Progress" -> next in listOf("Completed", "Cancelled")
     else -> false
-}
-
-private fun saveBookings(context: Context, bookings: List<ServiceBooking>) {
-    val json = JSONArray()
-    bookings.forEach { booking ->
-        json.put(JSONObject().apply {
-            put("id", booking.id)
-            put("customer", booking.customer)
-            put("phone", booking.phone)
-            put("appliance", booking.appliance)
-            put("issue", booking.issue)
-            put("address", booking.address)
-            put("preferredSlot", booking.preferredSlot)
-            put("pincode", booking.pincode)
-            put("status", booking.status)
-            put("createdAt", booking.createdAt)
-            put("statusUpdatedAt", booking.statusUpdatedAt)
-            put("assignedMechanic", booking.assignedMechanic)
-            put("rating", booking.rating)
-            put("review", booking.review)
-            put("reviewedAt", booking.reviewedAt)
-            put("latitude", booking.latitude ?: JSONObject.NULL)
-            put("longitude", booking.longitude ?: JSONObject.NULL)
-            put("cloudId", booking.cloudId)
-            put("customerUid", booking.customerUid)
-            put("assignedMechanicUid", booking.assignedMechanicUid)
-        })
-    }
-    context.getSharedPreferences(BOOKING_PREFS, Context.MODE_PRIVATE)
-        .edit()
-        .putString(BOOKINGS_KEY, json.toString())
-        .apply()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
