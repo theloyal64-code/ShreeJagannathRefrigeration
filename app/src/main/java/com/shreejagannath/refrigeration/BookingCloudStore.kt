@@ -99,7 +99,9 @@ internal class BookingCloudStore(
         require(customerName.isNotEmpty() && customerName.length <= 100) {
             "Enter a customer name with at most 100 characters."
         }
-        require(phone.length in 7..20) { "Enter a valid contact number." }
+        require(phone.matches(Regex("^[6-9][0-9]{9}$"))) {
+            "Enter a valid Indian 10-digit mobile number."
+        }
         require(issue.isNotEmpty() && issue.length <= 200) { "Select a valid problem." }
         require(address.isNotEmpty() && address.length <= 1000) { "Enter a service address with at most 1000 characters." }
         require(preferredSlot != null && preferredSlot.length <= 100 && pincode != null) {
