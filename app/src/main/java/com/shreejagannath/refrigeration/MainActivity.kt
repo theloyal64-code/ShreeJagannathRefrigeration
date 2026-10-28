@@ -734,7 +734,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             if (!completed && locating) {
                 cancellation.cancel()
                 fusedClient.lastLocation.addOnSuccessListener { cached ->
-                    if (cached != null && (!cached.hasAccuracy() || cached.accuracy <= 100f)) {
+                    if (cached != null) {
                         applyLocation(cached)
                     } else if (!completed) {
                         locating = false
@@ -769,7 +769,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                         applyLocation(location)
                     } else {
                         fusedClient.lastLocation.addOnSuccessListener { cached ->
-                            if (cached != null && (!cached.hasAccuracy() || cached.accuracy <= 100f)) {
+                            if (cached != null) {
                                 applyLocation(cached)
                             } else if (!completed) {
                                 mainHandler.removeCallbacks(timeout)
@@ -788,7 +788,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                 .addOnFailureListener {
                     if (!completed) {
                         fusedClient.lastLocation.addOnSuccessListener { cached ->
-                            if (cached != null && (!cached.hasAccuracy() || cached.accuracy <= 100f)) {
+                            if (cached != null) {
                                 applyLocation(cached)
                             } else {
                                 mainHandler.removeCallbacks(timeout)
@@ -864,13 +864,13 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             Text(when {
                 locating -> tr(language, "Getting GPS location…", "GPS ଲୋକେସନ୍ ନିଆଯାଉଛି…")
                 latitude != null && longitude != null -> tr(language, "GPS location saved ✓ (tap to refresh)", "GPS ଲୋକେସନ୍ ସେଭ୍ ହେଲା ✓")
-                else -> tr(language, "Use GPS to fill address (optional)", "ସଠିକ୍ GPS ଲୋକେସନ୍ ନିଅନ୍ତୁ *")
+                else -> tr(language, "📍 Use GPS to fill address (optional)", "📍 GPS ଦ୍ୱାରା ଠିକଣା ଭରନ୍ତୁ (ଇଚ୍ଛାଧୀନ)")
             })
         }
         if (latitude != null && longitude != null) {
             Text(tr(language, "Precise GPS captured • ±${locationAccuracy?.toInt() ?: 0} m. This pin will guide the technician.", "ସଠିକ୍ GPS ମିଳିଲା • ±${locationAccuracy?.toInt() ?: 0} ମିଟର୍। ଏହି ପିନ୍ ଟେକ୍ନିସିଆନ୍‌ଙ୍କୁ ରାସ୍ତା ଦେଖାଇବ।"), fontSize = 12.sp, color = Color(0xFF16804A), fontWeight = FontWeight.SemiBold)
         } else {
-            Text(tr(language, "GPS is optional. You can type the address yourself or use GPS to fill it.", "GPS ଇଚ୍ଛାଧୀନ। ଠିକଣା ନିଜେ ଲେଖନ୍ତୁ କିମ୍ବା GPS ଦ୍ୱାରା ଭରନ୍ତୁ।"), fontSize = 12.sp, color = Color(0xFFB45309), fontWeight = FontWeight.SemiBold)
+            Text(tr(language, "Address is required. Type it manually, or use GPS to fill it automatically. If GPS cannot find a street address, the coordinates will be saved and you can add a landmark.", "ଠିକଣା ଦେବା ଆବଶ୍ୟକ। ନିଜେ ଲେଖନ୍ତୁ କିମ୍ବା GPS ଦ୍ୱାରା ଭରନ୍ତୁ। GPS ଠିକଣା ନ ପାଇଲେ କୋଅର୍ଡିନେଟ୍ ସେଭ୍ ହେବ ଏବଂ ଲ୍ୟାଣ୍ଡମାର୍କ ଯୋଡିପାରିବେ।"), fontSize = 12.sp, color = Color(0xFF245783), fontWeight = FontWeight.SemiBold)
         }
         Spacer(Modifier.height(10.dp))
         OutlinedButton(
