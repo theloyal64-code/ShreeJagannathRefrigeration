@@ -103,11 +103,11 @@ internal class BookingCloudStore(
         require(pincode.isEmpty() || (pincode.length == 6 && pincode.all { it in '0'..'9' })) {
             "Enter a valid six-digit PIN code or leave it blank."
         }
-        require(latitude == null || (latitude is Number && latitude.toDouble().isFinite() && latitude.toDouble() in -90.0..90.0)) {
-            "The GPS latitude is invalid. Refresh the location or enter the address manually."
-        }
-        require(longitude == null || (longitude is Number && longitude.toDouble().isFinite() && longitude.toDouble() in -180.0..180.0)) {
-            "The GPS longitude is invalid. Refresh the location or enter the address manually."
+        val hasValidGpsPair = latitude is Number && longitude is Number &&
+            latitude.toDouble().isFinite() && latitude.toDouble() in -90.0..90.0 &&
+            longitude.toDouble().isFinite() && longitude.toDouble() in -180.0..180.0
+        require((latitude == null && longitude == null) || hasValidGpsPair) {
+            "GPS coordinates must include a valid latitude and longitude pair. Refresh the location or enter the address manually."
         }
         val ref = db.collection("bookings").document()
         // Construct the payload from an explicit allowlist. Do not forward arbitrary
