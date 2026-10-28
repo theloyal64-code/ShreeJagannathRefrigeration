@@ -509,3 +509,21 @@ test("customer cannot change booking details while cancelling a pending booking"
     phone: "9123456789"
   }));
 });
+
+test("customer profile creation requires all expected typed fields and server timestamps", async () => {
+  const db = testEnv.authenticatedContext("customer-new").firestore();
+  await assertFails(setDoc(doc(db, "users/customer-new"), {
+    uid: "customer-new",
+    role: "customer"
+  }));
+  await assertSucceeds(setDoc(doc(db, "users/customer-new"), {
+    uid: "customer-new",
+    role: "customer",
+    displayName: "New Customer",
+    email: "customer-new@example.test",
+    photoURL: "",
+    phone: "",
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  }));
+});
