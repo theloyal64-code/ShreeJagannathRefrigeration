@@ -563,3 +563,49 @@ test("customer cannot create a booking with a non-Indian or malformed phone numb
     statusUpdatedAt: serverTimestamp()
   }));
 });
+
+test("status history events cannot be edited or deleted", async () => {
+  await seed([
+    ["users/customer-1", profile("customer-1")],
+    ["bookings/booking-1", booking("customer-1", { status: "Completed" })],
+    ["bookings/booking-1/statusHistory/event-1", {
+      changedBy: "admin-1",
+      oldStatus: "In Progress",
+      newStatus: "Completed",
+      createdAt: Timestamp.now()
+    }]
+  ]);
+  const db = testEnv.authenticatedContext("customer-1").firestore();
+  const eventRef = doc(db, "bookings/booking-1/statusHistory/event-1");
+  await assertFails(updateDoc(eventRef, { newStatus: "Cancelled" }));
+  await assertFails(deleteDoc(eventRef));
+});
+
+test("customer reviews must use a valid rating, bounded text, and server timestamp", async () => {
+  await seed([
+    ["users/customer-1", profile("customer-1")],
+    ["bookings/booking-1", booking("customer-1", { status: "Completed" })]
+  ]);
+  const db = testEnv.authenticatedContext("customer-1").firestore();
+  const ref = doc(db, "bookings/booking-1");
+  await assertFails(updateDoc(ref, {
+    rating: 6,
+    review: "Too high",
+    reviewedAt: serverTimestamp()
+  }));
+  await assertFails(updateDoc(ref, {
+    rating: 5,
+    review: "x".repeat(501),
+    reviewedAt: serverTimestamp()
+  }));
+  await assertFails(updateDoc(ref, {
+    rating: 5,
+    review: "Client-supplied timestamp",
+    reviewedAt: Timestamp.now()
+  }));
+  await assertSucceeds(updateDoc(ref, {
+    rating: 5,
+    review: "Valid review",
+    reviewedAt: serverTimestamp()
+  }));
+});
