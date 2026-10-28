@@ -420,13 +420,13 @@ private fun MainApp() {
                             try { cloudStore.updateStatus(booking.cloudId, currentUid, "admin", status) }
                             catch (error: Exception) { Toast.makeText(context, error.message ?: "Could not update booking status.", Toast.LENGTH_LONG).show() }
                         }
-                    }, onAssign = { id, mechanic ->
+                    }, onAssign = { id, mechanicUid ->
                         val booking = bookings.firstOrNull { it.id == id }
-                        val target = mechanicProfiles.firstOrNull { it["displayName"] == mechanic }
+                        val target = mechanicProfiles.firstOrNull { it["uid"] == mechanicUid }
                         if (booking != null && booking.cloudId.isNotBlank()) scope.launch {
                             try {
-                                if (mechanic.isBlank()) cloudStore.assignMechanic(booking.cloudId, "")
-                                else if (target != null) cloudStore.assignMechanic(booking.cloudId, target["uid"].orEmpty())
+                                if (mechanicUid.isBlank()) cloudStore.assignMechanic(booking.cloudId, "")
+                                else if (target != null) cloudStore.assignMechanic(booking.cloudId, mechanicUid)
                                 else throw IllegalStateException("Create a mechanic account and profile before assigning this job.")
                             } catch (error: Exception) { Toast.makeText(context, error.message ?: "Could not assign mechanic.", Toast.LENGTH_LONG).show() }
                         }
@@ -1943,9 +1943,10 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, mec
         }
     }
     val filters = listOf("All", "Pending", "Accepted", "On the Way", "In Progress", "Completed", "Rejected", "Cancelled")
-    val mechanicFilters = listOf("All mechanics", "Unassigned") + mechanicProfiles.mapNotNull { it["displayName"] }
+    val mechanicFilters = listOf("All mechanics", "Unassigned") + mechanicProfiles.mapNotNull { it["uid"]?.takeIf(String::isNotBlank) }
+    val mechanicFilterNames = mechanicProfiles.associate { it["uid"].orEmpty() to it["displayName"].orEmpty() }
     val visibleBookings = bookings
-        .filter { selectedMechanicFilter == "All mechanics" || (if (selectedMechanicFilter == "Unassigned") it.assignedMechanic.isBlank() else it.assignedMechanic == selectedMechanicFilter) }
+        .filter { selectedMechanicFilter == "All mechanics" || (if (selectedMechanicFilter == "Unassigned") it.assignedMechanicUid.isBlank() else it.assignedMechanicUid == selectedMechanicFilter) }
         .filter { selectedFilter == "All" || it.status == selectedFilter }
         .filter {
             val query = search.trim()
@@ -1983,7 +1984,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, mec
                 val mechanicFilterLabel = when (selectedMechanicFilter) {
                     "All mechanics" -> tr(language, "All mechanics", "ସମସ୍ତ ମେକାନିକ୍")
                     "Unassigned" -> tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି")
-                    else -> selectedMechanicFilter
+                    else -> mechanicFilterNames[selectedMechanicFilter].orEmpty().ifBlank { selectedMechanicFilter }
                 }
                 Text(tr(language, "Mechanic view: ", "ମେକାନିକ୍ ଭ୍ୟୁ: ") + mechanicFilterLabel)
             }
@@ -1993,7 +1994,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, mec
                         text = { Text(when (mechanic) {
                             "All mechanics" -> tr(language, "All mechanics", "ସମସ୍ତ ମେକାନିକ୍")
                             "Unassigned" -> tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି")
-                            else -> mechanic
+                            else -> mechanicFilterNames[mechanic].orEmpty().ifBlank { mechanic }
                         }) },
                         onClick = { selectedMechanicFilter = mechanic; mechanicFilterExpanded = false }
                     )
@@ -2079,17 +2080,21 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, mec
                             Spacer(Modifier.height(8.dp))
                             Text(issueLabel(language, b.issue))
                             var assignmentExpanded by remember(b.id) { mutableStateOf(false) }
-                            val mechanicOptions = listOf("Unassigned") + mechanicProfiles.mapNotNull { it["displayName"] }
+                            val mechanicOptions = listOf("" to "Unassigned") + mechanicProfiles.mapNotNull { profile ->
+                                val uid = profile["uid"].orEmpty()
+                                val name = profile["displayName"].orEmpty()
+                                if (uid.isBlank() || name.isBlank()) null else uid to name
+                            }
                             Box(Modifier.fillMaxWidth()) {
                                 OutlinedButton(onClick = { assignmentExpanded = true }, modifier = Modifier.fillMaxWidth()) {
                                     Text(tr(language, "Assigned mechanic: ", "ନିଯୁକ୍ତ ମେକାନିକ୍: ") + if (b.assignedMechanic.isBlank()) tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି") else b.assignedMechanic)
                                 }
                                 DropdownMenu(expanded = assignmentExpanded, onDismissRequest = { assignmentExpanded = false }) {
-                                    mechanicOptions.forEach { mechanic ->
+                                    mechanicOptions.forEach { (mechanicUid, mechanicName) ->
                                         DropdownMenuItem(
-                                            text = { Text(if (mechanic == "Unassigned") tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି") else mechanic) },
+                                            text = { Text(if (mechanicUid.isBlank()) tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି") else mechanicName) },
                                             onClick = {
-                                                onAssign(b.id, if (mechanic == "Unassigned") "" else mechanic)
+                                                onAssign(b.id, mechanicUid)
                                                 assignmentExpanded = false
                                             }
                                         )
