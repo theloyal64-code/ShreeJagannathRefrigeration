@@ -102,14 +102,17 @@ service cloud.firestore {
         && request.resource.data.phone.size() <= 20
         && request.resource.data.preferredSlot is string
         && request.resource.data.pincode is string
-        && (request.resource.data.latitude == null
+        // GPS coordinates are either both absent or a complete valid pair.
+        && (
+          (request.resource.data.latitude == null
+            && request.resource.data.longitude == null)
           || (request.resource.data.latitude is number
             && request.resource.data.latitude >= -90
-            && request.resource.data.latitude <= 90))
-        && (request.resource.data.longitude == null
-          || (request.resource.data.longitude is number
+            && request.resource.data.latitude <= 90
+            && request.resource.data.longitude is number
             && request.resource.data.longitude >= -180
-            && request.resource.data.longitude <= 180))
+            && request.resource.data.longitude <= 180)
+        )
         && request.resource.data.displayId is int
         && request.resource.data.assignedMechanic == ''
         && request.resource.data.assignedMechanicUid == ''
