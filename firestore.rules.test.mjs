@@ -470,3 +470,12 @@ test("admin cannot silently edit customer booking details while changing status"
     phone: "9123456789"
   }));
 });
+
+test("customer cannot promote their existing profile to admin", async () => {
+  await seed([["users/customer-1", profile("customer-1", "customer")]]);
+  const db = testEnv.authenticatedContext("customer-1").firestore();
+  await assertFails(updateDoc(doc(db, "users/customer-1"), {
+    role: "admin",
+    updatedAt: serverTimestamp()
+  }));
+});
