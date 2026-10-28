@@ -302,3 +302,23 @@ test("customer cannot inject unknown fields into a booking", async () => {
   });
   await assertFails(batch.commit());
 });
+
+test("customer cannot change booking status or assign a mechanic directly", async () => {
+  await seed([
+    ["users/customer-1", profile("customer-1")],
+    ["users/mechanic-1", profile("mechanic-1", "mechanic")],
+    ["bookings/booking-1", booking("customer-1")]
+  ]);
+  const db = testEnv.authenticatedContext("customer-1").firestore();
+  const ref = doc(db, "bookings/booking-1");
+
+  await assertFails(updateDoc(ref, {
+    status: "Accepted",
+    statusUpdatedAt: serverTimestamp()
+  }));
+  await assertFails(updateDoc(ref, {
+    assignedMechanic: "mechanic-1",
+    assignedMechanicUid: "mechanic-1"
+  }));
+});
+
