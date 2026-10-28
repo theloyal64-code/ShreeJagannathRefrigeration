@@ -183,8 +183,9 @@ internal class BookingCloudStore(
     }
 
     suspend fun updateStatus(cloudId: String, uid: String, role: String, nextStatus: String) {
-        requireActiveUser(uid)
         require(role in listOf("admin", "mechanic")) { "Your account does not have staff access." }
+        // Do not trust a role supplied by the UI: verify the signed-in user's profile.
+        requireRole(uid, role)
         val ref = db.collection("bookings").document(cloudId)
         val historyRef = ref.collection("statusHistory").document()
         db.runTransaction { transaction ->
