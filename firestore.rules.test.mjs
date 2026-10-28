@@ -261,3 +261,44 @@ test("admin cannot delete a booking and erase its service record", async () => {
   const db = testEnv.authenticatedContext("admin-1").firestore();
   await assertFails(deleteDoc(doc(db, "bookings/booking-1")));
 });
+
+test("customer cannot create a booking with out-of-range GPS coordinates", async () => {
+  await seed([["users/customer-1", profile("customer-1")]]);
+  const db = testEnv.authenticatedContext("customer-1").firestore();
+  const bookingRef = doc(collection(db, "bookings"));
+  const historyRef = doc(collection(bookingRef, "statusHistory"));
+  const batch = writeBatch(db);
+  batch.set(bookingRef, {
+    ...booking("customer-1", { latitude: 91, longitude: 181 }),
+    createdAt: serverTimestamp(),
+    statusUpdatedAt: serverTimestamp()
+  });
+  batch.set(historyRef, {
+    changedBy: "customer-1",
+    oldStatus: "",
+    newStatus: "Pending",
+    createdAt: serverTimestamp()
+  });
+  await assertFails(batch.commit());
+});
+
+test("customer cannot inject unknown fields into a booking", async () => {
+  await seed([["users/customer-1", profile("customer-1")]]);
+  const db = testEnv.authenticatedContext("customer-1").firestore();
+  const bookingRef = doc(collection(db, "bookings"));
+  const historyRef = doc(collection(bookingRef, "statusHistory"));
+  const batch = writeBatch(db);
+  batch.set(bookingRef, {
+    ...booking("customer-1"),
+    unexpectedPrivilegedField: true,
+    createdAt: serverTimestamp(),
+    statusUpdatedAt: serverTimestamp()
+  });
+  batch.set(historyRef, {
+    changedBy: "customer-1",
+    oldStatus: "",
+    newStatus: "Pending",
+    createdAt: serverTimestamp()
+  });
+  await assertFails(batch.commit());
+});
