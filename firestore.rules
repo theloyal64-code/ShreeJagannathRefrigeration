@@ -52,13 +52,20 @@ service cloud.firestore {
           'uid', 'role', 'displayName', 'email', 'photoURL', 'phone',
           'createdAt', 'updatedAt'
         ]);
-      allow update: if isAdmin()
-        || (isSelf(userId)
+      allow update: if (
+          isAdmin()
           && request.resource.data.role == resource.data.role
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'displayName', 'email', 'photoURL', 'phone', 'updatedAt'
-          ]));
-      allow delete: if isAdmin();
+          ])
+        ) || (
+          isSelf(userId)
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'displayName', 'email', 'photoURL', 'phone', 'updatedAt'
+          ])
+        );
+      allow delete: if false;
     }
 
     match /bookings/{bookingId} {
