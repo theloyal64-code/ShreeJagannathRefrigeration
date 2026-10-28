@@ -1,52 +1,94 @@
-# Cloud backend rollout plan
+# Firebase / Firestore Setup
 
-The Android app currently stores bookings on the device. Do not use it for real customer data until the cloud migration and access rules are complete.
+The Android app uses Firebase Authentication and Cloud Firestore for shared booking data. The PostgreSQL API in `backend/` is legacy scaffolding and is not part of the app's current database path.
 
-## Target architecture (low-maintenance, free-tier-first)
+## 1. Enable Firebase services
 
-- Firebase Authentication: separate customer and admin/mechanic identities.
-- Cloud Firestore: shared booking records and status updates.
-- Firebase Cloud Messaging: booking/status notifications.
-- Firebase Crashlytics: crash monitoring.
-- PostgreSQL API authorization: customers can read only their own bookings; authorized staff can read and update bookings for this business.
-- Automated billing alerts and a tested data-export/backup procedure before production.
+Firebase project: `shree-jagannath-refrigeration`
 
-## Database schema
+In Firebase Console:
 
-The PostgreSQL schema is versioned in `backend/src/schema.sql` and is applied by the API at startup. It defines users, bookings, booking status history, ownership relationships, role/status constraints, coordinate validation, and indexes. The `CREATE TABLE IF NOT EXISTS` statements support a fresh database and repeat startup; they do not retrofit new constraints onto tables created by older schema versions. For any already-used database, apply reviewed `ALTER TABLE` migrations separately before deploying schema changes.
+1. Open **Build → Authentication → Sign-in method**.
+2. Enable **Google** for customer sign-in.
+3. Enable **Email/Password** for owner/admin and mechanic accounts.
+4. Open **Build → Firestore Database** and create the database in the region appropriate for the service business. Start in production mode; do not use open test rules.
 
-## Required setup before Android integration
+## 2. Deploy database rules and indexes
 
-1. Create a Firebase project owned by the app developer.
-2. Register Android package `com.shreejagannath.refrigeration`.
-3. Download `google-services.json` for that Android app and add it to `app/google-services.json` (do not commit service-account private keys).
-4. Enable the chosen sign-in method in Firebase Authentication.
-5. Provision the PostgreSQL database used by the API and store its connection string only in the hosting provider's secret environment settings.
-6. Deploy the API and verify `/health` confirms database connectivity.
-7. Create the first admin with the one-time setup secret, then rotate/remove that setup secret according to the deployment procedure.
-8. Configure budget alerts and review the current free quotas and billing terms.
+Install Firebase CLI on a trusted computer, authenticate with a project owner account, then run from the repository root:
 
-## Booking data shape (initial proposal)
+```bash
+firebase login
+firebase use shree-jagannath-refrigeration
+firebase deploy --only firestore:rules,firestore:indexes
+```
 
-Each booking should have a server-generated document ID and fields such as:
-- `customerUid`
-- `customerName`
-- `phone`
-- `address`
-- `serviceType`
-- `issue`
-- `preferredVisitAt`
-- `status`
-- `createdAt` (server timestamp)
-- `updatedAt` (server timestamp)
+The deployment files are:
 
-Do not trust a role, customer ID, price, or status supplied by a client without validating it through authentication and security rules/server logic. Never ship admin passwords or service-account credentials in the APK.
+- `firestore.rules` — customer ownership, staff roles, allowed updates, status transition validation, and review rules.
+- `firestore.indexes.json` — composite indexes for customer booking history and mechanic job lists.
+- `firebase.json` — tells Firebase CLI where those files are.
 
-## Production gates
+Do not replace the rules with public read/write rules.
 
-- Remove demo credentials (`admin / demo1234`).
-- Implement sign-in and role assignment securely.
-- Enforce customer ownership and staff authorization in Firestore rules.
-- Test two separate devices: customer creates booking, staff sees it, staff changes status, customer sees the update.
-- Test offline/retry behavior, duplicate submissions, notifications, backup/restore, and denied unauthorized access.
-- Only then consider the cloud-connected version ready for real bookings.
+## 3. Firestore data model
+
+### `users/{firebaseAuthUid}`
+
+Customer profile is created by the app after Google sign-in. Fields include:
+
+- `uid`: Firebase Authentication UID
+- `role`: `customer`, `admin`, or `mechanic`
+- `displayName`, `email`, `photoURL`, `phone`
+- `createdAt`, `updatedAt`
+
+Customer clients may create only their own `customer` profile. Staff roles must be created by a trusted project owner in Firebase Console.
+
+### `bookings/{autoDocumentId}`
+
+Fields include:
+
+- `displayId`: short display number (not the security identifier)
+- `customerUid`: owner UID from Firebase Authentication
+- `customerName`, `phone`
+- `appliance`: AC Service, Refrigerator, Washing Machine, Microwave Oven, or Geyser
+- `issue`, `address`, `preferredSlot`, `pincode`
+- `latitude`, `longitude` (optional if GPS was not available)
+- `status`: Pending, Accepted, On the Way, In Progress, Completed, Rejected, or Cancelled
+- `assignedMechanic`, `assignedMechanicUid`
+- `rating`, `review`, `reviewedAt`
+- `createdAt`, `statusUpdatedAt`
+
+Each booking has a `statusHistory/{eventId}` subcollection for status events.
+
+## 4. Provision the owner and mechanics
+
+For each staff member:
+
+1. Create an email/password account in Firebase Authentication.
+2. Copy that account's exact Authentication UID.
+3. In Firestore, create `users/{UID}` with fields:
+   - `uid`: exact UID
+   - `role`: `admin` for the owner or `mechanic` for a technician
+   - `displayName`: staff display name (for mechanics, use the desired assignment label)
+   - `email`: account email
+   - `phone`: staff phone number
+4. Do not place staff passwords in Firestore, source code, or the APK.
+
+The app checks the Firestore role after Firebase email/password sign-in. A user who signs in as Admin must have `role: "admin"`; a Mechanic must have `role: "mechanic"`.
+
+## 5. Acceptance tests before real customer use
+
+- Google sign-in creates a customer profile under the correct UID.
+- Customer A cannot read or edit Customer B's bookings.
+- Customer booking is visible to the admin on another device.
+- Admin can assign a booking to an existing mechanic profile.
+- Only the assigned mechanic can view/update that mechanic's job.
+- Status transitions outside the permitted workflow are rejected.
+- Customer can cancel only a Pending booking.
+- Customer can review only a Completed booking, with a rating from 1 to 5 and review text no longer than 500 characters.
+- Unauthorized access to staff roles and unrelated bookings is denied.
+
+## 6. Operational note
+
+The GitHub repository contains the Firebase deployment configuration, but creating the Cloud Firestore database and enabling Authentication providers are project-console operations. They must be completed by someone with access to the Firebase project before the app can use the cloud database.
