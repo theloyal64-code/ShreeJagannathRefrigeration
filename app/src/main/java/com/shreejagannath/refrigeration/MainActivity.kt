@@ -706,7 +706,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             }
             listener = object : LocationListener {
                 override fun onLocationChanged(location: Location) {
-                    val accurate = location.hasAccuracy() && location.accuracy <= 25f
+                    val accurate = location.hasAccuracy() && location.accuracy <= 100f
                     if (!accurate) return
                     mainHandler.removeCallbacks(timeout)
                     listener?.let { runCatching { manager.removeUpdates(it) } }
@@ -757,7 +757,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                 .filter { it.hasAccuracy() && it.accuracy <= 25f }
                 .minByOrNull { it.accuracy }
             if (cached != null) listener!!.onLocationChanged(cached)
-            mainHandler.postDelayed(timeout, 30000L)
+            mainHandler.postDelayed(timeout, 20000L)
             Toast.makeText(context, tr(language, "Finding your location using GPS and network… Keep Location on; outdoors is best.", "GPS ଏବଂ ନେଟୱର୍କ ଦ୍ୱାରା ଲୋକେସନ୍ ଖୋଜାଯାଉଛି… Location ଚାଲୁ ରଖନ୍ତୁ; ଖୋଲା ସ୍ଥାନ ଭଲ।"), Toast.LENGTH_LONG).show()
         } catch (_: SecurityException) {
             mainHandler.removeCallbacks(timeout)
@@ -826,13 +826,13 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             Text(when {
                 locating -> tr(language, "Getting GPS location…", "GPS ଲୋକେସନ୍ ନିଆଯାଉଛି…")
                 latitude != null && longitude != null -> tr(language, "GPS location saved ✓ (tap to refresh)", "GPS ଲୋକେସନ୍ ସେଭ୍ ହେଲା ✓")
-                else -> tr(language, "Capture precise GPS location *", "ସଠିକ୍ GPS ଲୋକେସନ୍ ନିଅନ୍ତୁ *")
+                else -> tr(language, "Use GPS to fill address (optional)", "ସଠିକ୍ GPS ଲୋକେସନ୍ ନିଅନ୍ତୁ *")
             })
         }
         if (latitude != null && longitude != null) {
             Text(tr(language, "Precise GPS captured • ±${locationAccuracy?.toInt() ?: 0} m. This pin will guide the technician.", "ସଠିକ୍ GPS ମିଳିଲା • ±${locationAccuracy?.toInt() ?: 0} ମିଟର୍। ଏହି ପିନ୍ ଟେକ୍ନିସିଆନ୍‌ଙ୍କୁ ରାସ୍ତା ଦେଖାଇବ।"), fontSize = 12.sp, color = Color(0xFF16804A), fontWeight = FontWeight.SemiBold)
         } else {
-            Text(tr(language, "Required: capture GPS with accuracy within 25 metres before continuing.", "ଆଗକୁ ବଢ଼ିବା ପୂର୍ବରୁ ୨୫ ମିଟର୍ ମଧ୍ୟରେ ସଠିକତା ସହ GPS ନିଅନ୍ତୁ।"), fontSize = 12.sp, color = Color(0xFFB45309), fontWeight = FontWeight.SemiBold)
+            Text(tr(language, "Optional: GPS can fill your address automatically. You can also type it below.", "ଆଗକୁ ବଢ଼ିବା ପୂର୍ବରୁ ୨୫ ମିଟର୍ ମଧ୍ୟରେ ସଠିକତା ସହ GPS ନିଅନ୍ତୁ।"), fontSize = 12.sp, color = Color(0xFFB45309), fontWeight = FontWeight.SemiBold)
         }
         Spacer(Modifier.height(10.dp))
         OutlinedButton(
@@ -890,7 +890,6 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                 pincode.isNotBlank() && pincode.length != 6 -> tr(language, "Enter a valid 6-digit PIN code or leave it blank.", "ଠିକ୍ ୬ ଅଙ୍କର ପିନ୍ କୋଡ୍ ଦିଅନ୍ତୁ କିମ୍ବା ଖାଲି ରଖନ୍ତୁ।")
                 issue.isBlank() -> tr(language, "Please select a problem.", "ଦୟାକରି ସମସ୍ୟା ବାଛନ୍ତୁ।")
                 address.isBlank() -> tr(language, "Please enter your address.", "ଦୟାକରି ଠିକଣା ଲେଖନ୍ତୁ।")
-                latitude == null || longitude == null -> tr(language, "Precise GPS location is required. Capture a location within 25 metres accuracy.", "ସଠିକ୍ GPS ଲୋକେସନ୍ ଆବଶ୍ୟକ। ୨୫ ମିଟର୍ ସଠିକତା ମଧ୍ୟରେ ଲୋକେସନ୍ ନିଅନ୍ତୁ।")
                 else -> ""
             }
             if (error.isBlank()) showSubmitConfirmation = true
