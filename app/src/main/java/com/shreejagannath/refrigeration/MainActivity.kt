@@ -1856,9 +1856,20 @@ private fun MechanicHome(
                             if (booking.pincode.isNotBlank()) Text(tr(language, "PIN: ", "ପିନ୍: ") + booking.pincode, color = Color.Gray)
                             if (booking.latitude != null && booking.longitude != null) {
                                 TextButton(onClick = {
-                                    val uri = android.net.Uri.parse("google.navigation:q=${booking.latitude},${booking.longitude}")
-                                    runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri).apply { setPackage("com.google.android.apps.maps") }) }
-                                        .onFailure { Toast.makeText(context, tr(language, "Maps app unavailable.", "ମ୍ୟାପ୍ସ ଆପ୍ ଉପଲବ୍ଧ ନାହିଁ।"), Toast.LENGTH_SHORT).show() }
+                                    val latitude = booking.latitude
+                                    val longitude = booking.longitude
+                                    val navigationUri = android.net.Uri.parse("google.navigation:q=${latitude},${longitude}")
+                                    val directionsUri = android.net.Uri.parse("https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}")
+                                    val mapsIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, navigationUri)
+                                        .setPackage("com.google.android.apps.maps")
+                                    runCatching { context.startActivity(mapsIntent) }
+                                        .onFailure {
+                                            runCatching {
+                                                context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, directionsUri))
+                                            }.onFailure {
+                                                Toast.makeText(context, tr(language, "Could not open navigation. Please check your maps app or use the address shown above.", "ନାଭିଗେସନ୍ ଖୋଲିହେଲା ନାହିଁ। ମ୍ୟାପ୍ ଆପ୍ ଯାଞ୍ଚ କରନ୍ତୁ କିମ୍ବା ଉପରେ ଥିବା ଠିକଣା ବ୍ୟବହାର କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                                            }
+                                        }
                                 }) { Text(tr(language, "Navigate to customer", "ଗ୍ରାହକଙ୍କ ପାଖକୁ ଯାଆନ୍ତୁ")) }
                             }
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
