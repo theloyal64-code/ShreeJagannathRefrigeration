@@ -221,6 +221,14 @@ private fun MainApp() {
             bookings = emptyList()
             return@LaunchedEffect
         }
+
+        // Clear the previous account's state immediately when the UID changes.
+        // Do not leave an old customer's bookings visible while the new query loads.
+        accountRole = ""
+        cloudError = ""
+        mechanicProfiles = emptyList()
+        bookings = emptyList()
+
         try {
             val user = FirebaseAuth.getInstance().currentUser ?: throw IllegalStateException("Please sign in with Google again.")
             cloudStore.ensureCustomerProfile(user)
