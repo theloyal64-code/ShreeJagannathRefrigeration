@@ -83,8 +83,8 @@ internal class BookingCloudStore(
         val phone = (values["phone"] as? String)?.trim().orEmpty()
         val issue = (values["issue"] as? String)?.trim().orEmpty()
         val address = (values["address"] as? String)?.trim().orEmpty()
-        val preferredSlot = values["preferredSlot"] as? String
-        val pincode = values["pincode"] as? String
+        val preferredSlot = (values["preferredSlot"] as? String)?.trim()
+        val pincode = (values["pincode"] as? String)?.trim()
         val latitude = values["latitude"]
         val longitude = values["longitude"]
 
@@ -97,7 +97,12 @@ internal class BookingCloudStore(
         require(phone.length in 7..20) { "Enter a valid contact number." }
         require(issue.isNotEmpty() && issue.length <= 200) { "Select a valid problem." }
         require(address.isNotEmpty() && address.length <= 1000) { "Enter a service address with at most 1000 characters." }
-        require(preferredSlot != null && pincode != null) { "Booking details are incomplete. Please review the form." }
+        require(preferredSlot != null && preferredSlot.length <= 100 && pincode != null) {
+            "Booking details are incomplete. Please review the form."
+        }
+        require(pincode.isEmpty() || (pincode.length == 6 && pincode.all(Char::isDigit))) {
+            "Enter a valid six-digit PIN code or leave it blank."
+        }
         require(latitude == null || (latitude is Number && latitude.toDouble().isFinite() && latitude.toDouble() in -90.0..90.0)) {
             "The GPS latitude is invalid. Refresh the location or enter the address manually."
         }
@@ -110,6 +115,8 @@ internal class BookingCloudStore(
             put("phone", phone)
             put("issue", issue)
             put("address", address)
+            put("preferredSlot", preferredSlot)
+            put("pincode", pincode)
             put("displayId", (ref.id.hashCode() and 0x7fffffff))
             put("customerUid", uid)
             put("status", "Pending")
