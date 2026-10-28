@@ -674,6 +674,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
     var pincode by remember { mutableStateOf("") }
     var latitude by remember { mutableStateOf<Double?>(null) }
     var longitude by remember { mutableStateOf<Double?>(null) }
+    var locationAccuracy by remember { mutableStateOf<Float?>(null) }
     var locating by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
     var issueExpanded by remember { mutableStateOf(false) }
@@ -696,10 +697,19 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             }
             val listener = object : LocationListener {
                 override fun onLocationChanged(location: Location) {
-                    latitude = location.latitude
-                    longitude = location.longitude
-                    locating = false
-                    Toast.makeText(context, tr(language, "GPS location saved for this booking.", "ଏହି ବୁକିଂ ପାଇଁ GPS ଲୋକେସନ୍ ସେଭ୍ ହେଲା।"), Toast.LENGTH_SHORT).show()
+                    if (location.hasAccuracy() && location.accuracy <= 25f) {
+                        latitude = location.latitude
+                        longitude = location.longitude
+                        locationAccuracy = location.accuracy
+                        locating = false
+                        Toast.makeText(context, tr(language, "Precise location captured (±${location.accuracy.toInt()} m).", "ସଠିକ୍ ଲୋକେସନ୍ ମିଳିଲା (±${location.accuracy.toInt()} ମିଟର୍)।"), Toast.LENGTH_LONG).show()
+                    } else {
+                        locating = false
+                        latitude = null
+                        longitude = null
+                        locationAccuracy = if (location.hasAccuracy()) location.accuracy else null
+                        Toast.makeText(context, tr(language, "Location accuracy is not sufficient yet. Move to an open area and retry GPS.", "ଲୋକେସନ୍ ସଠିକତା ଯଥେଷ୍ଟ ନୁହେଁ। ଖୋଲା ସ୍ଥାନକୁ ଯାଇ ପୁଣି GPS ଚେଷ୍ଟା କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                    }
                 }
             }
             @Suppress("DEPRECATION")
@@ -719,7 +729,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             Toast.makeText(context, tr(language, "Location permission denied. You can still enter your address.", "ଲୋକେସନ୍ ଅନୁମତି ମିଳିଲା ନାହିଁ। ଠିକଣା ଲେଖିପାରିବେ।"), Toast.LENGTH_LONG).show()
         }
     }
-    Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFFEAF2FB), Color(0xFFF7F9FC)))).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 14.dp)) {
+    Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFFDCEBFA), Color(0xFFF1EAFE), Color(0xFFE1F4F1)))).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 14.dp)) {
         Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = Navy), elevation = CardDefaults.cardElevation(3.dp)) {
             Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
                 Surface(shape = RoundedCornerShape(16.dp), color = Color.White.copy(alpha = 0.14f)) {
@@ -734,7 +744,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             }
         }
         Spacer(Modifier.height(14.dp))
-        Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(2.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFDCE6F0))) {
+        Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFEFC)), elevation = CardDefaults.cardElevation(4.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBFD8F3))) {
             Column(Modifier.fillMaxWidth().padding(16.dp)) {
                 Text(tr(language, "Customer details", "ଗ୍ରାହକ ବିବରଣୀ"), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Navy)
                 Text(tr(language, "Tell us how to contact you.", "ଆପଣଙ୍କ ସହ ଯୋଗାଯୋଗ ପାଇଁ ବିବରଣୀ ଦିଅନ୍ତୁ।"), fontSize = 12.sp, color = Color(0xFF687789))
@@ -766,11 +776,13 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             Text(when {
                 locating -> tr(language, "Getting GPS location…", "GPS ଲୋକେସନ୍ ନିଆଯାଉଛି…")
                 latitude != null && longitude != null -> tr(language, "GPS location saved ✓ (tap to refresh)", "GPS ଲୋକେସନ୍ ସେଭ୍ ହେଲା ✓")
-                else -> tr(language, "Use current GPS location (optional)", "ବର୍ତ୍ତମାନ GPS ଲୋକେସନ୍ ବ୍ୟବହାର କରନ୍ତୁ (ଇଚ୍ଛାଧୀନ)")
+                else -> tr(language, "Capture precise GPS location *", "ସଠିକ୍ GPS ଲୋକେସନ୍ ନିଅନ୍ତୁ *")
             })
         }
         if (latitude != null && longitude != null) {
-            Text(tr(language, "Location will be shared with the mechanic for this booking.", "ଏହି ବୁକିଂ ପାଇଁ ଲୋକେସନ୍ ମେକାନିକ୍‌ଙ୍କ ସହ ସେୟାର୍ ହେବ।"), fontSize = 12.sp, color = Color(0xFF16804A))
+            Text(tr(language, "Precise GPS captured • ±${locationAccuracy?.toInt() ?: 0} m. This pin will guide the technician.", "ସଠିକ୍ GPS ମିଳିଲା • ±${locationAccuracy?.toInt() ?: 0} ମିଟର୍। ଏହି ପିନ୍ ଟେକ୍ନିସିଆନ୍‌ଙ୍କୁ ରାସ୍ତା ଦେଖାଇବ।"), fontSize = 12.sp, color = Color(0xFF16804A), fontWeight = FontWeight.SemiBold)
+        } else {
+            Text(tr(language, "Required: capture GPS with accuracy within 25 metres before continuing.", "ଆଗକୁ ବଢ଼ିବା ପୂର୍ବରୁ ୨୫ ମିଟର୍ ମଧ୍ୟରେ ସଠିକତା ସହ GPS ନିଅନ୍ତୁ।"), fontSize = 12.sp, color = Color(0xFFB45309), fontWeight = FontWeight.SemiBold)
         }
         Spacer(Modifier.height(10.dp))
         OutlinedButton(
@@ -828,6 +840,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                 pincode.isNotBlank() && pincode.length != 6 -> tr(language, "Enter a valid 6-digit PIN code or leave it blank.", "ଠିକ୍ ୬ ଅଙ୍କର ପିନ୍ କୋଡ୍ ଦିଅନ୍ତୁ କିମ୍ବା ଖାଲି ରଖନ୍ତୁ।")
                 issue.isBlank() -> tr(language, "Please select a problem.", "ଦୟାକରି ସମସ୍ୟା ବାଛନ୍ତୁ।")
                 address.isBlank() -> tr(language, "Please enter your address.", "ଦୟାକରି ଠିକଣା ଲେଖନ୍ତୁ।")
+                latitude == null || longitude == null -> tr(language, "Precise GPS location is required. Capture a location within 25 metres accuracy.", "ସଠିକ୍ GPS ଲୋକେସନ୍ ଆବଶ୍ୟକ। ୨୫ ମିଟର୍ ସଠିକତା ମଧ୍ୟରେ ଲୋକେସନ୍ ନିଅନ୍ତୁ।")
                 else -> ""
             }
             if (error.isBlank()) showSubmitConfirmation = true
