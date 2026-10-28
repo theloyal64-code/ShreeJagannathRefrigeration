@@ -142,7 +142,7 @@ private fun loadBookings(context: Context): List<ServiceBooking> {
     }
 }
 
-private fun canTransitionBookingStatus(current: String, next: String): Boolean = when (current) {
+internal fun canTransitionBookingStatus(current: String, next: String): Boolean = when (current) {
     "Pending" -> next in listOf("Accepted", "Rejected", "Cancelled")
     "Accepted" -> next in listOf("On the Way", "Cancelled")
     "On the Way" -> next in listOf("In Progress", "Cancelled")
