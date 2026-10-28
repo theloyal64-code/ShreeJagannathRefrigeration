@@ -429,3 +429,44 @@ test("unassigned mechanic cannot change a booking status", async () => {
   });
   await assertFails(batch.commit());
 });
+
+test("customer cannot read another customer's booking history", async () => {
+  await seed([
+    ["users/customer-1", profile("customer-1")],
+    ["users/customer-2", profile("customer-2")],
+    ["bookings/booking-2", booking("customer-2")],
+    ["bookings/booking-2/statusHistory/event-1", {
+      changedBy: "customer-2",
+      oldStatus: "",
+      newStatus: "Pending",
+      createdAt: Timestamp.now()
+    }]
+  ]);
+  const db = testEnv.authenticatedContext("customer-1").firestore();
+  await assertFails(getDoc(doc(db, "bookings/booking-2/statusHistory/event-1")));
+});
+
+test("mechanic cannot assign themselves to a booking", async () => {
+  await seed([
+    ["users/mechanic-1", profile("mechanic-1", "mechanic")],
+    ["bookings/booking-1", booking("customer-1")]
+  ]);
+  const db = testEnv.authenticatedContext("mechanic-1").firestore();
+  await assertFails(updateDoc(doc(db, "bookings/booking-1"), {
+    assignedMechanicUid: "mechanic-1",
+    assignedMechanic: "mechanic-1"
+  }));
+});
+
+test("admin cannot silently edit customer booking details while changing status", async () => {
+  await seed([
+    ["users/admin-1", profile("admin-1", "admin")],
+    ["bookings/booking-1", booking("customer-1")]
+  ]);
+  const db = testEnv.authenticatedContext("admin-1").firestore();
+  await assertFails(updateDoc(doc(db, "bookings/booking-1"), {
+    status: "Accepted",
+    statusUpdatedAt: serverTimestamp(),
+    phone: "9123456789"
+  }));
+});
