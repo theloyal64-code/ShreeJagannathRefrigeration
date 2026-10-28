@@ -96,7 +96,7 @@ private val issueOptions = mapOf(
     "Microwave Oven" to listOf("Not heating", "Not turning on", "Sparking inside", "Turntable not moving", "Making noise", "Door problem", "Display not working", "Uneven heating", "Burning smell", "Buttons not responding"),
     "Geyser" to listOf("No hot water", "Water not heating enough", "Water leakage", "Not turning on", "Trips electricity", "Making noise", "Takes too long to heat", "Hot water runs out quickly", "Rusty water", "Installation / servicing")
 )
-data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val preferredSlot: String = "", val pincode: String = "", val status: String = "Pending", val createdAt: Long = System.currentTimeMillis(), val latitude: Double? = null, val longitude: Double? = null, val statusUpdatedAt: Long = createdAt, val assignedMechanic: String = "", val rating: Int = 0, val review: String = "", val reviewedAt: Long = 0L)
+data class ServiceBooking(val id: Int, val customer: String, val phone: String, val appliance: String, val issue: String, val address: String, val preferredSlot: String = "", val pincode: String = "", val status: String = "Pending", val createdAt: Long = System.currentTimeMillis(), val latitude: Double? = null, val longitude: Double? = null, val statusUpdatedAt: Long = createdAt, val assignedMechanic: String = "", val rating: Int = 0, val review: String = "", val reviewedAt: Long = 0L, val cloudId: String = "", val customerUid: String = "", val assignedMechanicUid: String = "")
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -129,7 +129,10 @@ private fun loadBookings(context: Context): List<ServiceBooking> {
                 assignedMechanic = item.optString("assignedMechanic", ""),
                 rating = item.optInt("rating", 0),
                 review = item.optString("review", ""),
-                reviewedAt = item.optLong("reviewedAt", 0L)
+                reviewedAt = item.optLong("reviewedAt", 0L),
+                cloudId = item.optString("cloudId", ""),
+                customerUid = item.optString("customerUid", ""),
+                assignedMechanicUid = item.optString("assignedMechanicUid", "")
             )
         }
     } catch (_: Exception) {
@@ -166,6 +169,9 @@ private fun saveBookings(context: Context, bookings: List<ServiceBooking>) {
             put("reviewedAt", booking.reviewedAt)
             put("latitude", booking.latitude ?: JSONObject.NULL)
             put("longitude", booking.longitude ?: JSONObject.NULL)
+            put("cloudId", booking.cloudId)
+            put("customerUid", booking.customerUid)
+            put("assignedMechanicUid", booking.assignedMechanicUid)
         })
     }
     context.getSharedPreferences(BOOKING_PREFS, Context.MODE_PRIVATE)
