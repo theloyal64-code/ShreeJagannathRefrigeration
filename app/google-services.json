@@ -1,41 +1,41 @@
 {
   "project_info": {
-    "project_number": "232900772497",
-    "project_id": "shree-jagannath-refriger-fd14d",
-    "storage_bucket": "shree-jagannath-refriger-fd14d.firebasestorage.app"
+    "project_number": "991045162363",
+    "project_id": "shree-jagannath-refrigeration",
+    "storage_bucket": "shree-jagannath-refrigeration.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:232900772497:android:9bb66c505668a9b94d7530",
+        "mobilesdk_app_id": "1:991045162363:android:88b96cee6d6c8b7783d9de",
         "android_client_info": {
           "package_name": "com.shreejagannath.refrigeration"
         }
       },
       "oauth_client": [
         {
-          "client_id": "232900772497-7p9c9fi1o4cn1749uobp7u62t65fvklj.apps.googleusercontent.com",
+          "client_id": "991045162363-10uc979f9jqondtf424l0eqfdh55r23j.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.shreejagannath.refrigeration",
-            "certificate_hash": "75174cf6ad1ea768c4ec29756f908b5e9a5be784"
+            "certificate_hash": "936b9e3cdb9492b6f6530fa0c6d0050c34b9fa4b"
           }
         },
         {
-          "client_id": "232900772497-1s0tpqu8jfnjaenu0kthpumbbnu9qse6.apps.googleusercontent.com",
+          "client_id": "991045162363-3m05bluppag5eqbi2rofb09n1qfl41el.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyA9hxXfUGzXFPknyVL8Ag3Vl8AgyNysym8"
+          "current_key": "AIzaSyAvXn1gZl2BvtTmqxEsp7fM1l2YrVoMRks"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "232900772497-1s0tpqu8jfnjaenu0kthpumbbnu9qse6.apps.googleusercontent.com",
+              "client_id": "991045162363-3m05bluppag5eqbi2rofb09n1qfl41el.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
