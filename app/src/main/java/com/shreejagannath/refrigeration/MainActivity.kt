@@ -302,6 +302,20 @@ private fun MainApp() {
                         }
                     }) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
                 }
+                ,actions = {
+                    if (screen in listOf("customer", "form", "history", "review", "bookingConfirmation")) {
+                        TextButton(onClick = {
+                            FirebaseAuth.getInstance().signOut()
+                            currentUid = ""
+                            accountRole = ""
+                            mechanicProfiles = emptyList()
+                            bookings = emptyList()
+                            screen = "welcome"
+                        }) {
+                            Text(tr(language, "Sign out", "ଲଗଆଉଟ୍"), color = Color.White)
+                        }
+                    }
+                }
             )
         }) { insets ->
             Box(Modifier.fillMaxSize().background(Page).padding(insets)) {
