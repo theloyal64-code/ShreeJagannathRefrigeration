@@ -782,9 +782,9 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                 Text(tr(language, "Customer details", "ଗ୍ରାହକ ବିବରଣୀ"), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Navy)
                 Text(tr(language, "Tell us how to contact you.", "ଆପଣଙ୍କ ସହ ଯୋଗାଯୋଗ ପାଇଁ ବିବରଣୀ ଦିଅନ୍ତୁ।"), fontSize = 12.sp, color = Color(0xFF687789))
                 Spacer(Modifier.height(12.dp))
-        OutlinedTextField(name, { name = it }, label = { Text(tr(language, "Customer name *", "ଗ୍ରାହକଙ୍କ ନାମ *")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.White, unfocusedContainerColor = Color(0xFFF9FBFF), focusedBorderColor = Color(0xFF2B75B9), unfocusedBorderColor = Color(0xFFB7CDE4)), leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Navy) })
+        OutlinedTextField(name, { name = it }, label = { Text(tr(language, "Customer name *", "ଗ୍ରାହକଙ୍କ ନାମ *")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.White, unfocusedContainerColor = Color.White, focusedBorderColor = Color(0xFF2676B9), unfocusedBorderColor = Color(0xFFB6CBE0)), leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Navy) })
         Spacer(Modifier.height(10.dp))
-        OutlinedTextField(phone, { phone = it.filter(Char::isDigit).take(10) }, label = { Text(tr(language, "Mobile number *", "ମୋବାଇଲ୍ ନମ୍ବର *")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(14.dp), leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Navy) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
+        OutlinedTextField(phone, { phone = it.filter(Char::isDigit).take(10) }, label = { Text(tr(language, "Mobile number *", "ମୋବାଇଲ୍ ନମ୍ବର *")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.White, unfocusedContainerColor = Color.White, focusedBorderColor = Color(0xFF2676B9), unfocusedBorderColor = Color(0xFFB6CBE0)), leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Navy) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
         Spacer(Modifier.height(10.dp))
         Text(tr(language, "Select the problem *", "ସମସ୍ୟା ବାଛନ୍ତୁ *"), fontWeight = FontWeight.SemiBold, color = Navy)
         Box {
@@ -794,7 +794,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             }
         }
         Spacer(Modifier.height(10.dp))
-        OutlinedTextField(address, { address = it }, label = { Text(tr(language, "Full address / area *", "ପୂରା ଠିକଣା / ଅଞ୍ଚଳ *")) }, modifier = Modifier.fillMaxWidth(), minLines = 2, shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.White, unfocusedContainerColor = Color(0xFFF9FBFF), focusedBorderColor = Color(0xFF2B75B9), unfocusedBorderColor = Color(0xFFB7CDE4)))
+        OutlinedTextField(address, { address = it }, label = { Text(tr(language, "Full address / area *", "ପୂରା ଠିକଣା / ଅଞ୍ଚଳ *")) }, modifier = Modifier.fillMaxWidth(), minLines = 2, shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.White, unfocusedContainerColor = Color.White, focusedBorderColor = Color(0xFF2676B9), unfocusedBorderColor = Color(0xFFB6CBE0)))
         Spacer(Modifier.height(8.dp))
         OutlinedButton(onClick = {
             val fine = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
@@ -805,7 +805,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             } else {
                 locationPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
             }
-        }, modifier = Modifier.fillMaxWidth(), enabled = !locating) {
+        }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), enabled = !locating, shape = RoundedCornerShape(15.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Navy)) {
             Text(when {
                 locating -> tr(language, "Getting GPS location…", "GPS ଲୋକେସନ୍ ନିଆଯାଉଛି…")
                 latitude != null && longitude != null -> tr(language, "GPS location saved ✓ (tap to refresh)", "GPS ଲୋକେସନ୍ ସେଭ୍ ହେଲା ✓")
