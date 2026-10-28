@@ -210,15 +210,19 @@ service cloud.firestore {
           && parentBookingAfter().status == request.resource.data.newStatus
           && (
             (isAdmin()
+              && parentBooking().status == request.resource.data.oldStatus
               && canTransition(request.resource.data.oldStatus, request.resource.data.newStatus))
             || (isMechanic()
               && parentBooking().assignedMechanicUid == request.auth.uid
+              && parentBooking().status == request.resource.data.oldStatus
               && canTransition(request.resource.data.oldStatus, request.resource.data.newStatus))
             || (parentBookingAfter().customerUid == request.auth.uid
               && ((request.resource.data.oldStatus == ''
-                    && request.resource.data.newStatus == 'Pending')
+                    && request.resource.data.newStatus == 'Pending'
+                    && !exists(/databases/$(database)/documents/bookings/$(bookingId)))
                 || (request.resource.data.oldStatus == 'Pending'
-                    && request.resource.data.newStatus == 'Cancelled')))
+                    && request.resource.data.newStatus == 'Cancelled'
+                    && parentBooking().status == 'Pending')))
           );
         // Status history is an audit trail: clients cannot edit or delete events.
         allow update, delete: if false;
