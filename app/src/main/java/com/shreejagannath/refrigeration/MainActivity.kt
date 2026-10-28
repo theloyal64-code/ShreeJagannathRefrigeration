@@ -1854,12 +1854,15 @@ private fun MechanicHome(
                             Text(booking.address, color = Color.Gray)
                             if (booking.preferredSlot.isNotBlank()) Text(tr(language, "Preferred visit: ", "ପସନ୍ଦର ସମୟ: ") + booking.preferredSlot, color = Color.Gray)
                             if (booking.pincode.isNotBlank()) Text(tr(language, "PIN: ", "ପିନ୍: ") + booking.pincode, color = Color.Gray)
-                            if (booking.latitude != null && booking.longitude != null) {
+                            if ((booking.latitude != null && booking.longitude != null) || booking.address.isNotBlank()) {
                                 TextButton(onClick = {
-                                    val latitude = booking.latitude
-                                    val longitude = booking.longitude
-                                    val navigationUri = android.net.Uri.parse("google.navigation:q=${latitude},${longitude}")
-                                    val directionsUri = android.net.Uri.parse("https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}")
+                                    val destination = if (booking.latitude != null && booking.longitude != null) {
+                                        "${booking.latitude},${booking.longitude}"
+                                    } else {
+                                        android.net.Uri.encode(booking.address)
+                                    }
+                                    val navigationUri = android.net.Uri.parse("google.navigation:q=${destination}")
+                                    val directionsUri = android.net.Uri.parse("https://www.google.com/maps/dir/?api=1&destination=${destination}")
                                     val mapsIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, navigationUri)
                                         .setPackage("com.google.android.apps.maps")
                                     runCatching { context.startActivity(mapsIntent) }
