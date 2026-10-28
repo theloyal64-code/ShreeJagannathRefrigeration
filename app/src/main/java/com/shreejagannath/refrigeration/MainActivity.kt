@@ -196,13 +196,18 @@ private fun MainApp() {
         }
     }
 
-    LaunchedEffect(currentUid, accountRole) {
+    LaunchedEffect(currentUid, accountRole, profileLoadAttempt) {
         mechanicProfiles = if (accountRole == "admin") {
             try {
-                cloudStore.listMechanics(currentUid)
+                cloudStore.listMechanics(currentUid).also {
+                    if (FirebaseAuth.getInstance().currentUser?.uid == currentUid) cloudError = ""
+                }
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
-            } catch (_: Exception) {
+            } catch (error: Exception) {
+                if (FirebaseAuth.getInstance().currentUser?.uid == currentUid) {
+                    cloudError = error.message ?: "Unable to load mechanic accounts. Please retry."
+                }
                 emptyList()
             }
         } else emptyList()
