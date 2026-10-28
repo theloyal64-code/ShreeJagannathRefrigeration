@@ -359,24 +359,34 @@ private fun MainApp() {
                         screen = "mechanic"
                     })
                     "mechanic" -> MechanicHome(
-                        bookings = bookings.filter { it.assignedMechanic == loggedInMechanic },
+                        bookings = bookings.filter { it.assignedMechanicUid == currentUid },
                         mechanicName = loggedInMechanic,
                         language = language,
-                        onLogout = { loggedInMechanic = ""; screen = "welcome" },
+                        onLogout = { FirebaseAuth.getInstance().signOut(); currentUid = ""; accountRole = ""; loggedInMechanic = ""; screen = "welcome" },
                         onStatus = { id, status ->
-                            val booking = bookings.firstOrNull { it.id == id && it.assignedMechanic == loggedInMechanic }
-                            if (booking != null && canTransitionBookingStatus(booking.status, status)) {
-                                bookings = bookings.map { if (it.id == id) it.copy(status = status, statusUpdatedAt = System.currentTimeMillis()) else it }
+                            val booking = bookings.firstOrNull { it.id == id && it.assignedMechanicUid == currentUid }
+                            if (booking != null && booking.cloudId.isNotBlank()) scope.launch {
+                                try { cloudStore.updateStatus(booking.cloudId, currentUid, "mechanic", status) }
+                                catch (error: Exception) { Toast.makeText(context, error.message ?: "Could not update booking status.", Toast.LENGTH_LONG).show() }
                             }
                         }
                     )
-                    "admin" -> AdminHome(bookings, language, onStatus = { id, status ->
+                    "admin" -> AdminHome(bookings, language, mechanicProfiles, onStatus = { id, status ->
                         val booking = bookings.firstOrNull { it.id == id }
-                        if (booking != null && canTransitionBookingStatus(booking.status, status)) {
-                            bookings = bookings.map { if (it.id == id) it.copy(status = status, statusUpdatedAt = System.currentTimeMillis()) else it }
+                        if (booking != null && booking.cloudId.isNotBlank()) scope.launch {
+                            try { cloudStore.updateStatus(booking.cloudId, currentUid, "admin", status) }
+                            catch (error: Exception) { Toast.makeText(context, error.message ?: "Could not update booking status.", Toast.LENGTH_LONG).show() }
                         }
                     }, onAssign = { id, mechanic ->
-                        bookings = bookings.map { if (it.id == id) it.copy(assignedMechanic = mechanic) else it }
+                        val booking = bookings.firstOrNull { it.id == id }
+                        val target = mechanicProfiles.firstOrNull { it["displayName"] == mechanic }
+                        if (booking != null && booking.cloudId.isNotBlank()) scope.launch {
+                            try {
+                                if (mechanic.isBlank()) cloudStore.assignMechanic(booking.cloudId, "", "")
+                                else if (target != null) cloudStore.assignMechanic(booking.cloudId, target["uid"].orEmpty(), mechanic)
+                                else throw IllegalStateException("Create a mechanic account and profile before assigning this job.")
+                            } catch (error: Exception) { Toast.makeText(context, error.message ?: "Could not assign mechanic.", Toast.LENGTH_LONG).show() }
+                        }
                     })
                 }
             }
