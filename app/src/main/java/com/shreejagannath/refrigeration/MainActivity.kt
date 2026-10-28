@@ -394,16 +394,26 @@ private fun MainApp() {
                         onStatus = { id, status ->
                             val booking = bookings.firstOrNull { it.id == id && it.assignedMechanicUid == currentUid }
                             if (booking != null && booking.cloudId.isNotBlank()) scope.launch {
-                                try { cloudStore.updateStatus(booking.cloudId, currentUid, "mechanic", status) }
-                                catch (error: Exception) { Toast.makeText(context, error.message ?: "Could not update booking status.", Toast.LENGTH_LONG).show() }
+                                try {
+                                    cloudStore.updateStatus(booking.cloudId, currentUid, "mechanic", status)
+                                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                                    throw cancelled
+                                } catch (error: Exception) {
+                                    Toast.makeText(context, error.message ?: "Could not update booking status.", Toast.LENGTH_LONG).show()
+                                }
                             }
                         }
                     )
                     "admin" -> AdminHome(bookings, language, mechanicProfiles, onStatus = { id, status ->
                         val booking = bookings.firstOrNull { it.id == id }
                         if (booking != null && booking.cloudId.isNotBlank()) scope.launch {
-                            try { cloudStore.updateStatus(booking.cloudId, currentUid, "admin", status) }
-                            catch (error: Exception) { Toast.makeText(context, error.message ?: "Could not update booking status.", Toast.LENGTH_LONG).show() }
+                            try {
+                                cloudStore.updateStatus(booking.cloudId, currentUid, "admin", status)
+                            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                                throw cancelled
+                            } catch (error: Exception) {
+                                Toast.makeText(context, error.message ?: "Could not update booking status.", Toast.LENGTH_LONG).show()
+                            }
                         }
                     }, onAssign = { id, mechanicUid ->
                         val booking = bookings.firstOrNull { it.id == id }
@@ -413,7 +423,11 @@ private fun MainApp() {
                                 if (mechanicUid.isBlank()) cloudStore.assignMechanic(booking.cloudId, currentUid, "")
                                 else if (target != null) cloudStore.assignMechanic(booking.cloudId, currentUid, mechanicUid)
                                 else throw IllegalStateException("Create a mechanic account and profile before assigning this job.")
-                            } catch (error: Exception) { Toast.makeText(context, error.message ?: "Could not assign mechanic.", Toast.LENGTH_LONG).show() }
+                            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                                throw cancelled
+                            } catch (error: Exception) {
+                                Toast.makeText(context, error.message ?: "Could not assign mechanic.", Toast.LENGTH_LONG).show()
+                            }
                         }
                     })
                 }
