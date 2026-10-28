@@ -1,5 +1,6 @@
 package com.shreejagannath.refrigeration
 
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
@@ -75,13 +76,40 @@ internal class BookingCloudStore(
     }
 
     suspend fun createBooking(uid: String, values: Map<String, Any?>): String {
+        require(uid.isNotBlank() && FirebaseAuth.getInstance().currentUser?.uid == uid) {
+            "Your sign-in session changed. Please sign in again before booking."
+        }
+        val customerName = (values["customerName"] as? String)?.trim().orEmpty()
+        val phone = (values["phone"] as? String)?.trim().orEmpty()
+        val issue = (values["issue"] as? String)?.trim().orEmpty()
+        val address = (values["address"] as? String)?.trim().orEmpty()
+        val preferredSlot = values["preferredSlot"] as? String
+        val pincode = values["pincode"] as? String
+        val latitude = values["latitude"]
+        val longitude = values["longitude"]
+
         require(values["appliance"] is String && (values["appliance"] as String) in listOf(
             "AC Service", "Refrigerator", "Washing Machine", "Microwave Oven", "Geyser"
         )) { "Select a valid appliance." }
-        require((values["issue"] as? String)?.isNotBlank() == true) { "Select an issue." }
-        require((values["address"] as? String)?.isNotBlank() == true) { "Enter your service address." }
+        require(customerName.isNotEmpty() && customerName.length <= 100) {
+            "Enter a customer name with at most 100 characters."
+        }
+        require(phone.length in 7..20) { "Enter a valid contact number." }
+        require(issue.isNotEmpty() && issue.length <= 200) { "Select a valid problem." }
+        require(address.isNotEmpty() && address.length <= 1000) { "Enter a service address with at most 1000 characters." }
+        require(preferredSlot != null && pincode != null) { "Booking details are incomplete. Please review the form." }
+        require(latitude == null || (latitude is Number && latitude.toDouble().isFinite() && latitude.toDouble() in -90.0..90.0)) {
+            "The GPS latitude is invalid. Refresh the location or enter the address manually."
+        }
+        require(longitude == null || (longitude is Number && longitude.toDouble().isFinite() && longitude.toDouble() in -180.0..180.0)) {
+            "The GPS longitude is invalid. Refresh the location or enter the address manually."
+        }
         val ref = db.collection("bookings").document()
         val data = values.toMutableMap().apply {
+            put("customerName", customerName)
+            put("phone", phone)
+            put("issue", issue)
+            put("address", address)
             put("displayId", (ref.id.hashCode() and 0x7fffffff))
             put("customerUid", uid)
             put("status", "Pending")
