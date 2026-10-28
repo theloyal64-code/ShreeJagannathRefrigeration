@@ -296,7 +296,16 @@ private fun MainApp() {
                                         bookings = emptyList()
                                         Toast.makeText(context, tr(language, "This is a staff account. Please use Staff Login.", "ଏହା ଏକ ଷ୍ଟାଫ୍ ଆକାଉଣ୍ଟ। ଦୟାକରି Staff Login ବ୍ୟବହାର କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
                                     }
+                                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                                    throw cancelled
                                 } catch (error: Exception) {
+                                    if (FirebaseAuth.getInstance().currentUser?.uid == user.uid) {
+                                        FirebaseAuth.getInstance().signOut()
+                                        currentUid = ""
+                                        accountRole = ""
+                                        bookings = emptyList()
+                                        mechanicProfiles = emptyList()
+                                    }
                                     Toast.makeText(context, error.message ?: tr(language, "Could not verify your account. Please retry.", "ଆକାଉଣ୍ଟ ଯାଞ୍ଚ ହୋଇପାରିଲା ନାହିଁ। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
                                 }
                             }
@@ -1815,6 +1824,11 @@ private fun TeamLogin(language: AppLanguage, onAdminSuccess: () -> Unit, onMecha
                     }
                     if (expectedRole == "admin") onAdminSuccess()
                     else onMechanicSuccess(profile.getString("displayName")?.takeIf { it.isNotBlank() } ?: user.email?.substringBefore("@") ?: user.uid)
+                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                    // If authentication completed before the screen was cancelled,
+                    // do not leave a half-verified staff session active.
+                    FirebaseAuth.getInstance().signOut()
+                    throw cancelled
                 } catch (e: Exception) {
                     // Do not leave a partially authenticated staff account active if
                     // role/profile verification failed.
