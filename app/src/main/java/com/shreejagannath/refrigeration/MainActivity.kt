@@ -725,9 +725,10 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                             val postalCode = result?.postalCode.orEmpty()
                             mainHandler.post {
                                 if (formattedAddress.isNotBlank()) address = formattedAddress
+                                else if (address.isBlank()) address = "GPS coordinates: %.6f, %.6f".format(Locale.US, location.latitude, location.longitude)
                                 if (pincode.isBlank() && postalCode.length == 6) pincode = postalCode
                                 if (formattedAddress.isBlank()) {
-                                    Toast.makeText(context, tr(language, "GPS pin saved, but address lookup failed. Please type the address landmark manually.", "GPS ପିନ୍ ସେଭ୍ ହେଲା, କିନ୍ତୁ ଠିକଣା ମିଳିଲା ନାହିଁ। ଠିକଣା/ଲ୍ୟାଣ୍ଡମାର୍କ ନିଜେ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, tr(language, "GPS pin captured. Address lookup is unavailable, so coordinates were added; please add a nearby landmark.", "GPS ପିନ୍ ମିଳିଲା। ଠିକଣା ଖୋଜିହେଲା ନାହିଁ, ତେଣୁ କୋଅର୍ଡିନେଟ୍ ଯୋଡାଗଲା; ନିକଟସ୍ଥ ଲ୍ୟାଣ୍ଡମାର୍କ ଲେଖନ୍ତୁ।"), Toast.LENGTH_LONG).show()
                                 } else {
                                     Toast.makeText(context, tr(language, "Address filled from GPS. Please verify it before booking.", "GPS ରୁ ଠିକଣା ଭରାଗଲା। ବୁକିଂ ପୂର୍ବରୁ ଯାଞ୍ଚ କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
                                 }
@@ -740,11 +741,24 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                     }.start()
                 }
             }
-            val selectedProvider = if (manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) LocationManager.GPS_PROVIDER else LocationManager.NETWORK_PROVIDER
+            // Listen to GPS and network providers together. GPS may be enabled but have no fix indoors.
             @Suppress("DEPRECATION")
-            manager.requestLocationUpdates(selectedProvider, 1000L, 0f, listener!!, Looper.getMainLooper())
+            if (manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                manager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, listener!!, Looper.getMainLooper())
+            }
+            @Suppress("DEPRECATION")
+            if (manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                manager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000L, 0f, listener!!, Looper.getMainLooper())
+            }
+            // Use a recent cached fix immediately when it meets the requested accuracy.
+            val cached = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+                .filter { runCatching { manager.isProviderEnabled(it) }.getOrDefault(false) }
+                .mapNotNull { provider -> runCatching { @Suppress("DEPRECATION") manager.getLastKnownLocation(provider) }.getOrNull() }
+                .filter { it.hasAccuracy() && it.accuracy <= 25f }
+                .minByOrNull { it.accuracy }
+            if (cached != null) listener!!.onLocationChanged(cached)
             mainHandler.postDelayed(timeout, 30000L)
-            Toast.makeText(context, tr(language, "Getting precise GPS… keep Location on and wait up to 30 seconds.", "ସଠିକ୍ GPS ନିଆଯାଉଛି… Location ଚାଲୁ ରଖି ୩୦ ସେକେଣ୍ଡ ଅପେକ୍ଷା କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+            Toast.makeText(context, tr(language, "Finding your location using GPS and network… Keep Location on; outdoors is best.", "GPS ଏବଂ ନେଟୱର୍କ ଦ୍ୱାରା ଲୋକେସନ୍ ଖୋଜାଯାଉଛି… Location ଚାଲୁ ରଖନ୍ତୁ; ଖୋଲା ସ୍ଥାନ ଭଲ।"), Toast.LENGTH_LONG).show()
         } catch (_: SecurityException) {
             mainHandler.removeCallbacks(timeout)
             locating = false
