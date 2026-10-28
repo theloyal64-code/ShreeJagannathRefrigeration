@@ -75,7 +75,7 @@ service cloud.firestore {
         && request.resource.data.address.size() > 0
         && request.resource.data.phone is string
         && request.resource.data.keys().hasOnly([
-          'customerUid', 'customerName', 'phone', 'appliance', 'issue',
+          'customerUid', 'displayId', 'customerName', 'phone', 'appliance', 'issue',
           'address', 'preferredSlot', 'pincode', 'latitude', 'longitude',
           'status', 'assignedMechanic', 'assignedMechanicUid', 'rating',
           'review', 'createdAt', 'statusUpdatedAt'
@@ -88,7 +88,18 @@ service cloud.firestore {
 
       // Customers can only cancel their own pending booking or review a completed one.
       allow update: if signedIn() && (
-        isAdmin()
+        (isAdmin()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'statusUpdatedAt', 'assignedMechanic', 'assignedMechanicUid'
+          ])
+          && (
+            (request.resource.data.status == resource.data.status
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                'assignedMechanic', 'assignedMechanicUid'
+              ]))
+            || (validStatus(request.resource.data.status)
+              && canTransition(resource.data.status, request.resource.data.status))
+          ))
         || (isMechanic()
           && resource.data.assignedMechanicUid == request.auth.uid
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
@@ -136,8 +147,8 @@ service cloud.firestore {
             isAdmin()
             || (isMechanic() && parentBooking().assignedMechanicUid == request.auth.uid)
             || (parentBooking().customerUid == request.auth.uid
-              && parentBooking().status == 'Cancelled'
-              && request.resource.data.newStatus == 'Cancelled')
+              && ((parentBooking().status == 'Pending' && request.resource.data.newStatus == 'Pending')
+                || (parentBooking().status == 'Cancelled' && request.resource.data.newStatus == 'Cancelled')))
           );
         allow update, delete: if isAdmin();
       }
