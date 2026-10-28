@@ -291,20 +291,6 @@ private fun MainApp() {
             )
         }) { insets ->
             Box(Modifier.fillMaxSize().background(Page).padding(insets)) {
-                if (cloudError.isNotBlank() && screen != "welcome") {
-                    Card(
-                        modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFE8E8)),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = cloudError,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                            color = Color(0xFF9A1C1C),
-                            fontSize = 12.sp
-                        )
-                    }
-                }
                 when (screen) {
                     "welcome" -> Welcome(language, onLanguage = { language = it }, onCustomer = {
                         val user = FirebaseAuth.getInstance().currentUser
@@ -417,6 +403,20 @@ private fun MainApp() {
                             } catch (error: Exception) { Toast.makeText(context, error.message ?: "Could not assign mechanic.", Toast.LENGTH_LONG).show() }
                         }
                     })
+                }
+                if (cloudError.isNotBlank() && screen != "welcome") {
+                    Card(
+                        modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFE8E8)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = cloudError,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            color = Color(0xFF9A1C1C),
+                            fontSize = 12.sp
+                        )
+                    }
                 }
             }
         }
