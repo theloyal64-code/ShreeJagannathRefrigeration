@@ -546,3 +546,20 @@ test("customer profile metadata updates require typed values and a server timest
     updatedAt: serverTimestamp()
   }));
 });
+
+
+test("customer cannot create a booking with a non-Indian or malformed phone number", async () => {
+  await seed([["users/customer-1", profile("customer-1")]]);
+  const db = testEnv.authenticatedContext("customer-1").firestore();
+  const ref = doc(collection(db, "bookings"));
+  await assertFails(setDoc(ref, {
+    ...booking("customer-1", { phone: "call-me-123" }),
+    createdAt: serverTimestamp(),
+    statusUpdatedAt: serverTimestamp()
+  }));
+  await assertFails(setDoc(doc(collection(db, "bookings")), {
+    ...booking("customer-1", { phone: "1234567890" }),
+    createdAt: serverTimestamp(),
+    statusUpdatedAt: serverTimestamp()
+  }));
+});
