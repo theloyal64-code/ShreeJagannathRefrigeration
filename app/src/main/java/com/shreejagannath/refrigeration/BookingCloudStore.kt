@@ -54,14 +54,19 @@ internal class BookingCloudStore(
         onBookings: (List<Map<String, Any?>>) -> Unit,
         onError: (Exception) -> Unit
     ): ListenerRegistration {
+        requireActiveUser(uid)
+        require(role in listOf("customer", "admin", "mechanic")) {
+            "Your account role is invalid. Please sign in again or contact the administrator."
+        }
         val query: Query = when (role) {
             "admin" -> db.collection("bookings").orderBy("createdAt", Query.Direction.DESCENDING)
             "mechanic" -> db.collection("bookings")
                 .whereEqualTo("assignedMechanicUid", uid)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
-            else -> db.collection("bookings")
+            "customer" -> db.collection("bookings")
                 .whereEqualTo("customerUid", uid)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
+            else -> error("Unreachable role validation.")
         }
         return query.addSnapshotListener { snapshot, error ->
             if (error != null) {
