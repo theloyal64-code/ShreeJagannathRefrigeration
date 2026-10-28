@@ -200,6 +200,7 @@ private fun MainApp() {
     MaterialTheme(colorScheme = lightColorScheme(primary = Navy, secondary = Orange, background = Page)) {
         Scaffold(topBar = {
             if (screen != "welcome") TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Navy, titleContentColor = Color.White, navigationIconContentColor = Color.White, actionIconContentColor = Color.White),
                 title = { Text(when (screen) {
                     "customer" -> tr(language, "Book a Service", "ସେବା ବୁକ୍ କରନ୍ତୁ")
                     "form" -> tr(language, "Service Request", "ସେବା ଅନୁରୋଧ")
@@ -338,6 +339,7 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    GoogleSignInButton(language = language, onSignedIn = onCustomer, compact = true)
                     listOf(
                         AppLanguage.ENGLISH to "EN",
                         AppLanguage.ODIA to "ଓଡ଼ିଆ"
@@ -364,7 +366,7 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
             }
         }
         Row(
-            Modifier.fillMaxWidth().height(220.dp).padding(horizontal = 16.dp, vertical = 3.dp),
+            Modifier.fillMaxWidth().height(270.dp).padding(horizontal = 16.dp, vertical = 3.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1.05f), verticalArrangement = Arrangement.Center) {
@@ -407,7 +409,7 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Button(
                 onClick = onCustomer,
-                modifier = Modifier.fillMaxWidth().height(58.dp),
+                modifier = Modifier.fillMaxWidth().height(66.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0B4B86)),
                 contentPadding = PaddingValues(horizontal = 16.dp)
@@ -421,11 +423,10 @@ private fun Welcome(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, on
                 Text("❯", fontSize = 23.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(8.dp))
-            GoogleSignInButton(language = language, onSignedIn = onCustomer, compact = true)
             Spacer(Modifier.height(5.dp))
             OutlinedButton(
                 onClick = onAdmin,
-                modifier = Modifier.fillMaxWidth().height(54.dp),
+                modifier = Modifier.fillMaxWidth().height(62.dp),
                 shape = RoundedCornerShape(18.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Navy)
@@ -549,17 +550,22 @@ private fun GoogleSignInButton(language: AppLanguage, onSignedIn: () -> Unit, co
             }
         },
         enabled = !signingIn,
-        modifier = Modifier.fillMaxWidth().height(if (compact) 48.dp else 54.dp),
-        shape = RoundedCornerShape(16.dp)
+        modifier = if (compact) Modifier.size(34.dp) else Modifier.fillMaxWidth().height(54.dp),
+        shape = RoundedCornerShape(if (compact) 50.dp else 16.dp),
+        contentPadding = if (compact) PaddingValues(0.dp) else PaddingValues(horizontal = 16.dp)
     ) {
-        Text(if (signingIn) tr(language, "Signing in...", "ଲଗଇନ୍ ହେଉଛି...") else tr(language, "Continue with Google", "Google ସହିତ ଆଗକୁ ବଢ଼ନ୍ତୁ"), fontWeight = FontWeight.Bold)
+        if (compact) {
+            Text("G", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF4285F4))
+        } else {
+            Text(if (signingIn) tr(language, "Signing in...", "ଲଗଇନ୍ ହେଉଛି...") else tr(language, "Continue with Google", "Google ସହିତ ଆଗକୁ ବଢ଼ନ୍ତୁ"), fontWeight = FontWeight.Bold)
+        }
     }
 }
 
 @Composable
 private fun CustomerHome(appliances: List<Appliance>, bookings: List<ServiceBooking>, language: AppLanguage, onChoose: (Appliance) -> Unit, onHistory: () -> Unit) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+        modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFFEAF2FB), Color(0xFFF7F9FC)))).padding(horizontal = 16.dp),
         contentPadding = PaddingValues(top = 12.dp, bottom = 22.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -604,7 +610,8 @@ private fun CustomerHome(appliances: List<Appliance>, bookings: List<ServiceBook
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD9E5F2))
             ) {
                 Column(Modifier.padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1539,7 +1546,7 @@ private fun MechanicHome(
 ) {
     val context = LocalContext.current
     val activeCount = bookings.count { it.status in listOf("Accepted", "On the Way", "In Progress") }
-    Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+    Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFFEAF2FB), Color(0xFFF7F9FC)))).padding(horizontal = 16.dp)) {
         Spacer(Modifier.height(12.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -1658,7 +1665,7 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, onS
         }
         .sortedByDescending { it.id }
 
-    Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+    Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFFEAF2FB), Color(0xFFF7F9FC)))).padding(horizontal = 16.dp)) {
         Spacer(Modifier.height(14.dp))
         Text(tr(language, "Namaskar, Mechanic 👋", "ନମସ୍କାର, ମେକାନିକ୍ 👋"), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Navy)
         Text(tr(language, "Review requests, find customers and update service status.", "ଅନୁରୋଧ ଦେଖନ୍ତୁ, ଗ୍ରାହକ ଖୋଜନ୍ତୁ ଏବଂ ସେବା ସ୍ଥିତି ବଦଳାନ୍ତୁ।"), color = Color.Gray)
