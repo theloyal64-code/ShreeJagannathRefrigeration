@@ -1,0 +1,35 @@
+name: Firestore Security Rules Tests
+
+on:
+  push:
+    branches: ["feature/database-hardening"]
+    paths:
+      - "firestore.rules"
+      - "firestore.rules.test.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - "firebase.json"
+      - ".github/workflows/firestore-rules-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  firestore-rules:
+    name: Test Firestore rules in emulator (no Android build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: Install dependencies
+        run: npm install
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools
+      - name: Run Firestore emulator security tests
+        run: firebase emulators:exec --only firestore --project demo-shree-jagannath-refrigeration "npm run test:rules"
