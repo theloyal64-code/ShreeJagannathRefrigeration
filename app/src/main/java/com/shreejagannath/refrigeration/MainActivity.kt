@@ -1949,7 +1949,11 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, mec
     }
     val filters = listOf("All", "Pending", "Accepted", "On the Way", "In Progress", "Completed", "Rejected", "Cancelled")
     val mechanicFilters = listOf("All mechanics", "Unassigned") + mechanicProfiles.mapNotNull { it["uid"]?.takeIf(String::isNotBlank) }
-    val mechanicFilterNames = mechanicProfiles.associate { it["uid"].orEmpty() to it["displayName"].orEmpty() }
+    val mechanicFilterNames = mechanicProfiles.associate { profile ->
+        val uid = profile["uid"].orEmpty()
+        val name = profile["displayName"].orEmpty()
+        uid to if (mechanicProfiles.count { it["displayName"] == name } > 1) name + " · " + uid.takeLast(4) else name
+    }
     val visibleBookings = bookings
         .filter { selectedMechanicFilter == "All mechanics" || (if (selectedMechanicFilter == "Unassigned") it.assignedMechanicUid.isBlank() else it.assignedMechanicUid == selectedMechanicFilter) }
         .filter { selectedFilter == "All" || it.status == selectedFilter }
@@ -2088,7 +2092,12 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, mec
                             val mechanicOptions = listOf("" to "Unassigned") + mechanicProfiles.mapNotNull { profile ->
                                 val uid = profile["uid"].orEmpty()
                                 val name = profile["displayName"].orEmpty()
-                                if (uid.isBlank() || name.isBlank()) null else uid to name
+                                if (uid.isBlank() || name.isBlank()) null else {
+                                    val displayLabel = if (mechanicProfiles.count { it["displayName"] == name } > 1) {
+                                        name + " · " + uid.takeLast(4)
+                                    } else name
+                                    uid to displayLabel
+                                }
                             }
                             Box(Modifier.fillMaxWidth()) {
                                 OutlinedButton(onClick = { assignmentExpanded = true }, modifier = Modifier.fillMaxWidth()) {
