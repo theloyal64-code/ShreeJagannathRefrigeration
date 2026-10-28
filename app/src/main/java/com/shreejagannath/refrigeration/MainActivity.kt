@@ -207,11 +207,12 @@ private fun MainApp() {
     var currentUid by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser?.uid.orEmpty()) }
     var accountRole by remember { mutableStateOf("") }
     var cloudError by remember { mutableStateOf("") }
+    var profileLoadAttempt by remember { mutableIntStateOf(0) }
     var mechanicProfiles by remember { mutableStateOf<List<Map<String, String>>>(emptyList()) }
     var bookingListener by remember { mutableStateOf<ListenerRegistration?>(null) }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(currentUid) {
+    LaunchedEffect(currentUid, profileLoadAttempt) {
         bookingListener?.remove()
         bookingListener = null
         if (currentUid.isBlank()) {
@@ -416,12 +417,20 @@ private fun MainApp() {
                         colors = CardDefaults.cardColors(containerColor = Color(0xFFFFE8E8)),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text(
-                            text = cloudError,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                            color = Color(0xFF9A1C1C),
-                            fontSize = 12.sp
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(start = 14.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = cloudError,
+                                modifier = Modifier.weight(1f).padding(vertical = 4.dp),
+                                color = Color(0xFF9A1C1C),
+                                fontSize = 12.sp
+                            )
+                            TextButton(onClick = { profileLoadAttempt++ }) {
+                                Text(tr(language, "Retry", "ପୁଣି ଚେଷ୍ଟା"), color = Color(0xFF9A1C1C))
+                            }
+                        }
                     }
                 }
             }
