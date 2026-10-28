@@ -331,9 +331,10 @@ private fun MainApp() {
                     }, onAdmin = { screen = "adminLogin" })
                     "customer" -> CustomerHome(appliances, bookings, language,
                         onChoose = { chosen = it; screen = "form" }, onHistory = { screen = "history" })
-                    "form" -> RequestForm(chosen, language, onSubmit = { name, phone, issue, address, preferredSlot, pincode, latitude, longitude ->
+                    "form" -> RequestForm(chosen, language, onSubmit = { name, phone, issue, address, preferredSlot, pincode, latitude, longitude, onComplete ->
                         if (currentUid.isBlank() || accountRole != "customer") {
                             Toast.makeText(context, tr(language, "Please sign in with a customer Google account before booking.", "ବୁକିଂ ପୂର୍ବରୁ ଗ୍ରାହକ Google ଆକାଉଣ୍ଟରେ ଲଗଇନ୍ କରନ୍ତୁ।"), Toast.LENGTH_LONG).show()
+                            onComplete()
                         } else {
                             scope.launch {
                                 try {
@@ -353,6 +354,8 @@ private fun MainApp() {
                                     screen = "bookingConfirmation"
                                 } catch (error: Exception) {
                                     Toast.makeText(context, error.message ?: "Booking could not be saved. Please retry.", Toast.LENGTH_LONG).show()
+                                } finally {
+                                    onComplete()
                                 }
                             }
                         }
@@ -831,7 +834,7 @@ private fun CustomerHome(appliances: List<Appliance>, bookings: List<ServiceBook
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (String, String, String, String, String, String, Double?, Double?) -> Unit) {
+private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (String, String, String, String, String, String, Double?, Double?, () -> Unit) -> Unit) {
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var issue by remember { mutableStateOf("") }
@@ -1132,7 +1135,9 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                         if (!isSubmitting) {
                             isSubmitting = true
                             showSubmitConfirmation = false
-                            onSubmit(name.trim(), phone, issue.trim(), address.trim(), preferredSlot.trim(), pincode, latitude, longitude)
+                            onSubmit(name.trim(), phone, issue.trim(), address.trim(), preferredSlot.trim(), pincode, latitude, longitude) {
+                                isSubmitting = false
+                            }
                         }
                     }
                 ) {
