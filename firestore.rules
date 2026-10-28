@@ -101,6 +101,7 @@ service cloud.firestore {
           ])
           && (
             (request.resource.data.status == resource.data.status
+              && resource.data.status in ['Pending', 'Accepted']
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                 'assignedMechanic', 'assignedMechanicUid'
               ]))
