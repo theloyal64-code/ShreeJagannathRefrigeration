@@ -187,7 +187,8 @@ service cloud.firestore {
           ))
       );
 
-      allow delete: if isAdmin();
+      // Keep service and audit records intact; cancel bookings instead of deleting them.
+      allow delete: if false;
 
       match /statusHistory/{eventId} {
         function parentBooking() {
