@@ -200,8 +200,9 @@ private fun MainApp() {
     var chosen by remember { mutableStateOf(appliances[0]) }
     var loggedInMechanic by remember { mutableStateOf("") }
     var lastCreatedBookingId by remember { mutableIntStateOf(0) }
-    var bookings by remember { mutableStateOf(loadBookings(context)) }
-    var nextId by remember { mutableIntStateOf((bookings.maxOfOrNull { it.id } ?: 1000) + 1) }
+    // Cloud Firestore is the source of truth. Never render another account's
+    // cached bookings from SharedPreferences before the authenticated query returns.
+    var bookings by remember { mutableStateOf(emptyList<ServiceBooking>()) }
     val cloudStore = remember { BookingCloudStore() }
     var currentUid by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser?.uid.orEmpty()) }
     var accountRole by remember { mutableStateOf("") }
@@ -246,9 +247,6 @@ private fun MainApp() {
 
     DisposableEffect(Unit) { onDispose { bookingListener?.remove() } }
 
-    LaunchedEffect(bookings) {
-        saveBookings(context, bookings)
-    }
     LaunchedEffect(language) {
         context.getSharedPreferences(BOOKING_PREFS, Context.MODE_PRIVATE).edit()
             .putString(LANGUAGE_KEY, language.name).apply()
@@ -1785,6 +1783,9 @@ private fun TeamLogin(language: AppLanguage, onAdminSuccess: () -> Unit, onMecha
                     if (expectedRole == "admin") onAdminSuccess()
                     else onMechanicSuccess(profile.getString("displayName")?.takeIf { it.isNotBlank() } ?: user.email?.substringBefore("@") ?: user.uid)
                 } catch (e: Exception) {
+                    // Do not leave a partially authenticated staff account active if
+                    // role/profile verification failed.
+                    FirebaseAuth.getInstance().signOut()
                     error = e.message ?: tr(language, "Sign-in failed. Check your details and try again.", "ଲଗଇନ୍ ବିଫଳ। ବିବରଣୀ ଯାଞ୍ଚ କରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।")
                 } finally { signingIn = false }
             }
