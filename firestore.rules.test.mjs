@@ -382,3 +382,50 @@ test("customer cannot create a booking with letters in the PIN code", async () =
   await assertFails(batch.commit());
 });
 
+test("admin cannot skip required booking status transitions", async () => {
+  await seed([
+    ["users/admin-1", profile("admin-1", "admin")],
+    ["bookings/booking-1", booking("customer-1", { status: "Pending" })]
+  ]);
+  const db = testEnv.authenticatedContext("admin-1").firestore();
+  const bookingRef = doc(db, "bookings/booking-1");
+  const historyRef = doc(collection(bookingRef, "statusHistory"));
+  const batch = writeBatch(db);
+  batch.update(bookingRef, {
+    status: "Completed",
+    statusUpdatedAt: serverTimestamp()
+  });
+  batch.set(historyRef, {
+    changedBy: "admin-1",
+    oldStatus: "Pending",
+    newStatus: "Completed",
+    createdAt: serverTimestamp()
+  });
+  await assertFails(batch.commit());
+});
+
+test("unassigned mechanic cannot change a booking status", async () => {
+  await seed([
+    ["users/mechanic-1", profile("mechanic-1", "mechanic")],
+    ["bookings/booking-1", booking("customer-1", {
+      status: "Accepted",
+      assignedMechanicUid: "mechanic-2",
+      assignedMechanic: "mechanic-2"
+    })]
+  ]);
+  const db = testEnv.authenticatedContext("mechanic-1").firestore();
+  const bookingRef = doc(db, "bookings/booking-1");
+  const historyRef = doc(collection(bookingRef, "statusHistory"));
+  const batch = writeBatch(db);
+  batch.update(bookingRef, {
+    status: "On the Way",
+    statusUpdatedAt: serverTimestamp()
+  });
+  batch.set(historyRef, {
+    changedBy: "mechanic-1",
+    oldStatus: "Accepted",
+    newStatus: "On the Way",
+    createdAt: serverTimestamp()
+  });
+  await assertFails(batch.commit());
+});
