@@ -90,12 +90,26 @@ service cloud.firestore {
         ]
         && request.resource.data.issue is string
         && request.resource.data.issue.size() > 0
+        && request.resource.data.issue.size() <= 200
         && request.resource.data.address is string
         && request.resource.data.address.size() > 0
+        && request.resource.data.address.size() <= 1000
         && request.resource.data.customerName is string
         && request.resource.data.customerName.size() > 0
+        && request.resource.data.customerName.size() <= 100
         && request.resource.data.phone is string
-        && request.resource.data.phone.size() > 0
+        && request.resource.data.phone.size() >= 7
+        && request.resource.data.phone.size() <= 20
+        && request.resource.data.preferredSlot is string
+        && request.resource.data.pincode is string
+        && (request.resource.data.latitude == null
+          || (request.resource.data.latitude is number
+            && request.resource.data.latitude >= -90
+            && request.resource.data.latitude <= 90))
+        && (request.resource.data.longitude == null
+          || (request.resource.data.longitude is number
+            && request.resource.data.longitude >= -180
+            && request.resource.data.longitude <= 180))
         && request.resource.data.displayId is int
         && request.resource.data.assignedMechanic == ''
         && request.resource.data.assignedMechanicUid == ''
@@ -103,6 +117,12 @@ service cloud.firestore {
         && request.resource.data.review == ''
         && request.resource.data.createdAt == request.time
         && request.resource.data.statusUpdatedAt == request.time
+        && request.resource.data.keys().hasAll([
+          'customerUid', 'displayId', 'customerName', 'phone', 'appliance', 'issue',
+          'address', 'preferredSlot', 'pincode', 'latitude', 'longitude',
+          'status', 'assignedMechanic', 'assignedMechanicUid', 'rating',
+          'review', 'createdAt', 'statusUpdatedAt'
+        ])
         && request.resource.data.keys().hasOnly([
           'customerUid', 'displayId', 'customerName', 'phone', 'appliance', 'issue',
           'address', 'preferredSlot', 'pincode', 'latitude', 'longitude',
