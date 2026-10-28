@@ -843,7 +843,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
         Spacer(Modifier.height(10.dp))
         Text(tr(language, "Select the problem *", "ସମସ୍ୟା ବାଛନ୍ତୁ *"), fontWeight = FontWeight.SemiBold, color = Navy)
         Box {
-            OutlinedButton(onClick = { issueExpanded = true }, modifier = Modifier.fillMaxWidth()) { Text(if (issue.isBlank()) tr(language, "Choose a problem", "ସମସ୍ୟା ବାଛନ୍ତୁ") else issueLabel(language, issue)) }
+            Button(onClick = { issueExpanded = true }, modifier = Modifier.fillMaxWidth()) { Text(if (issue.isBlank()) tr(language, "Choose a problem", "ସମସ୍ୟା ବାଛନ୍ତୁ") else issueLabel(language, issue)) }
             DropdownMenu(expanded = issueExpanded, onDismissRequest = { issueExpanded = false }, modifier = Modifier.heightIn(max = 340.dp)) {
                 issues.forEach { option -> DropdownMenuItem(text = { Text(issueLabel(language, option)) }, leadingIcon = { Text(problemEmoji(option), fontSize = 22.sp) }, onClick = { issue = option; issueExpanded = false }) }
             }
@@ -862,7 +862,7 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             }
         }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), enabled = !locating, shape = RoundedCornerShape(15.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Navy)) {
             Text(when {
-                locating -> tr(language, "Getting GPS location…", "GPS ଲୋକେସନ୍ ନିଆଯାଉଛି…")
+                locating -> tr(language, "Finding location…", "ଲୋକେସନ୍ ଖୋଜାଯାଉଛି…")
                 latitude != null && longitude != null -> tr(language, "GPS location saved ✓ (tap to refresh)", "GPS ଲୋକେସନ୍ ସେଭ୍ ହେଲା ✓")
                 else -> tr(language, "📍 Use GPS to fill address (optional)", "📍 GPS ଦ୍ୱାରା ଠିକଣା ଭରନ୍ତୁ (ଇଚ୍ଛାଧୀନ)")
             })
