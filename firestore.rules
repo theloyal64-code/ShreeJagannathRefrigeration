@@ -110,7 +110,7 @@ service cloud.firestore {
         && request.resource.data.customerName.size() <= 100
         && request.resource.data.phone is string
         && request.resource.data.phone.size() == 10
-        && request.resource.data.phone.matches('^[6-9][0-9]{9}
+        && request.resource.data.phone.matches('^[6-9][0-9]{9}')
         && request.resource.data.preferredSlot is string
         && request.resource.data.preferredSlot.size() <= 100
         && request.resource.data.pincode is string
