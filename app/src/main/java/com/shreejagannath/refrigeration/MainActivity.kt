@@ -1492,7 +1492,7 @@ private fun TeamLogin(language: AppLanguage, onAdminSuccess: () -> Unit, onMecha
     val mechanics = listOf("Mechanic 1", "Mechanic 2", "Senior Technician")
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.Center) {
         Text(tr(language, "Team Access", "ଟିମ୍ ପ୍ରବେଶ"), fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Navy)
-        Text(tr(language, "Demo login only. Do not use these credentials for a live business.", "ଏହା କେବଳ ଡେମୋ ଲଗଇନ୍। ଲାଇଭ୍ ବ୍ୟବସାୟରେ ଏହି ଲଗଇନ୍ ବ୍ୟବହାର କରନ୍ତୁ ନାହିଁ।"), color = Color.Gray)
+        Text(tr(language, "Team login will be enabled after secure server authentication is configured.", "ସୁରକ୍ଷିତ ସର୍ଭର ଲଗଇନ୍ ସେଟ୍ ହେବା ପରେ ଟିମ୍ ଲଗଇନ୍ ଚାଲୁ ହେବ।"), color = Color.Gray)
         Spacer(Modifier.height(18.dp))
         Box {
             OutlinedButton(onClick = { roleMenu = true }, modifier = Modifier.fillMaxWidth()) { Text(tr(language, "Login role: ", "ଲଗଇନ୍ ଭୂମିକା: ") + role) }
@@ -1515,18 +1515,16 @@ private fun TeamLogin(language: AppLanguage, onAdminSuccess: () -> Unit, onMecha
                 }
             }
             Spacer(Modifier.height(10.dp))
-            OutlinedTextField(pin, { pin = it; error = "" }, label = { Text(tr(language, "Demo PIN", "ଡେମୋ ପିନ୍")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
+            OutlinedTextField(pin, { pin = it; error = "" }, label = { Text(tr(language, "Team PIN", "ଟିମ୍ ପିନ୍")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
         }
         if (error.isNotBlank()) { Spacer(Modifier.height(8.dp)); Text(error, color = MaterialTheme.colorScheme.error) }
         Spacer(Modifier.height(16.dp))
         Button(onClick = {
-            if (role == "Admin") {
-                if (username == "admin" && password == "demo1234") onAdminSuccess()
-                else error = tr(language, "Demo admin login: admin / demo1234", "ଡେମୋ ଆଡମିନ୍ ଲଗଇନ୍: admin / demo1234")
-            } else {
-                if (pin == "1234") onMechanicSuccess(mechanic)
-                else error = tr(language, "Demo mechanic PIN: 1234", "ଡେମୋ ମେକାନିକ୍ ପିନ୍: 1234")
-            }
+            error = tr(
+                language,
+                "Secure team login is not configured yet. Demo credentials have been removed.",
+                "ସୁରକ୍ଷିତ ଟିମ୍ ଲଗଇନ୍ ଏପର୍ଯ୍ୟନ୍ତ ସେଟ୍ ହୋଇନାହିଁ। ଡେମୋ କ୍ରେଡେନ୍ସିଆଲ୍ ହଟାଯାଇଛି।"
+            )
         }, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text(tr(language, "Login", "ଲଗଇନ୍")) }
     }
 }
