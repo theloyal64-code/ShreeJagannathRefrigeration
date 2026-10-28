@@ -346,7 +346,8 @@ private fun MainApp() {
                             }
                         ) else screen = "history"
                     }
-                    "adminLogin" -> TeamLogin(language, onAdminSuccess = { screen = "admin" }, onAdminPreview = { screen = "admin" }, onMechanicSuccess = { mechanic ->
+                    "adminLogin" -> TeamLogin(language, onAdminSuccess = { currentUid = FirebaseAuth.getInstance().currentUser?.uid.orEmpty(); screen = "admin" }, onMechanicSuccess = { mechanic ->
+                        currentUid = FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
                         loggedInMechanic = mechanic
                         screen = "mechanic"
                     })
@@ -1697,62 +1698,55 @@ private fun BookingProgress(status: String, language: AppLanguage) {
 }
 
 @Composable
-private fun TeamLogin(language: AppLanguage, onAdminSuccess: () -> Unit, onAdminPreview: () -> Unit, onMechanicSuccess: (String) -> Unit) {
+private fun TeamLogin(language: AppLanguage, onAdminSuccess: () -> Unit, onMechanicSuccess: (String) -> Unit) {
     var role by remember { mutableStateOf("Admin") }
-    var mechanic by remember { mutableStateOf("Mechanic 1") }
-    var mechanicMenu by remember { mutableStateOf(false) }
     var roleMenu by remember { mutableStateOf(false) }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
-    val mechanics = listOf("Mechanic 1", "Mechanic 2", "Senior Technician")
+    var signingIn by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.Center) {
-        Text(tr(language, "Team Access", "ଟିମ୍ ପ୍ରବେଶ"), fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Navy)
-        Text(tr(language, "Team login will be enabled after secure server authentication is configured.", "ସୁରକ୍ଷିତ ସର୍ଭର ଲଗଇନ୍ ସେଟ୍ ହେବା ପରେ ଟିମ୍ ଲଗଇନ୍ ଚାଲୁ ହେବ।"), color = Color.Gray)
+        Text(tr(language, "Secure Team Access", "ସୁରକ୍ଷିତ ଟିମ୍ ପ୍ରବେଶ"), fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Navy)
+        Text(tr(language, "Use the team email and password provisioned by the app administrator.", "ଆପ୍ ଆଡମିନ୍ ଦେଇଥିବା ଟିମ୍ ଇମେଲ୍ ଓ ପାସୱାର୍ଡ ବ୍ୟବହାର କରନ୍ତୁ।"), color = Color.Gray)
         Spacer(Modifier.height(18.dp))
         Box {
             OutlinedButton(onClick = { roleMenu = true }, modifier = Modifier.fillMaxWidth()) { Text(tr(language, "Login role: ", "ଲଗଇନ୍ ଭୂମିକା: ") + role) }
             DropdownMenu(expanded = roleMenu, onDismissRequest = { roleMenu = false }) {
-                listOf("Admin", "Mechanic").forEach { item ->
-                    DropdownMenuItem(text = { Text(item) }, onClick = { role = item; error = ""; roleMenu = false })
-                }
+                listOf("Admin", "Mechanic").forEach { item -> DropdownMenuItem(text = { Text(item) }, onClick = { role = item; error = ""; roleMenu = false }) }
             }
         }
         Spacer(Modifier.height(10.dp))
-        if (role == "Admin") {
-            OutlinedTextField(username, { username = it }, label = { Text(tr(language, "Admin username", "ଆଡମିନ୍ ୟୁଜରନେମ୍")) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-            Spacer(Modifier.height(10.dp))
-            OutlinedTextField(password, { password = it }, label = { Text(tr(language, "Password", "ପାସୱାର୍ଡ")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
-        } else {
-            Box {
-                OutlinedButton(onClick = { mechanicMenu = true }, modifier = Modifier.fillMaxWidth()) { Text(tr(language, "Mechanic profile: ", "ମେକାନିକ୍ ପ୍ରୋଫାଇଲ୍: ") + mechanic) }
-                DropdownMenu(expanded = mechanicMenu, onDismissRequest = { mechanicMenu = false }) {
-                    mechanics.forEach { item -> DropdownMenuItem(text = { Text(item) }, onClick = { mechanic = item; mechanicMenu = false }) }
-                }
-            }
-            Spacer(Modifier.height(10.dp))
-            OutlinedTextField(pin, { pin = it; error = "" }, label = { Text(tr(language, "Team PIN", "ଟିମ୍ ପିନ୍")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
-        }
+        OutlinedTextField(username, { username = it; error = "" }, label = { Text(tr(language, "Team email", "ଟିମ୍ ଇମେଲ୍")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email))
+        Spacer(Modifier.height(10.dp))
+        OutlinedTextField(password, { password = it; error = "" }, label = { Text(tr(language, "Password", "ପାସୱାର୍ଡ")) }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
         if (error.isNotBlank()) { Spacer(Modifier.height(8.dp)); Text(error, color = MaterialTheme.colorScheme.error) }
         Spacer(Modifier.height(16.dp))
-        Button(onClick = {
-            error = tr(
-                language,
-                "Secure team login is not configured yet. Demo credentials have been removed.",
-                "ସୁରକ୍ଷିତ ଟିମ୍ ଲଗଇନ୍ ଏପର୍ଯ୍ୟନ୍ତ ସେଟ୍ ହୋଇନାହିଁ। ଡେମୋ କ୍ରେଡେନ୍ସିଆଲ୍ ହଟାଯାଇଛି।"
-            )
-        }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) { Text(tr(language, "Sign in securely", "ସୁରକ୍ଷିତ ଲଗଇନ୍")) }
-        if (BuildConfig.DEBUG) {
-            Spacer(Modifier.height(12.dp))
-            OutlinedButton(onClick = onAdminPreview, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(14.dp)) {
-                Text(tr(language, "Preview Admin Dashboard (UI only)", "ଆଡମିନ୍ ଡ୍ୟାସବୋର୍ଡ ଦେଖନ୍ତୁ (କେବଳ UI)"))
+        Button(enabled = !signingIn && username.isNotBlank() && password.isNotBlank(), onClick = {
+            signingIn = true
+            error = ""
+            scope.launch {
+                try {
+                    val result = FirebaseAuth.getInstance().signInWithEmailAndPassword(username.trim(), password).await()
+                    val user = result.user ?: throw IllegalStateException("Team account was not returned.")
+                    val profile = FirebaseFirestore.getInstance().collection("users").document(user.uid).get().await()
+                    val expectedRole = if (role == "Admin") "admin" else "mechanic"
+                    if (!profile.exists() || profile.getString("role") != expectedRole) {
+                        FirebaseAuth.getInstance().signOut()
+                        throw IllegalStateException(tr(language, "This account is not provisioned for the selected team role.", "ଏହି ଆକାଉଣ୍ଟ ଚୟନିତ ଟିମ୍ ଭୂମିକା ପାଇଁ ସେଟ୍ ହୋଇନାହିଁ।"))
+                    }
+                    if (expectedRole == "admin") onAdminSuccess()
+                    else onMechanicSuccess(profile.getString("displayName")?.takeIf { it.isNotBlank() } ?: user.email?.substringBefore("@") ?: user.uid)
+                } catch (e: Exception) {
+                    error = e.message ?: tr(language, "Sign-in failed. Check your details and try again.", "ଲଗଇନ୍ ବିଫଳ। ବିବରଣୀ ଯାଞ୍ଚ କରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।")
+                } finally { signingIn = false }
             }
-            Text(tr(language, "Developer preview only; hidden in release builds. This does not authenticate an owner.", "କେବଳ ଡେଭଲପର୍ ପ୍ରିଭ୍ୟୁ; ରିଲିଜ୍ ବିଲ୍ଡରେ ଲୁଚାଯିବ। ଏହା ମାଲିକ ଲଗଇନ୍ ନୁହେଁ।"), fontSize = 11.sp, color = Color.Gray)
+        }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
+            Text(if (signingIn) tr(language, "Signing in...", "ଲଗଇନ୍ ହେଉଛି...") else tr(language, "Sign in securely", "ସୁରକ୍ଷିତ ଲଗଇନ୍"))
         }
     }
 }
-
 @Composable
 private fun MechanicHome(
     bookings: List<ServiceBooking>,
