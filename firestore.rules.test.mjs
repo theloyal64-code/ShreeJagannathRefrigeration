@@ -479,3 +479,33 @@ test("customer cannot promote their existing profile to admin", async () => {
     updatedAt: serverTimestamp()
   }));
 });
+
+test("assigned mechanic cannot edit customer booking details while changing status", async () => {
+  await seed([
+    ["users/mechanic-1", profile("mechanic-1", "mechanic")],
+    ["bookings/booking-1", booking("customer-1", {
+      status: "Accepted",
+      assignedMechanicUid: "mechanic-1",
+      assignedMechanic: "mechanic-1"
+    })]
+  ]);
+  const db = testEnv.authenticatedContext("mechanic-1").firestore();
+  await assertFails(updateDoc(doc(db, "bookings/booking-1"), {
+    status: "On the Way",
+    statusUpdatedAt: serverTimestamp(),
+    address: "Different address"
+  }));
+});
+
+test("customer cannot change booking details while cancelling a pending booking", async () => {
+  await seed([
+    ["users/customer-1", profile("customer-1")],
+    ["bookings/booking-1", booking("customer-1")]
+  ]);
+  const db = testEnv.authenticatedContext("customer-1").firestore();
+  await assertFails(updateDoc(doc(db, "bookings/booking-1"), {
+    status: "Cancelled",
+    statusUpdatedAt: serverTimestamp(),
+    phone: "9123456789"
+  }));
+});
