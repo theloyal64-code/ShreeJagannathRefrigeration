@@ -1741,7 +1741,7 @@ private fun ServiceReviewScreen(
         }
         Spacer(Modifier.height(8.dp))
         Text(
-            tr(language, "Your in-app feedback is saved on this device. Google Play rating opens the app's Play Store listing when it is published.", "ଆପ୍‌ରେ ଦିଆଯାଇଥିବା ମତାମତ ଏହି ଡିଭାଇସ୍‌ରେ ସେଭ୍ ହୁଏ। ଆପ୍ ପ୍ରକାଶିତ ହେଲେ Google Play ରେଟିଂ ତାହାର ଲିଷ୍ଟିଂ ଖୋଲିବ।"),
+            tr(language, "Your feedback is saved with this service booking and can be viewed across your signed-in devices. Google Play rating opens the app listing after publication.", "ଆପଣଙ୍କ ମତାମତ ଏହି ସେବା ବୁକିଂ ସହିତ ସେଭ୍ ହୁଏ ଏବଂ ଲଗ୍‌ଇନ୍ କରାଯାଇଥିବା ଅନ୍ୟ ଡିଭାଇସ୍‌ରେ ମଧ୍ୟ ଦେଖିହେବ। ଆପ୍ ପ୍ରକାଶିତ ହେଲେ Google Play ରେଟିଂ ଲିଷ୍ଟିଂ ଖୋଲିବ।"),
             fontSize = 12.sp, color = Color.Gray
         )
     }
