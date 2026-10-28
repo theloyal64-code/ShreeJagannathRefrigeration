@@ -857,6 +857,8 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
     val issues = issueOptions[appliance.name] ?: listOf("Not working", "Making noise", "Leakage", "Other")
     val context = LocalContext.current
     fun captureCurrentLocation() {
+        // Preserve a manual address entered while GPS/geocoding is in progress.
+        val addressAtRequest = address
         val mainHandler = Handler(Looper.getMainLooper())
         val fusedClient = LocationServices.getFusedLocationProviderClient(context)
         val cancellation = CancellationTokenSource()
@@ -884,11 +886,15 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
                 } catch (_: Exception) { }
 
                 mainHandler.post {
+                    // A reverse-geocoder result can arrive several seconds later.
+                    // Do not overwrite an address the customer edited after tapping GPS.
+                    val addressUnchangedSinceRequest = address == addressAtRequest
+                    val canFillAddress = address.isBlank() || address.startsWith("GPS pin:") || addressUnchangedSinceRequest
                     if (formattedAddress.isNotBlank()) {
-                        address = formattedAddress
+                        if (canFillAddress) address = formattedAddress
                     } else {
                         val coordinates = "GPS pin: %.6f, %.6f".format(Locale.US, location.latitude, location.longitude)
-                        if (address.isBlank() || address.startsWith("GPS pin:")) address = coordinates
+                        if (canFillAddress) address = coordinates
                     }
                     if (pincode.isBlank() && postalCode.length == 6) pincode = postalCode
                     val accuracyText = locationAccuracy?.let { " ±${it.toInt()} m" }.orEmpty()
