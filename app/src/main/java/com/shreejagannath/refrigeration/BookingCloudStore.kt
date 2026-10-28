@@ -104,19 +104,21 @@ internal class BookingCloudStore(
 
     suspend fun cancelPendingBooking(cloudId: String, uid: String) {
         val ref = db.collection("bookings").document(cloudId)
-        db.runTransaction { transaction ->
+        val oldStatus = db.runTransaction { transaction ->
             val snapshot = transaction.get(ref)
             require(snapshot.exists()) { "Booking not found." }
             require(snapshot.getString("customerUid") == uid) { "You cannot cancel another customer's booking." }
-            require(snapshot.getString("status") == "Pending") { "Only pending bookings can be cancelled." }
+            val status = snapshot.getString("status") ?: "Pending"
+            require(status == "Pending") { "Only pending bookings can be cancelled." }
             transaction.update(ref, mapOf(
                 "status" to "Cancelled",
                 "statusUpdatedAt" to FieldValue.serverTimestamp()
             ))
+            status
         }.await()
         ref.collection("statusHistory").add(mapOf(
             "changedBy" to uid,
-            "oldStatus" to "Pending",
+            "oldStatus" to oldStatus,
             "newStatus" to "Cancelled",
             "createdAt" to FieldValue.serverTimestamp()
         )).await()
@@ -124,23 +126,25 @@ internal class BookingCloudStore(
 
     suspend fun updateStatus(cloudId: String, uid: String, role: String, nextStatus: String) {
         val ref = db.collection("bookings").document(cloudId)
-        db.runTransaction { transaction ->
+        val oldStatus = db.runTransaction { transaction ->
             val snapshot = transaction.get(ref)
             require(snapshot.exists()) { "Booking not found." }
-            val oldStatus = snapshot.getString("status") ?: "Pending"
+            val status = snapshot.getString("status") ?: "Pending"
             require(role == "admin" || (role == "mechanic" && snapshot.getString("assignedMechanicUid") == uid)) {
                 "This booking is not assigned to your account."
             }
-            require(canTransitionBookingStatus(oldStatus, nextStatus)) {
+            require(canTransitionBookingStatus(status, nextStatus)) {
                 "This status change is not allowed."
             }
             transaction.update(ref, mapOf(
                 "status" to nextStatus,
                 "statusUpdatedAt" to FieldValue.serverTimestamp()
             ))
+            status
         }.await()
         ref.collection("statusHistory").add(mapOf(
             "changedBy" to uid,
+            "oldStatus" to oldStatus,
             "newStatus" to nextStatus,
             "createdAt" to FieldValue.serverTimestamp()
         )).await()
@@ -171,11 +175,33 @@ internal class BookingCloudStore(
             )
         }
     }
-    suspend fun assignMechanic(cloudId: String, mechanicUid: String, mechanicName: String) {
-        db.collection("bookings").document(cloudId).update(mapOf(
-            "assignedMechanicUid" to mechanicUid,
-            "assignedMechanic" to mechanicName
-        )).await()
+    suspend fun assignMechanic(cloudId: String, mechanicUid: String) {
+        val bookingRef = db.collection("bookings").document(cloudId)
+        db.runTransaction { transaction ->
+            val booking = transaction.get(bookingRef)
+            require(booking.exists()) { "Booking not found." }
+            require(booking.getString("status") in listOf("Pending", "Accepted")) {
+                "A mechanic can only be assigned while a booking is Pending or Accepted."
+            }
+
+            val mechanicName = if (mechanicUid.isBlank()) {
+                ""
+            } else {
+                val profileRef = db.collection("users").document(mechanicUid)
+                val profile = transaction.get(profileRef)
+                require(profile.exists() && profile.getString("role") == "mechanic") {
+                    "The selected account is not an active mechanic profile."
+                }
+                profile.getString("displayName")?.takeIf { it.isNotBlank() }
+                    ?: profile.getString("email")?.substringBefore("@")
+                    ?: mechanicUid
+            }
+
+            transaction.update(bookingRef, mapOf(
+                "assignedMechanicUid" to mechanicUid,
+                "assignedMechanic" to mechanicName
+            ))
+        }.await()
     }
 }
 
