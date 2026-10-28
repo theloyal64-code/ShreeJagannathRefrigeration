@@ -876,6 +876,17 @@ private fun RequestForm(appliance: Appliance, language: AppLanguage, onSubmit: (
             locationAccuracy = if (location.hasAccuracy()) location.accuracy else null
             locating = false
 
+            // Show a usable GPS-pin address immediately. Reverse geocoding can be slow
+            // or unavailable on some devices, so it must never be the only way to fill
+            // the required address field. A later manual edit is preserved below.
+            val coordinates = "GPS pin: %.6f, %.6f".format(Locale.US, location.latitude, location.longitude)
+            mainHandler.post {
+                val addressStillAtRequest = address == addressAtRequest
+                if (address.isBlank() || address.startsWith("GPS pin:") || addressStillAtRequest) {
+                    address = coordinates
+                }
+            }
+
             Thread {
                 var formattedAddress = ""
                 var postalCode = ""
