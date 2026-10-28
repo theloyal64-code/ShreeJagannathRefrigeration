@@ -610,7 +610,7 @@ private fun CustomerHome(appliances: List<Appliance>, bookings: List<ServiceBook
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD9E5F2))
             ) {
                 Column(Modifier.padding(14.dp)) {
