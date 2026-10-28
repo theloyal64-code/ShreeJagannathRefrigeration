@@ -199,7 +199,7 @@ private fun MainApp() {
     LaunchedEffect(currentUid, accountRole) {
         mechanicProfiles = if (accountRole == "admin") {
             try {
-                cloudStore.listMechanics()
+                cloudStore.listMechanics(currentUid)
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
@@ -410,8 +410,8 @@ private fun MainApp() {
                         val target = mechanicProfiles.firstOrNull { it["uid"] == mechanicUid }
                         if (booking != null && booking.cloudId.isNotBlank()) scope.launch {
                             try {
-                                if (mechanicUid.isBlank()) cloudStore.assignMechanic(booking.cloudId, "")
-                                else if (target != null) cloudStore.assignMechanic(booking.cloudId, mechanicUid)
+                                if (mechanicUid.isBlank()) cloudStore.assignMechanic(booking.cloudId, currentUid, "")
+                                else if (target != null) cloudStore.assignMechanic(booking.cloudId, currentUid, mechanicUid)
                                 else throw IllegalStateException("Create a mechanic account and profile before assigning this job.")
                             } catch (error: Exception) { Toast.makeText(context, error.message ?: "Could not assign mechanic.", Toast.LENGTH_LONG).show() }
                         }
