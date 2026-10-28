@@ -322,3 +322,23 @@ test("customer cannot change booking status or assign a mechanic directly", asyn
   }));
 });
 
+test("customer cannot create a booking with only one GPS coordinate", async () => {
+  await seed([["users/customer-1", profile("customer-1")]]);
+  const db = testEnv.authenticatedContext("customer-1").firestore();
+  const bookingRef = doc(collection(db, "bookings"));
+  const historyRef = doc(collection(bookingRef, "statusHistory"));
+  const batch = writeBatch(db);
+  batch.set(bookingRef, {
+    ...booking("customer-1", { latitude: 20.0, longitude: null }),
+    createdAt: serverTimestamp(),
+    statusUpdatedAt: serverTimestamp()
+  });
+  batch.set(historyRef, {
+    changedBy: "customer-1",
+    oldStatus: "",
+    newStatus: "Pending",
+    createdAt: serverTimestamp()
+  });
+  await assertFails(batch.commit());
+});
+
