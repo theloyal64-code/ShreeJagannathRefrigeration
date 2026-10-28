@@ -173,8 +173,6 @@ service cloud.firestore {
               ])
               && request.resource.data.statusUpdatedAt == request.time)
             || (resource.data.status == 'Completed'
-              && resource.data.rating == 0
-              && !('reviewedAt' in resource.data)
               && request.resource.data.rating is int
               && request.resource.data.rating >= 1
               && request.resource.data.rating <= 5
