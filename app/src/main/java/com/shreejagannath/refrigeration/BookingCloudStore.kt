@@ -1,6 +1,7 @@
 package com.shreejagannath.refrigeration
 
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -79,7 +80,9 @@ internal class BookingCloudStore(
         )) { "Select a valid appliance." }
         require((values["issue"] as? String)?.isNotBlank() == true) { "Select an issue." }
         require((values["address"] as? String)?.isNotBlank() == true) { "Enter your service address." }
+        val ref = db.collection("bookings").document()
         val data = values.toMutableMap().apply {
+            put("displayId", (ref.id.hashCode() and 0x7fffffff))
             put("customerUid", uid)
             put("status", "Pending")
             put("assignedMechanic", "")
@@ -89,9 +92,8 @@ internal class BookingCloudStore(
             put("createdAt", FieldValue.serverTimestamp())
             put("statusUpdatedAt", FieldValue.serverTimestamp())
         }
-        val ref = db.collection("bookings").add(data).await()
-        db.collection("bookings").document(ref.id)
-            .collection("statusHistory").add(mapOf(
+        ref.set(data).await()
+        ref.collection("statusHistory").add(mapOf(
                 "changedBy" to uid,
                 "oldStatus" to "",
                 "newStatus" to "Pending",
@@ -126,7 +128,7 @@ internal class BookingCloudStore(
             val snapshot = transaction.get(ref)
             require(snapshot.exists()) { "Booking not found." }
             val oldStatus = snapshot.getString("status") ?: "Pending"
-            require(role == "admin" || snapshot.getString("assignedMechanicUid") == uid) {
+            require(role == "admin" || (role == "mechanic" && snapshot.getString("assignedMechanicUid") == uid)) {
                 "This booking is not assigned to your account."
             }
             require(canTransitionBookingStatus(oldStatus, nextStatus)) {
