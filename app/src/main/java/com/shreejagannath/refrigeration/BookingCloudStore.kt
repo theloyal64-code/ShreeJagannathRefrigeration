@@ -133,7 +133,14 @@ internal class BookingCloudStore(
         return ref.id
     }
 
+    private fun requireActiveUser(uid: String) {
+        require(uid.isNotBlank() && FirebaseAuth.getInstance().currentUser?.uid == uid) {
+            "Your sign-in session changed. Please sign in again and retry."
+        }
+    }
+
     suspend fun cancelPendingBooking(cloudId: String, uid: String) {
+        requireActiveUser(uid)
         val ref = db.collection("bookings").document(cloudId)
         val historyRef = ref.collection("statusHistory").document()
         db.runTransaction { transaction ->
@@ -156,6 +163,8 @@ internal class BookingCloudStore(
     }
 
     suspend fun updateStatus(cloudId: String, uid: String, role: String, nextStatus: String) {
+        requireActiveUser(uid)
+        require(role in listOf("admin", "mechanic")) { "Your account does not have staff access." }
         val ref = db.collection("bookings").document(cloudId)
         val historyRef = ref.collection("statusHistory").document()
         db.runTransaction { transaction ->
@@ -182,8 +191,10 @@ internal class BookingCloudStore(
     }
 
     suspend fun submitReview(cloudId: String, uid: String, rating: Int, review: String) {
+        requireActiveUser(uid)
+        val normalizedReview = review.trim()
         require(rating in 1..5) { "Rating must be between 1 and 5." }
-        require(review.length <= 500) { "Review must be 500 characters or fewer." }
+        require(normalizedReview.length <= 500) { "Review must be 500 characters or fewer." }
         val ref = db.collection("bookings").document(cloudId)
         db.runTransaction { transaction ->
             val snapshot = transaction.get(ref)
@@ -192,7 +203,7 @@ internal class BookingCloudStore(
             require(snapshot.getString("status") == "Completed") { "Only completed bookings can be reviewed." }
             transaction.update(ref, mapOf(
                 "rating" to rating,
-                "review" to review.trim(),
+                "review" to normalizedReview,
                 "reviewedAt" to FieldValue.serverTimestamp()
             ))
         }.await()
