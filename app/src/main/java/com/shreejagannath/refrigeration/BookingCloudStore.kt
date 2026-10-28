@@ -172,3 +172,26 @@ internal class BookingCloudStore(
         )).await()
     }
 }
+
+
+internal fun firestoreBookingToModel(data: Map<String, Any?>): ServiceBooking {
+    fun string(key: String) = data[key] as? String ?: ""
+    fun long(key: String, fallback: Long = 0L): Long = when (val value = data[key]) {
+        is Timestamp -> value.toDate().time
+        is Number -> value.toLong()
+        else -> fallback
+    }
+    val cloudId = string("cloudId")
+    val created = long("createdAt", System.currentTimeMillis()).takeIf { it > 0L } ?: System.currentTimeMillis()
+    return ServiceBooking(
+        id = (data["displayId"] as? Number)?.toInt() ?: (cloudId.hashCode() and 0x7fffffff),
+        customer = string("customerName"), phone = string("phone"), appliance = string("appliance"),
+        issue = string("issue"), address = string("address"), preferredSlot = string("preferredSlot"),
+        pincode = string("pincode"), status = string("status").ifBlank { "Pending" }, createdAt = created,
+        latitude = (data["latitude"] as? Number)?.toDouble(), longitude = (data["longitude"] as? Number)?.toDouble(),
+        statusUpdatedAt = long("statusUpdatedAt", created).takeIf { it > 0L } ?: created,
+        assignedMechanic = string("assignedMechanic"), rating = (data["rating"] as? Number)?.toInt() ?: 0,
+        review = string("review"), reviewedAt = long("reviewedAt"), cloudId = cloudId,
+        customerUid = string("customerUid"), assignedMechanicUid = string("assignedMechanicUid")
+    )
+}
