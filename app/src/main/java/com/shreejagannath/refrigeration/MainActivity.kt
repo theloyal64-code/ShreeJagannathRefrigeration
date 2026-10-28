@@ -2066,21 +2066,31 @@ private fun AdminHome(bookings: List<ServiceBooking>, language: AppLanguage, mec
                                     uid to displayLabel
                                 }
                             }
-                            Box(Modifier.fillMaxWidth()) {
-                                OutlinedButton(onClick = { assignmentExpanded = true }, modifier = Modifier.fillMaxWidth()) {
-                                    Text(tr(language, "Assigned mechanic: ", "ନିଯୁକ୍ତ ମେକାନିକ୍: ") + if (b.assignedMechanic.isBlank()) tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି") else b.assignedMechanic)
-                                }
-                                DropdownMenu(expanded = assignmentExpanded, onDismissRequest = { assignmentExpanded = false }) {
-                                    mechanicOptions.forEach { (mechanicUid, mechanicName) ->
-                                        DropdownMenuItem(
-                                            text = { Text(if (mechanicUid.isBlank()) tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି") else mechanicName) },
-                                            onClick = {
-                                                onAssign(b.id, mechanicUid)
-                                                assignmentExpanded = false
-                                            }
-                                        )
+                            if (b.status in listOf("Pending", "Accepted")) {
+                                Box(Modifier.fillMaxWidth()) {
+                                    OutlinedButton(onClick = { assignmentExpanded = true }, modifier = Modifier.fillMaxWidth()) {
+                                        Text(tr(language, "Assigned mechanic: ", "ନିଯୁକ୍ତ ମେକାନିକ୍: ") + if (b.assignedMechanic.isBlank()) tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି") else b.assignedMechanic)
+                                    }
+                                    DropdownMenu(expanded = assignmentExpanded, onDismissRequest = { assignmentExpanded = false }) {
+                                        mechanicOptions.forEach { (mechanicUid, mechanicName) ->
+                                            DropdownMenuItem(
+                                                text = { Text(if (mechanicUid.isBlank()) tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି") else mechanicName) },
+                                                onClick = {
+                                                    onAssign(b.id, mechanicUid)
+                                                    assignmentExpanded = false
+                                                }
+                                            )
+                                        }
                                     }
                                 }
+                            } else {
+                                Text(
+                                    tr(language, "Assigned mechanic: ", "ନିଯୁକ୍ତ ମେକାନିକ୍: ") +
+                                        (b.assignedMechanic.ifBlank { tr(language, "Unassigned", "ନିଯୁକ୍ତ ହୋଇନାହାନ୍ତି") }) +
+                                        tr(language, " • assignment locked after work starts", " • କାମ ଆରମ୍ଭ ପରେ ନିଯୁକ୍ତି ବଦଳାଯାଇପାରିବ ନାହିଁ"),
+                                    fontSize = 12.sp,
+                                    color = Color.Gray
+                                )
                             }
                             Text("${tr(language, "Phone", "ଫୋନ୍")}: ${b.phone}", fontSize = 13.sp, color = Color.Gray)
                             Text("${tr(language, "Address", "ଠିକଣା")}: ${b.address}", fontSize = 13.sp, color = Color.Gray)
